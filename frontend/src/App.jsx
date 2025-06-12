@@ -5,6 +5,8 @@ import DriverManagement from './pages/Drivermanagement';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css'
+import Reg_ma_new_request from './pages/Reg-ma_new_request';
+import Reg_ma_aprovel from './pages/Reg_ma_aprovel';
 
 function App() {
   return (
@@ -23,6 +25,9 @@ function App() {
           </ProtectedRoute>
         }>
           <Route path="/dashboard" element={<DriverManagement />} />
+          <Route path="/registration-management" element={<Reg_ma_new_request />} />
+          <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel/>} />
+          {/* Add more protected routes here */}
         </Route>
 
       </Routes>
