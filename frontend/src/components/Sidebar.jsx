@@ -41,42 +41,6 @@ const Sidebar = () => {
           to="/registration-management"
           active={location.pathname === "/registration-management"}
         />
-        <SidebarItem
-          icon={<AiOutlineFileSearch />}
-          label="Approval Status"
-          to="/registration-management/aproval_status"
-          active={location.pathname === "/registration-management/aproval_status"}
-        />
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Driver Profile"
-          to="/driver-management/Driver_profile"
-          active={location.pathname === "/driver-management/Driver_profile"}
-        />
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Vehicle Info"
-          to="/driver-management/vehicle_information"
-          active={location.pathname === "/driver-management/vehicle_information"}
-        />
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Attachments"
-          to="/driver-management/attachments"
-          active={location.pathname === "/driver-management/attachments"}
-        />
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Logs"
-          to="/driver-management/logs"
-          active={location.pathname === "/driver-management/logs"}
-        />
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Add Driver"
-          to="/adddriverform"
-          active={location.pathname === "/adddriverform"}
-        />
       </nav>
 
       {/* Footer/Bottom Info */}

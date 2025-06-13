@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { LayoutDashboard, Users, UserCog, Briefcase, Truck, ChevronDown, Bell, CircleUserRound, ChevronLeft, ChevronRight } from 'lucide-react'; // Importing icons
 
 function Reg_ma_new_request() {
@@ -45,23 +46,29 @@ function Reg_ma_new_request() {
         </div>
 
         {/* Tabs */}
+
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
-          <button
-            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Darker tab background */
-            }`}
-            onClick={() => setActiveTab('New Request')}
-          >
-            New Request ( 0 )
-          </button>
-          <button
-            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'Completed Requests' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Darker tab background */
-            }`}
-            onClick={() => setActiveTab('Completed Requests')}
-          >
-            Completed Requests ( 8 )
-          </button>
+          <Link to="/registration-management">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request'
+                  ? 'bg-gray-900 text-white'
+                  : 'hover:bg-gray-800 text-gray-400'
+                }`}
+            >
+              New Request
+            </button>
+          </Link>
+
+          <Link to="/registration-management/aproval_status">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'Completed Requests'
+                  ? 'bg-gray-900 text-white'
+                  : 'hover:bg-gray-800 text-gray-400'
+                }`}
+            >
+              Completed Requests
+            </button>
+          </Link>
         </div>
 
         {/* Filter Section */}
@@ -142,13 +149,13 @@ function Reg_ma_new_request() {
 
         {/* Pagination */}
         <div className="flex justify-end items-center mt-auto space-x-2 text-sm text-gray-400">
-            <button className="p-2 rounded-full hover:bg-gray-800 transition-colors"> {/* Darker pagination button background */}
-                <ChevronLeft size={16} />
-            </button>
-            <span className="bg-green-600 text-white px-3 py-1 rounded-full">1</span> {/* Changed pagination active to green */}
-            <button className="p-2 rounded-full hover:bg-gray-800 transition-colors"> {/* Darker pagination button background */}
-                <ChevronRight size={16} />
-            </button>
+          <button className="p-2 rounded-full hover:bg-gray-800 transition-colors"> {/* Darker pagination button background */}
+            <ChevronLeft size={16} />
+          </button>
+          <span className="bg-green-600 text-white px-3 py-1 rounded-full">1</span> {/* Changed pagination active to green */}
+          <button className="p-2 rounded-full hover:bg-gray-800 transition-colors"> {/* Darker pagination button background */}
+            <ChevronRight size={16} />
+          </button>
         </div>
 
       </div>

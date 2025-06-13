@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, CircleUserRound, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'; // Importing icons, Sun and Moon are no longer needed for functionality but keeping them for import consistency if other parts use them
+import { Link } from 'react-router-dom';
 
 function App() {
   const [activeTab, setActiveTab] = useState('New Request');
@@ -253,8 +254,8 @@ function App() {
       const result = await response.json();
 
       if (result.candidates && result.candidates.length > 0 &&
-          result.candidates[0].content && result.candidates[0].content.parts &&
-          result.candidates[0].content.parts.length > 0) {
+        result.candidates[0].content && result.candidates[0].content.parts &&
+        result.candidates[0].content.parts.length > 0) {
         const text = result.candidates[0].content.parts[0].text;
         setDriverInsight(text);
       } else {
@@ -311,24 +312,28 @@ function App() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-4 mb-8 border-b border-gray-700"> {/* Fixed border color */}
-          <button
-            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Fixed colors */
-            }`}
-            onClick={() => setActiveTab('New Request')}
-          >
-            New Request ( 0 )
-          </button>
-          <button
-            className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'Completed Requests' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Fixed colors */
-            }`}
-            onClick={() => setActiveTab('Completed Requests')}
-          >
-            Completed Requests ( 8 )
-          </button>
+        <div className="flex space-x-4 mb-8 border-b border-gray-700">
+          <Link to="/registration-management">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request'
+                  ? 'bg-gray-900 text-white'
+                  : 'hover:bg-gray-800 text-gray-400'
+                }`}
+            >
+              New Request
+            </button>
+          </Link>
+
+          <Link to="/registration-management/aproval_status">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'Completed Requests'
+                  ? 'bg-gray-900 text-white'
+                  : 'hover:bg-gray-800 text-gray-400'
+                }`}
+            >
+              Completed Requests
+            </button>
+          </Link>
         </div>
 
         {/* Filter Section */}
@@ -403,18 +408,16 @@ function App() {
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.phoneNumber}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.deliveryProvider}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">
-                    <span className={`py-1 px-3 rounded-full text-xs ${
-                      driver.tawseelApproval === 'Completed' ? 'bg-green-700 text-green-100' : 'bg-red-700 text-red-100'
-                    }`}>
+                    <span className={`py-1 px-3 rounded-full text-xs ${driver.tawseelApproval === 'Completed' ? 'bg-green-700 text-green-100' : 'bg-red-700 text-red-100'
+                      }`}>
                       {driver.tawseelApproval}
                     </span>
                   </td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.vehicleType}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.city}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">
-                    <span className={`py-1 px-3 rounded-full text-xs ${
-                      driver.requestStatus === 'Approved' ? 'bg-green-700 text-green-100' : 'bg-red-700 text-red-100'
-                    }`}>
+                    <span className={`py-1 px-3 rounded-full text-xs ${driver.requestStatus === 'Approved' ? 'bg-green-700 text-green-100' : 'bg-red-700 text-red-100'
+                      }`}>
                       {driver.requestStatus}
                     </span>
                   </td>
@@ -445,33 +448,32 @@ function App() {
 
         {/* Pagination */}
         <div className="flex justify-end items-center mt-auto space-x-2 text-sm text-gray-400"> {/* Fixed text color */}
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {[...Array(totalPages)].map((_, index) => (
             <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`} 
-            >
-                <ChevronLeft size={16} />
-            </button>
-            {[...Array(totalPages)].map((_, index) => (
-              <button
-                key={index + 1}
-                onClick={() => setCurrentPage(index + 1)}
-                className={`px-3 py-1 rounded-full ${
-                  currentPage === index + 1
-                    ? 'bg-green-600 text-white'
-                    : 'hover:bg-gray-800' /* Fixed hover color */
+              key={index + 1}
+              onClick={() => setCurrentPage(index + 1)}
+              className={`px-3 py-1 rounded-full ${currentPage === index + 1
+                  ? 'bg-green-600 text-white'
+                  : 'hover:bg-gray-800' /* Fixed hover color */
                 }`}
-              >
-                {index + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`} 
             >
-                <ChevronRight size={16} />
+              {index + 1}
             </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
 
       </div>
