@@ -26,6 +26,8 @@ SECRET_KEY = 'django-insecure-l=xm*%#1195(fokhf8hjcbop##rsge5!)(z3#i_=@=tnlu0uce
 DEBUG = True
 
 ALLOWED_HOSTS = []
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Application definition

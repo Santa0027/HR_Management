@@ -1,6 +1,11 @@
-from django.urls import path
-from .views import driver_list
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import DriverViewSet, DriverLogViewSet
+
+router = DefaultRouter()
+router.register(r'drivers', DriverViewSet)
+router.register(r'driver-logs', DriverLogViewSet)
 
 urlpatterns = [
-    path('api/drivers/', driver_list),
+    path('Register/', include(router.urls)),
 ]
