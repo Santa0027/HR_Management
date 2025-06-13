@@ -12,6 +12,8 @@ import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
+import Reg_ma_vehicle_registration from './pages/Reg_ma_vehicle_registration';
+import Reg_ma_vehicle_list from './pages/Reg_ma_vehicle_list';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           <Route path="/driver-management/vehicle_information" element={<Driver_mange_vehicle_info />} />
           <Route path="/driver-management/attachments" element={<Driver_manage_attachment />} />
           <Route path="/driver-management/logs" element={<Driver_mange_logs />} />
+          <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
+          <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
           {/* Add more protected routes here */}
           <Route path='/adddriverform' element={<AddDriverForm />} />
         </Route>
