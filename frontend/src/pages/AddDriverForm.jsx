@@ -58,16 +58,22 @@ const AddDriverForm = () => {
             if (documents.visa) submitData.append('visa_document', documents.visa);
             if (documents.medical) submitData.append('medical_certificate', documents.medical);
 
-            const response = await axios.post('/ Register/drivers/', submitData, {
+            const response = await axios.post('/Register/drivers/', submitData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
             alert('Driver added successfully!');
             console.log('Success:', response.data);
         } catch (error) {
-            alert('Failed to submit the form.');
-            console.error('Error submitting form:', error);
+            if (error.response) {
+                console.error('Validation Error:', error.response.data);
+                alert('Validation failed: ' + JSON.stringify(error.response.data));
+            } else {
+                alert('Failed to submit the form.');
+                console.error('Error:', error);
+            }
         }
+
     };
 
     return (
