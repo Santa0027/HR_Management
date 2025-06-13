@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import DriverManagement from './pages/Drivermanagement';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import AddDriverForm from './pages/AddDriverForm';
 import './App.css'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           </ProtectedRoute>
         }>
           <Route path="/dashboard" element={<DriverManagement />} />
+          <Route path='/adddriverform' element={<AddDriverForm />} />
         </Route>
 
       </Routes>
