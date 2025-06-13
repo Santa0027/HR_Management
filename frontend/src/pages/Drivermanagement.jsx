@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const drivers = [
   {
@@ -183,7 +184,9 @@ export default function DriverManagement() {
                   <Badge status={d.accountStatus} />
                 </td>
                 <td className="px-4 py-2">
-                  <button className="text-blue-400 hover:underline">View</button>
+                  <Link to="/driver-management/Driver_profile">
+                    <button className="text-blue-400 hover:underline">View</button>
+                  </Link>                    
                 </td>
               </tr>
             ))}

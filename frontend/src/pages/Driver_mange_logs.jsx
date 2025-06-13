@@ -129,7 +129,7 @@ function Driver_mange_logs() {
           >
             Vehicle Information
             </button></Link>
-          <Link to="/driver-management/attachment" >
+          <Link to="/driver-management/attachmentS" >
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Attachments' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -137,7 +137,8 @@ function Driver_mange_logs() {
             onClick={() => setActiveTab('Attachments')}
           >
             Attachments
-          </button></Link>
+            </button></Link>
+          <Link to="/driver-management/logs" >
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Logs' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -145,7 +146,8 @@ function Driver_mange_logs() {
             onClick={() => setActiveTab('Logs')}
           >
             Logs
-          </button>
+            </button>
+          </Link> 
         </div>
 
         {/* Content based on active tab */}

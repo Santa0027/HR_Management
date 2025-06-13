@@ -40,9 +40,10 @@ function Reg_ma_new_request() {
         {/* Page Title & Add Driver Button */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold">Registration Management</h1>
+          <Link to="/adddriverform">
           <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors"> {/* Changed button to green */}
             Add Driver
-          </button>
+          </button></Link>
         </div>
 
         {/* Tabs */}

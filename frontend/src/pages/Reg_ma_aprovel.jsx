@@ -273,44 +273,27 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-inter"> {/* Fixed to dark mode */}
-      {/* Main Content */}
-      <div className="flex flex-col p-8">
-        {/* Top Bar for Language and User Icon (Theme toggle removed) */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm transition-colors">
-              English <ChevronDown size={16} className="ml-1" />
-            </button>
-            {/* Theme toggle button removed */}
-            <CircleUserRound size={24} className="text-green-400" /> {/* Fixed icon color */}
-          </div>
-        </div>
-
-        {/* Breadcrumb / Context Text */}
-        <div className="text-sm text-gray-400 mb-2">Organization / Registration Management</div> {/* Fixed text color */}
-        {/* Page Title & Add Driver Button */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-semibold">Registration Management</h1>
-          <div className="flex space-x-4">
-            <button
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors flex items-center justify-center"
-              onClick={generateDriverInsight}
-              disabled={loadingInsight}
-            >
-              {loadingInsight ? (
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                '✨ Generate Driver Insight'
-              )}
-            </button>
-            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
-              Add Driver
-            </button>
-          </div>
-        </div>
+      
+     <div className="flex flex-col p-8"> {/* Removed 'flex-1' from main content */}
+             {/* Header */}
+             <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+               <div className="text-sm text-gray-400">Organization / Registration Management</div>
+               <div className="flex items-center space-x-4">
+                 <button className="flex items-center px-3 py-1 bg-gray-900 rounded-full text-sm hover:bg-gray-800 transition-colors"> {/* Darker button background */}
+                   English <ChevronDown size={16} className="ml-1" />
+                 </button>
+                 <CircleUserRound size={24} className="text-green-400" /> {/* Changed icon color to green */}
+               </div>
+             </header>
+     
+             {/* Page Title & Add Driver Button */}
+             <div className="flex justify-between items-center mb-6">
+               <h1 className="text-3xl font-semibold">Registration Management</h1>
+               <Link to="/adddriverform">
+               <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors"> {/* Changed button to green */}
+                 Add Driver
+               </button></Link>
+             </div>
 
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
           <Link to="/registration-management">
