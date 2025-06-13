@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, CircleUserRound } from 'lucide-react'; // Importing icons
+import { Link } from 'react-router-dom'
 
 function Driver_mange_logs() {
   const [activeTab, setActiveTab] = useState('Logs'); // Default to Logs tab
@@ -109,6 +110,7 @@ function Driver_mange_logs() {
 
         {/* Tabs for Driver Details */}
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
+         <Link to="/driver-management/driver_profile">
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Driver Information' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -116,7 +118,9 @@ function Driver_mange_logs() {
             onClick={() => setActiveTab('Driver Information')}
           >
             Driver Information
-          </button>
+            </button>
+            </Link>
+          <Link to="/driver-management/vehicle_information" >
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Vehicle Information' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -124,7 +128,8 @@ function Driver_mange_logs() {
             onClick={() => setActiveTab('Vehicle Information')}
           >
             Vehicle Information
-          </button>
+            </button></Link>
+          <Link to="/driver-management/attachment" >
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Attachments' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -132,7 +137,7 @@ function Driver_mange_logs() {
             onClick={() => setActiveTab('Attachments')}
           >
             Attachments
-          </button>
+          </button></Link>
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Logs' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
