@@ -1,28 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, CircleUserRound, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'; // Importing icons, including Sun and Moon
+import { ChevronDown, CircleUserRound, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'; // Importing icons, Sun and Moon are no longer needed for functionality but keeping them for import consistency if other parts use them
 
-function Reg_ma_aprovel() {
+function App() {
   const [activeTab, setActiveTab] = useState('New Request');
   const [driverInsight, setDriverInsight] = useState(''); // State to store LLM generated insight
   const [loadingInsight, setLoadingInsight] = useState(false); // State for loading indicator
-  const [darkMode, setDarkMode] = useState(true); // State for theme mode (default to dark)
-
-  // Effect to apply/remove dark class from HTML body for Tailwind JIT mode (optional but good practice)
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  // Function to toggle dark/light mode
-  const toggleDarkMode = () => {
-    setDarkMode(prevMode => !prevMode);
-  };
+  const [currentPage, setCurrentPage] = useState(1); // State for current pagination page
 
   // Sample Data for the table
-  const sampleDrivers = [
+  const allDrivers = [ // Renamed sampleDrivers to allDrivers to distinguish the full list
     {
       requestNumber: '#12345',
       driverId: 'Unver-UD1',
@@ -127,7 +113,120 @@ function Reg_ma_aprovel() {
       requestStatus: 'Approved',
       action: '-',
     },
+    // Adding more sample data to demonstrate pagination across multiple pages
+    {
+      requestNumber: '#10001',
+      driverId: 'Driver-009',
+      driverName: 'Olivia Wilson',
+      driverNumber: '555-1111',
+      phoneNumber: '1234567890',
+      deliveryProvider: 'ExpressGo',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Car',
+      city: 'New York',
+      requestStatus: 'Approved',
+      action: '-',
+    },
+    {
+      requestNumber: '#10002',
+      driverId: 'Driver-010',
+      driverName: 'Liam Brown',
+      driverNumber: '555-2222',
+      phoneNumber: '1234567891',
+      deliveryProvider: 'QuickMove',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Van',
+      city: 'Chicago',
+      requestStatus: 'Approved',
+      action: '-',
+    },
+    {
+      requestNumber: '#10003',
+      driverId: 'Driver-011',
+      driverName: 'Emma Davis',
+      driverNumber: '555-3333',
+      phoneNumber: '1234567892',
+      deliveryProvider: 'SpeedyDeliver',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Motorcycle',
+      city: 'Houston',
+      requestStatus: 'Rejected',
+      action: '-',
+    },
+    {
+      requestNumber: '#10004',
+      driverId: 'Driver-012',
+      driverName: 'Noah Garcia',
+      driverNumber: '555-4444',
+      phoneNumber: '1234567893',
+      deliveryProvider: 'SwiftRide',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Car',
+      city: 'Phoenix',
+      requestStatus: 'Approved',
+      action: '-',
+    },
+    {
+      requestNumber: '#10005',
+      driverId: 'Driver-013',
+      driverName: 'Ava Martinez',
+      driverNumber: '555-5555',
+      phoneNumber: '1234567894',
+      deliveryProvider: 'CityLink',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Truck',
+      city: 'Philadelphia',
+      requestStatus: 'Approved',
+      action: '-',
+    },
+    {
+      requestNumber: '#10006',
+      driverId: 'Driver-014',
+      driverName: 'Elijah Rodriguez',
+      driverNumber: '555-6666',
+      phoneNumber: '1234567895',
+      deliveryProvider: 'MetroLogistics',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Van',
+      city: 'San Antonio',
+      requestStatus: 'Rejected',
+      action: '-',
+    },
+    {
+      requestNumber: '#10007',
+      driverId: 'Driver-015',
+      driverName: 'Charlotte Hernandez',
+      driverNumber: '555-7777',
+      phoneNumber: '1234567896',
+      deliveryProvider: 'FastTrack',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Motorcycle',
+      city: 'San Diego',
+      requestStatus: 'Approved',
+      action: '-',
+    },
+    {
+      requestNumber: '#10008',
+      driverId: 'Driver-016',
+      driverName: 'Benjamin Lopez',
+      driverNumber: '555-8888',
+      phoneNumber: '1234567897',
+      deliveryProvider: 'Reliable Delivery',
+      tawseelApproval: 'Completed',
+      vehicleType: 'Car',
+      city: 'Dallas',
+      requestStatus: 'Approved',
+      action: '-',
+    },
   ];
+
+  const itemsPerPage = 5; // Number of items to display per page
+  const totalPages = Math.ceil(allDrivers.length / itemsPerPage); // Calculate total pages dynamically
+
+  // Get drivers for the current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentDrivers = allDrivers.slice(startIndex, endIndex);
 
 
   // Function to call the Gemini API for driver insight
@@ -135,19 +234,13 @@ function Reg_ma_aprovel() {
     setLoadingInsight(true); // Set loading to true
     setDriverInsight(''); // Clear previous insight
 
-    // Define the prompt for the LLM
     const prompt = "Generate a detailed, positive summary for a hypothetical delivery driver named 'Ahmad Al-Fahad' who has been driving for 3 years in Riyadh, using a sedan. Highlight his strengths in timely delivery, excellent customer satisfaction, and reliability. Suggest one area for potential growth, such as expanding to larger vehicle types or new service areas. Format it as a professional HR summary.";
 
     try {
-      // Initialize chat history for the API call
       let chatHistory = [];
       chatHistory.push({ role: "user", parts: [{ text: prompt }] });
 
-      const payload = {
-        contents: chatHistory,
-      };
-
-      // API key is left empty; Canvas will inject it at runtime.
+      const payload = { contents: chatHistory };
       const apiKey = "";
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
@@ -159,12 +252,11 @@ function Reg_ma_aprovel() {
 
       const result = await response.json();
 
-      // Check if the response structure is valid and contains content
       if (result.candidates && result.candidates.length > 0 &&
           result.candidates[0].content && result.candidates[0].content.parts &&
           result.candidates[0].content.parts.length > 0) {
         const text = result.candidates[0].content.parts[0].text;
-        setDriverInsight(text); // Set the generated insight
+        setDriverInsight(text);
       } else {
         setDriverInsight("Failed to generate insight. Please try again.");
         console.error("Gemini API response structure unexpected:", result);
@@ -173,33 +265,28 @@ function Reg_ma_aprovel() {
       setDriverInsight("Error generating insight. " + error.message);
       console.error("Error calling Gemini API:", error);
     } finally {
-      setLoadingInsight(false); // Set loading to false regardless of success or failure
+      setLoadingInsight(false);
     }
   };
 
 
   return (
-    <div className={`min-h-screen font-inter ${darkMode ? 'bg-black text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+    <div className="min-h-screen bg-black text-gray-200 font-inter"> {/* Fixed to dark mode */}
       {/* Main Content */}
       <div className="flex flex-col p-8">
-        {/* Top Bar for Language, Theme Toggle, and User Icon */}
+        {/* Top Bar for Language and User Icon (Theme toggle removed) */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-4">
-            <button className={`flex items-center px-3 py-1 rounded-full text-sm transition-colors ${darkMode ? 'bg-gray-900 hover:bg-gray-800 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}>
+            <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm transition-colors">
               English <ChevronDown size={16} className="ml-1" />
             </button>
-            <button
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-full transition-colors ${darkMode ? 'bg-gray-900 hover:bg-gray-800 text-green-400' : 'bg-gray-200 hover:bg-gray-300 text-green-600'}`}
-            >
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <CircleUserRound size={24} className={`${darkMode ? 'text-green-400' : 'text-green-600'}`} />
+            {/* Theme toggle button removed */}
+            <CircleUserRound size={24} className="text-green-400" /> {/* Fixed icon color */}
           </div>
         </div>
 
         {/* Breadcrumb / Context Text */}
-        <div className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Organization / Registration Management</div>
+        <div className="text-sm text-gray-400 mb-2">Organization / Registration Management</div> {/* Fixed text color */}
         {/* Page Title & Add Driver Button */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold">Registration Management</h1>
@@ -225,12 +312,10 @@ function Reg_ma_aprovel() {
         </div>
 
         {/* Tabs */}
-        <div className={`flex space-x-4 mb-8 border-b ${darkMode ? 'border-gray-700' : 'border-gray-300'}`}>
+        <div className="flex space-x-4 mb-8 border-b border-gray-700"> {/* Fixed border color */}
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'New Request'
-                ? (darkMode ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-900')
-                : (darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-200 text-gray-700')
+              activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Fixed colors */
             }`}
             onClick={() => setActiveTab('New Request')}
           >
@@ -238,9 +323,7 @@ function Reg_ma_aprovel() {
           </button>
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
-              activeTab === 'Completed Requests'
-                ? (darkMode ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-900')
-                : (darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-200 text-gray-700')
+              activeTab === 'Completed Requests' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400' /* Fixed colors */
             }`}
             onClick={() => setActiveTab('Completed Requests')}
           >
@@ -249,44 +332,44 @@ function Reg_ma_aprovel() {
         </div>
 
         {/* Filter Section */}
-        <div className={`p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end ${darkMode ? 'bg-gray-900' : 'bg-gray-200'}`}>
+        <div className="bg-gray-900 p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end"> {/* Fixed background */}
           <div>
-            <label htmlFor="vehicleType" className={`block text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>Vehicle Type</label>
-            <select id="vehicleType" className={`w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'}`}>
+            <label htmlFor="vehicleType" className="block text-sm mb-2 text-gray-400">Vehicle Type</label> {/* Fixed text color */}
+            <select id="vehicleType" className="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 border-gray-700 text-white"> {/* Fixed colors */}
               <option>Select Vehicle Type</option>
               {/* Add more options here */}
             </select>
           </div>
           <div>
-            <label htmlFor="requestStatus" className={`block text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>Request Status</label>
-            <select id="requestStatus" className={`w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'}`}>
+            <label htmlFor="requestStatus" className="block text-sm mb-2 text-gray-400">Request Status</label> {/* Fixed text color */}
+            <select id="requestStatus" className="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 border-gray-700 text-white"> {/* Fixed colors */}
               <option>Select Request Status</option>
               {/* Add more options here */}
             </select>
           </div>
           <div>
-            <label htmlFor="requestId" className={`block text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>Request ID</label>
-            <input type="text" id="requestId" placeholder="Enter Request ID" className={`w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'}`} />
+            <label htmlFor="requestId" className="block text-sm mb-2 text-gray-400">Request ID</label> {/* Fixed text color */}
+            <input type="text" id="requestId" placeholder="Enter Request ID" className="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 border-gray-700 text-white" /> {/* Fixed colors */}
           </div>
           <div>
-            <label htmlFor="city" className={`block text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>City</label>
-            <select id="city" className={`w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'}`}>
+            <label htmlFor="city" className="block text-sm mb-2 text-gray-400">City</label> {/* Fixed text color */}
+            <select id="city" className="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 border-gray-700 text-white"> {/* Fixed colors */}
               <option>Select City</option>
               {/* Add more options here */}
             </select>
           </div>
           <div>
-            <label htmlFor="approval" className={`block text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>Approval</label>
-            <select id="approval" className={`w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-800'}`}>
+            <label htmlFor="approval" className="block text-sm mb-2 text-gray-400">Approval</label> {/* Fixed text color */}
+            <select id="approval" className="w-full border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-800 border-gray-700 text-white"> {/* Fixed colors */}
               <option>Select Approval</option>
               {/* Add more options here */}
             </select>
           </div>
           <div className="flex space-x-2">
-            <button className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800'}`}>
+            <button className="flex-1 px-4 py-2 rounded-md font-medium transition-colors bg-gray-800 hover:bg-gray-700 text-white"> {/* Fixed colors */}
               Sorting
             </button>
-            <button className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-800'}`}>
+            <button className="flex-1 px-4 py-2 rounded-md font-medium transition-colors bg-gray-800 hover:bg-gray-700 text-white"> {/* Fixed colors */}
               Reset All
             </button>
           </div>
@@ -294,9 +377,9 @@ function Reg_ma_aprovel() {
 
         {/* Table Header */}
         <div className="overflow-x-auto mb-4">
-          <table className={`min-w-full rounded-lg ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+          <table className="min-w-full rounded-lg bg-gray-900"> {/* Fixed background */}
             <thead>
-              <tr className={`${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-200 text-gray-700'} uppercase text-sm leading-normal`}>
+              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal"> {/* Fixed colors */}
                 <th className="py-3 px-6 text-left rounded-tl-lg">Request Number</th>
                 <th className="py-3 px-6 text-left">Driver ID</th>
                 <th className="py-3 px-6 text-left">Driver name</th>
@@ -310,9 +393,9 @@ function Reg_ma_aprovel() {
                 <th className="py-3 px-6 text-center rounded-tr-lg">Action</th>
               </tr>
             </thead>
-            <tbody className={`${darkMode ? 'text-gray-400' : 'text-gray-700'} text-sm font-light`}>
-              {sampleDrivers.map((driver, index) => (
-                <tr key={index} className={`${darkMode ? 'border-b border-gray-800 hover:bg-gray-700' : 'border-b border-gray-300 hover:bg-gray-100'}`}>
+            <tbody className="text-gray-400 text-sm font-light"> {/* Fixed text color */}
+              {currentDrivers.map((driver, index) => ( // Render currentDrivers
+                <tr key={index} className="border-b border-gray-800 hover:bg-gray-700"> {/* Fixed border and hover colors */}
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.requestNumber}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.driverId}</td>
                   <td className="py-3 px-6 text-left whitespace-nowrap">{driver.driverName}</td>
@@ -338,25 +421,55 @@ function Reg_ma_aprovel() {
                   <td className="py-3 px-6 text-center whitespace-nowrap">{driver.action}</td>
                 </tr>
               ))}
+              {currentDrivers.length === 0 && ( // Display "No Entries Available" if no data on current page
+                <tr className="border-b border-gray-800">
+                  <td className="py-3 px-6 text-center" colSpan="11">
+                    <div className="text-lg font-semibold mt-8 mb-2">No Entries Available</div>
+                    <div className="text-sm text-gray-500 mb-8">
+                      There are currently no entries available for this page.
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Driver Insight Section */}
         {driverInsight && (
-          <div className={`p-6 rounded-lg mt-8 ${darkMode ? 'bg-gray-900' : 'bg-gray-200'}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-green-400' : 'text-green-600'}`}>✨ Driver Insight Report</h2>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} whitespace-pre-wrap`}>{driverInsight}</p>
+          <div className="bg-gray-900 p-6 rounded-lg mt-8"> {/* Fixed background */}
+            <h2 className="text-xl font-semibold mb-4 text-green-400">✨ Driver Insight Report</h2> {/* Fixed title color */}
+            <p className="text-gray-300 whitespace-pre-wrap">{driverInsight}</p> {/* Fixed text color */}
           </div>
         )}
 
         {/* Pagination */}
-        <div className={`flex justify-end items-center mt-auto space-x-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            <button className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'}`}>
+        <div className="flex justify-end items-center mt-auto space-x-2 text-sm text-gray-400"> {/* Fixed text color */}
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`} 
+            >
                 <ChevronLeft size={16} />
             </button>
-            <span className="bg-green-600 text-white px-3 py-1 rounded-full">1</span>
-            <button className={`p-2 rounded-full transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'}`}>
+            {[...Array(totalPages)].map((_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => setCurrentPage(index + 1)}
+                className={`px-3 py-1 rounded-full ${
+                  currentPage === index + 1
+                    ? 'bg-green-600 text-white'
+                    : 'hover:bg-gray-800' /* Fixed hover color */
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-full transition-colors hover:bg-gray-800 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`} 
+            >
                 <ChevronRight size={16} />
             </button>
         </div>
@@ -366,7 +479,10 @@ function Reg_ma_aprovel() {
   );
 }
 
-export default Reg_ma_aprovel;
+export default App;
+
+
+
 
 
 // import React, { useState, useEffect, createContext, useContext } from 'react';
