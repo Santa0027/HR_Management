@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'hr',
     'drivers',
     'code',
-    'accounts_module'
+    'accounts_module',
+    'vehicle'
 ]
 
 MIDDLEWARE = [

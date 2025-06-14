@@ -49,11 +49,10 @@ function Reg_ma_new_request() {
         {/* Page Title & Add Driver */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold">Registration Management</h1>
-          <Link to={'/adddriverform'}>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+          <Link to="/adddriverform">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors"> {/* Changed button to green */}
             Add Driver
-          </button>
-          </Link>
+          </button></Link>
         </div>
 
         {/* Tabs */}
@@ -124,9 +123,9 @@ function Reg_ma_new_request() {
                 <th className="py-3 px-6 text-left">Driver Name</th>
                 <th className="py-3 px-6 text-left">Driver Number</th>
                 <th className="py-3 px-6 text-left">Phone Number</th>
-                {/* <th className="py-3 px-6 text-left">Delivery Provider</th> */}
-                {/* <th className="py-3 px-6 text-left">Tawseel Approval</th> */}
-                {/* <th className="py-3 px-6 text-left">Vehicle Type</th>  */}
+                <th className="py-3 px-6 text-left">Delivery Provider</th>
+                <th className="py-3 px-6 text-left">Tawseel Approval</th>
+                <th className="py-3 px-6 text-left">Vehicle Type</th> 
                 <th className="py-3 px-6 text-left">City</th>
                 <th className="py-3 px-6 text-left">Request Status</th>
                 <th className="py-3 px-6 text-center rounded-tr-lg">Action</th>
@@ -153,9 +152,9 @@ function Reg_ma_new_request() {
                     <td className="py-3 px-6 text-left">{driver.driver_name}</td>
                     <td className="py-3 px-6 text-left">{driver.driverNumber}</td>
                     <td className="py-3 px-6 text-left">{driver.mobile}</td>
-                    {/* <td className="py-3 px-6 text-left">{driver.provider}</td> */}
+                    <td className="py-3 px-6 text-left">{driver.provider}</td>
                     <td className="py-3 px-6 text-left">{driver.approval}</td>
-                    {/* <td className="py-3 px-6 text-left">{driver.vehicle}</td> */}
+                    <td className="py-3 px-6 text-left">{driver.vehicle}</td>
                     <td className="py-3 px-6 text-left">{driver.city}</td>
                     <td className="py-3 px-6 text-left">{driver.status}</td>
                     <td className="py-3 px-6 text-center">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, CircleUserRound } from 'lucide-react'; // Importing icons
+import { Link } from 'react-router-dom'
 
 function Driver_mange_DrProfile() {
   const [activeTab, setActiveTab] = useState('Driver Information'); // State for active tab
@@ -78,6 +79,7 @@ function Driver_mange_DrProfile() {
 
         {/* Tabs for Driver Details */}
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
+        <Link to="/driver-management/driover_profile">
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Driver Information' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -85,7 +87,9 @@ function Driver_mange_DrProfile() {
             onClick={() => setActiveTab('Driver Information')}
           >
             Driver Information
-          </button>
+            </button>
+          </Link>
+          <Link to={"/driver-management/vehicle_information"}>
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Vehicle Information' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -93,7 +97,9 @@ function Driver_mange_DrProfile() {
             onClick={() => setActiveTab('Vehicle Information')}
           >
             Vehicle Information
-          </button>
+            </button>
+          </Link>
+          <Link to={"/driver-management/attachments"}>
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Attachments' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -101,7 +107,9 @@ function Driver_mange_DrProfile() {
             onClick={() => setActiveTab('Attachments')}
           >
             Attachments
-          </button>
+            </button>
+          </Link>
+          <Link to={"/driver-management/logs"}>
           <button
             className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${
               activeTab === 'Logs' ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-400'
@@ -109,7 +117,7 @@ function Driver_mange_DrProfile() {
             onClick={() => setActiveTab('Logs')}
           >
             Logs
-          </button>
+          </button></Link>
         </div>
 
         {/* Content based on active tab */}
