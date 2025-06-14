@@ -69,7 +69,7 @@ function VehicleEdit() {
       navigate(`/vehicles/${id}`);
     } catch (err) {
       console.error('Update failed:', err);
-      alert('Failed to update vehicle.');
+      alert('Failed to update vehicles.');
     }
   };
 
