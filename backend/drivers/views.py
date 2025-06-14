@@ -35,3 +35,9 @@ class DriverLogViewSet(viewsets.ModelViewSet):
     queryset = DriverLog.objects.all().order_by('-timestamp')
     serializer_class = DriverLogSerializer
     permission_classes = [permissions.IsAuthenticated]
+from django.http import JsonResponse
+from .models import Driver
+
+def get_drivers_by_company(request, company_id):
+    drivers = Driver.objects.filter(company_id=company_id).values()
+    return JsonResponse(list(drivers), safe=False)

@@ -53,7 +53,10 @@ INSTALLED_APPS = [
     'drivers',
     'code',
     'accounts_module',
-    'vehicle'
+    'vehicle',
+    'logs',
+    'company',
+
 ]
 
 MIDDLEWARE = [

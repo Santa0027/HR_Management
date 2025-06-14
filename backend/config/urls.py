@@ -13,6 +13,6 @@ urlpatterns = [
     path('', include('drivers.urls')),  # if you have app-specific URLs
     path('', include('core.urls')),
     path('', include('vehicle.urls')),
-
+    path('', include('company.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

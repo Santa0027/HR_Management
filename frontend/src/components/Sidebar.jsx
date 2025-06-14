@@ -132,6 +132,12 @@ const Sidebar = () => {
             to="/vehicle-list"
             active={location.pathname === "/vehicle-list"}
           />
+          <SidebarItem
+            label="Componay Registration"
+            to="/platform-list"
+            active={location.pathname === "/platform-list"}
+          />
+         
         </SidebarItem>
       </nav>
 

@@ -7,6 +7,7 @@ router.register(r'vehicles', VehicleRegistrationViewSet, basename='vehicle')
 
 urlpatterns = [
     path('vehicles-list/', vehicle_list, name='vehicle-list'),  # Optional additional endpoint
+    
 ]
 
 urlpatterns += router.urls
