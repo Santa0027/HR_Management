@@ -53,7 +53,6 @@ const AddDriverForm = () => {
             });
 
             const token = localStorage.getItem('access_token');
-
             const config = {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -61,9 +60,7 @@ const AddDriverForm = () => {
                 }
             };
 
-            const response = await axios.post('/Register/drivers/', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await axios.post('/Register/drivers/', data, config);
             alert('Driver added successfully!');
             console.log('Success:', response.data);
         } catch (error) {
@@ -150,7 +147,6 @@ const AddDriverForm = () => {
     );
 };
 
-// Reusable Input component
 const Input = ({ label, type = "text", value, onChange }) => (
     <div>
         <label className="block">{label}</label>
@@ -158,7 +154,6 @@ const Input = ({ label, type = "text", value, onChange }) => (
     </div>
 );
 
-// Reusable Select component
 const Select = ({ label, value, onChange }) => (
     <div>
         <label className="block">{label}</label>

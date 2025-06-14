@@ -45,7 +45,6 @@ class Driver(models.Model):
             ('pending', 'Pending'),
             ('approved', 'Approved'),
             ('rejected', 'Rejected'),
-            ('expired', 'Expired'),
         ),
         default='pending'
     )
