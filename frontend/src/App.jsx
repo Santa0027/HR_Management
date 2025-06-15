@@ -13,7 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Dashboard and Management
 import DriverManagement from './pages/Drivermanagement';
 import AddDriverForm from './pages/AddDriverForm';
-
+import DriverProfileEditDelete from './pages/Reg_ma_driver_information'
 // Registration Management
 import Reg_ma_new_request from './pages/Reg-ma_new_request';
 import Reg_ma_aprovel from './pages/Reg_ma_aprovel';
@@ -61,6 +61,7 @@ function App() {
           <Route path="/registration-management" element={<Reg_ma_new_request />} />
           <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
           <Route path="/registration-management/aproval_status/driver/:id" element={<DriverProfile />} />
+          <Route path='/profileedit/:id' element={<DriverProfileEditDelete />}/>
 
           <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
           <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
@@ -73,7 +74,7 @@ function App() {
 
 
           {/* Driver Management */}
-          <Route path="/driver-management/Driver_profile" element={<Driver_mange_DrProfile />} />
+          <Route path="/driver-management/Driver_profile/:id" element={<Driver_mange_DrProfile />} />
           <Route path="/driver-management/vehicle_information" element={<Driver_mange_vehicle_info />} />
           <Route path="/driver-management/attachments" element={<Driver_manage_attachment />} />
           <Route path="/driver-management/logs" element={<Driver_mange_logs />} />

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from company.models import Company
+from vehicle.models import VehicleRegistration
 
 class Driver(models.Model):
     GENDER_CHOICES = (
@@ -11,13 +12,16 @@ class Driver(models.Model):
 
     # Step 1: Personal Information
     driver_name = models.CharField(max_length=100)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True ,related_name='driver')  # ✅ important
+    driverId = models.IntegerField( null=False,blank=False,default='1')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True ,related_name='drivers')  # ✅ important
+    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.CASCADE, null=True, blank=True ,related_name='drivers')  # ✅ important
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     iqama = models.CharField(max_length=20, unique=True)
     mobile = models.CharField(max_length=20)
     city = models.CharField(max_length=100)
     nationality = models.CharField(max_length=100)
     dob = models.DateField()
+    password = models.CharField(max_length=20 ,null=False,blank=False,default="user@123")
 
     # Step 2: Documents 
     iqama_document = models.FileField(upload_to='drivers/iqama/')

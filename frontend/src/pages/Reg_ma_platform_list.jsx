@@ -122,7 +122,7 @@ function Reg_ma_platform_list() {
                   <td className="py-3 px-6">{reg.company_name}</td>
                   <td className="py-3 px-6">{reg.gst_number}</td>
                   <td className="py-3 px-6">{reg.commission_percentage || '-'}</td>
-                  <td className="py-3 px-6">{reg.drivers_allotted || '-'}</td>
+                  <td className="py-3 px-6">{reg.driver_count || '-'}</td>
                   <td className="py-3 px-6 text-center">
                     <Link to={`/company-profile/${reg.id}`}>
                       <button

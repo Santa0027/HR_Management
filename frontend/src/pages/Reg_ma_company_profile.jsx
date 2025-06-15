@@ -155,10 +155,14 @@ function CompanyProfile() {
                     key={index}
                     className="border-b border-gray-800 hover:bg-gray-700"
                   >
-                    <td className="py-3 px-6">{driver.driver_id}</td>
-                    <td className="py-3 px-6">{driver.name}</td>
-                    <td className="py-3 px-6">{driver.phone}</td>
-                    <td className="py-3 px-6">{driver.vehicle_name}</td>
+                    <td className="py-3 px-6">{driver.id}</td>
+                    <td className="py-3 px-6">{driver.driver_name}</td>
+                    <td className="py-3 px-6">{driver.mobile}</td>
+                    <td className="py-3 px-6">
+  {driver.vehicle 
+    ? `${driver.vehicle.vehicle_name} (${driver.vehicle.vehicle_number})` 
+    : 'No Vehicle Assigned'}
+</td>
                     <td className="py-3 px-6">
                       <span
                         className={`py-1 px-3 rounded-full text-xs font-medium ${

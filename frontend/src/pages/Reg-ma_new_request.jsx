@@ -207,11 +207,17 @@ function Reg_ma_new_request() {
                     <td className="py-3 px-6">{driver.mobile}</td>
                     <td className="py-3 px-6">{driver.company}</td>
                     <td className="py-3 px-6">{driver.approval}</td>
-                    <td className="py-3 px-6">{driver.vehicle}</td>
+                    <td className="py-3 px-6">
+                      {driver.vehicle ? driver.vehicle.vehicle_type : 'No Vehicle Assigned'}
+                    </td>
                     <td className="py-3 px-6">{driver.city}</td>
                     <td className="py-3 px-6">{driver.status}</td>
                     <td className="py-3 px-6 text-center">
-                      <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">View</button>
+                      <Link to={`/profileedit/${driver.id}`}>
+                        <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">
+                          View
+                        </button>
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -234,3 +240,5 @@ function Reg_ma_new_request() {
 }
 
 export default Reg_ma_new_request;
+
+

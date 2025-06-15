@@ -9,9 +9,10 @@ from .models import Company
 from drivers.models import Driver
 from drivers.serializers import DriverSerializer
 from .serializers import CompanySerializer
+from django.db.models import Count
 
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.all().order_by('-created_at')
+    queryset = Company.objects.annotate(driver_count=Count('drivers')).order_by('-created_at')
     serializer_class = CompanySerializer
 
 # @api_view(['GET'])

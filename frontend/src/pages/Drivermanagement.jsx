@@ -95,7 +95,7 @@ export default function DriverManagement() {
                     <Badge status={d.account_status} />
                   </td>
                   <td className="px-4 py-2">
-                    <Link to={`/driver-management/${d.id}`}>
+                    <Link to={`/driver-management/Driver_profile/${d.id}`}>
                       <button className="text-blue-400 hover:underline">View</button>
                     </Link>
                   </td>

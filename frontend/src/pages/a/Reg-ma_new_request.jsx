@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+} from 'lucide-react';
+
+function Reg_ma_new_request() {
+  const [activeTab, setActiveTab] = useState('New Request');
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch driver data from API
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/Register/drivers/');
+ // Replace with your real API URL
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setDrivers(data);
+      } catch (err) {
+        console.error("Failed to fetch drivers:", err);
+        setError("Unable to load drivers.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDrivers();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-black text-gray-200 font-inter">
+      <div className="flex flex-col p-8">
+        {/* Header */}
+        <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+          <div className="text-sm text-gray-400">Organization / Registration Management</div>
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-3 py-1 bg-gray-900 rounded-full text-sm hover:bg-gray-800 transition-colors">
+              English <ChevronDown size={16} className="ml-1" />
+            </button>
+            <CircleUserRound size={24} className="text-green-400" />
+          </div>
+        </header>
+
+        {/* Page Title & Add Driver */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-semibold">Registration Management</h1>
+          <Link to="/adddriverform">
+          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors"> {/* Changed button to green */}
+            Add Driver
+          </button></Link>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex space-x-4 mb-8 border-b border-gray-700">
+          <Link to="/registration-management">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request'
+                ? 'bg-gray-900 text-white'
+                : 'hover:bg-gray-800 text-gray-400'}`}
+            >
+              New Request
+            </button>
+          </Link>
+          <Link to="/registration-management/aproval_status">
+            <button
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'Completed Requests'
+                ? 'bg-gray-900 text-white'
+                : 'hover:bg-gray-800 text-gray-400'}`}
+            >
+              Completed Requests
+            </button>
+          </Link>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-gray-900 p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+          <div>
+            <label htmlFor="vehicleType" className="block text-gray-400 text-sm mb-2">Vehicle Type</label>
+            <select id="vehicleType" className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white">
+              <option>Select Vehicle Type</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="requestStatus" className="block text-gray-400 text-sm mb-2">Request Status</label>
+            <select id="requestStatus" className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white">
+              <option>Select Request Status</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="requestId" className="block text-gray-400 text-sm mb-2">Request ID</label>
+            <input type="text" id="requestId" placeholder="Enter Request ID" className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white" />
+          </div>
+          <div>
+            <label htmlFor="city" className="block text-gray-400 text-sm mb-2">City</label>
+            <select id="city" className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white">
+              <option>Select City</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="approval" className="block text-gray-400 text-sm mb-2">Approval</label>
+            <select id="approval" className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white">
+              <option>Select Approval</option>
+            </select>
+          </div>
+          <div className="flex space-x-2">
+            <button className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium">Sorting</button>
+            <button className="flex-1 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium">Reset All</button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto mb-4">
+          <table className="min-w-full bg-gray-900 rounded-lg">
+            <thead>
+              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
+                <th className="py-3 px-6 text-left rounded-tl-lg">Request Number</th>
+                <th className="py-3 px-6 text-left">Driver ID</th>
+                <th className="py-3 px-6 text-left">Driver Name</th>
+                <th className="py-3 px-6 text-left">Driver Number</th>
+                <th className="py-3 px-6 text-left">Phone Number</th>
+                <th className="py-3 px-6 text-left">Delivery Provider</th>
+                <th className="py-3 px-6 text-left">Tawseel Approval</th>
+                <th className="py-3 px-6 text-left">Vehicle Type</th> 
+                <th className="py-3 px-6 text-left">City</th>
+                <th className="py-3 px-6 text-left">Request Status</th>
+                <th className="py-3 px-6 text-center rounded-tr-lg">Action</th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-400 text-sm font-light">
+              {loading ? (
+                <tr>
+                  <td colSpan="11" className="py-6 text-center text-gray-400">
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="11" className="py-6 text-center text-red-400">
+                    {error}
+                  </td>
+                </tr>
+              ) : drivers.length > 0 ? (
+                drivers.map((driver, index) => (
+                  <tr key={index} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+                    <td className="py-3 px-6 text-left">{driver.id}</td>
+                    <td className="py-3 px-6 text-left">{driver.driverId}</td>
+                    <td className="py-3 px-6 text-left">{driver.driver_name}</td>
+                    <td className="py-3 px-6 text-left">{driver.driverNumber}</td>
+                    <td className="py-3 px-6 text-left">{driver.mobile}</td>
+                    <td className="py-3 px-6 text-left">{driver.provider}</td>
+                    <td className="py-3 px-6 text-left">{driver.approval}</td>
+                    <td className="py-3 px-6 text-left">{driver.vehicle}</td>
+                    <td className="py-3 px-6 text-left">{driver.city}</td>
+                    <td className="py-3 px-6 text-left">{driver.status}</td>
+                    <td className="py-3 px-6 text-center">
+                      <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">View</button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="11" className="py-6 text-center text-gray-500">
+                    No Entries Available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-end items-center mt-auto space-x-2 text-sm text-gray-400">
+          <button className="p-2 rounded-full hover:bg-gray-800">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="bg-green-600 text-white px-3 py-1 rounded-full">1</span>
+          <button className="p-2 rounded-full hover:bg-gray-800">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Reg_ma_new_request;
