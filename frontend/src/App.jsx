@@ -23,12 +23,14 @@ import Reg_ma_platform_list from './pages/Reg_ma_platform_list';
 import CompanyRegistrationForm from './pages/Reg_ma_company_form';
 import CompanyProfile from './pages/Reg_ma_company_profile';
 
+
 // Driver Management
 import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
 import DriverProfile from './pages/Driverapproal';
+import PendingApprovalTabContent from './pages/Reg_ma_vehicle_approval';
 
 
 // Vehicle Details
@@ -61,7 +63,8 @@ function App() {
           <Route path="/registration-management" element={<Reg_ma_new_request />} />
           <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
           <Route path="/registration-management/aproval_status/driver/:id" element={<DriverProfile />} />
-          <Route path='/profileedit/:id' element={<DriverProfileEditDelete />}/>
+          <Route path="/profileedit/:driverId" element={<DriverProfileEditDelete />} />
+
 
           <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
           <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
@@ -83,6 +86,8 @@ function App() {
           {/* Vehicle Details */}
           <Route path="/vehicles/:id" element={<VehicleProfile />} />
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
+          <Route path="/vehicleapprovel/" element={<PendingApprovalTabContent />} />
+
         </Route>
       </Routes>
     </BrowserRouter>

@@ -10,7 +10,6 @@ function DriverProfileEditDelete() {
   const [driverData, setDriverData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-console.log("Driver ID from useParams:", driverId);
 
   useEffect(() => {
     async function fetchDriver() {
@@ -26,6 +25,8 @@ console.log("Driver ID from useParams:", driverId);
     }
     fetchDriver();
   }, [driverId]);
+  console.log("Driver ID:", driverId);
+console.log("URL:", `/Register/drivers/${driverId}/`)
 
   if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading driver profile...</div>;
   if (error || !driverData) return <div className="min-h-screen bg-black text-red-400 p-8">{error || 'Driver not found.'}</div>;
@@ -45,6 +46,7 @@ console.log("Driver ID from useParams:", driverId);
   const handleSave = async () => {
     try {
       await axiosInstance.patch(`/Register/drivers/${driverId}/`, driverData);
+      console.log(driverData);
       alert('Saved successfully!');
       setIsEditing(false);
     } catch (err) {
@@ -115,17 +117,17 @@ console.log("Driver ID from useParams:", driverId);
         {/* Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
-            ['driverName','driver_name'],
-            ['driverNumber','Driver No.'],
-            ['nationalId','National ID'],
-            ['contactNumber','Contact No.'],
+            ['driver_name','driver_name'],
+            ['driverId','Driver No.'],
+            ['nationality','National ID'],
+            ['mobile','Contact No.'],
             ['driverType','Driver Type'],
-            ['approvalStatus','Approval'],
+            ['status','Approval'],
             ['licenseNumber','License No.'],
             ['licenseExpiry','License Expiry'],
             ['vehicleAllocated','Vehicle'],
             ['createdBy','Created By', true],
-            ['createdDate','Created At', true, 'date'],
+            ['submitted_by','Created At', true, 'date'],
             ['address','Address', false, 'textarea']
           ].map(([key,label, readonly=false, type='text']) => (
             <div key={key}>

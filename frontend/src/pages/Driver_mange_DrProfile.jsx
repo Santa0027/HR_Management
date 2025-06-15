@@ -71,9 +71,8 @@ function Driver_mange_DrProfile() {
             <div>
               <span className="font-semibold text-gray-300">Status:</span>{' '}
               <button
-                className={`py-1 px-3 rounded-full text-xs font-medium transition-colors ${
-                  driverData.status === 'Active' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                }`}
+                className={`py-1 px-3 rounded-full text-xs font-medium transition-colors ${driverData.status === 'Active' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                  }`}
                 disabled
               >
                 {driverData.status}
@@ -89,11 +88,10 @@ function Driver_mange_DrProfile() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === tab
+            className={`px-4 py-2 text-sm font-medium ${activeTab === tab
                 ? 'border-b-2 border-green-400 text-white'
                 : 'text-gray-400 hover:text-white'
-            } transition-colors`}
+              } transition-colors`}
           >
             {tab}
           </button>
@@ -117,7 +115,7 @@ function Driver_mange_DrProfile() {
               <label className="block text-sm font-medium mb-1">Date of Birth</label>
               <input
                 type="date"
-                value={driverData.dob  || ''}
+                value={driverData.dob || ''}
                 className="w-full px-4 py-2 rounded bg-gray-800 text-white border border-gray-700"
                 disabled
               />
@@ -204,6 +202,13 @@ function Driver_mange_DrProfile() {
               />
             </div>
           </form>
+        </div>
+      )}
+      {activeTab === 'Documents' && (
+        <div className="bg-gray-900 p-6 rounded-lg">
+          <h2 className="text-lg font-semibold text-white mb-4">Documents</h2>
+          <p className="text-gray-400">This section will show all uploaded driver documents like ID proof, license, etc.</p>
+          {/* You can map over a `driverData.documents` array if it exists */}
         </div>
       )}
     </div>
