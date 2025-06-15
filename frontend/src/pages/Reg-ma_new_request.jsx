@@ -106,9 +106,10 @@ function Reg_ma_new_request() {
               onChange={e => setFilterVehicleType(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
             >
-              <option value="">Select Vehicle Type</option>
-              {getUniqueOptions("vehicle").map(type => (
-                <option key={type} value={type}>{type}</option>
+              {getUniqueOptions("vehicle").map(vehicle => (
+                <option key={vehicle.id} value={vehicle.vehicle_type}>
+                  {vehicle.vehicle_type}
+                </option>
               ))}
             </select>
           </div>
