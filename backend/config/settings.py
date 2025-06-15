@@ -26,11 +26,20 @@ SECRET_KEY = 'django-insecure-l=xm*%#1195(fokhf8hjcbop##rsge5!)(z3#i_=@=tnlu0uce
 DEBUG = True
 
 ALLOWED_HOSTS = []
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework_simplejwt',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +52,11 @@ INSTALLED_APPS = [
     'hr',
     'drivers',
     'code',
-    'accounts_module'
+    'accounts_module',
+    'vehicle',
+    'logs',
+    'company',
+
 ]
 
 MIDDLEWARE = [
@@ -74,6 +87,14 @@ TEMPLATES = [
     },
 ]
 
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
@@ -82,8 +103,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'hr_management_db',
+        'USER': 'admin',
+        'PASSWORD': 'admin@vellore',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
