@@ -11,5 +11,6 @@ router.register(r'driver-logs', DriverLogViewSet)
 urlpatterns = [
     path('Register/', include(router.urls)),
     path('by-company/<int:company_id>/', views.get_drivers_by_company, name='drivers-by-company'),
+    path('Register/onboarded/', views.onboarded_drivers, name='onboarded-drivers'),
 ]
     

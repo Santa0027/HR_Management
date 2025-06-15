@@ -43,17 +43,17 @@ function EditCompany() {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axiosInstance.put(`/company-profile/${id}/`, company);
-      alert('Company updated successfully');
-      navigate(`/company/${id}`);
-    } catch (error) {
-      console.error('Update failed', error);
-      alert('Error updating company');
-    }
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await axiosInstance.put(`/company/${id}/`, company);
+    alert('Company updated successfully');
+    navigate(`/company-profile/`);
+  } catch (error) {
+    console.error('Update failed', error.response?.data || error.message);
+    alert('Error updating company');
+  }
+};
 
   if (loading) return <div className="p-6 text-white">Loading...</div>;
 

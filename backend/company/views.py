@@ -14,14 +14,14 @@ class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all().order_by('-created_at')
     serializer_class = CompanySerializer
 
-@api_view(['GET'])
-def company_profile(request, company_id):
-    try:
-        company = Company.objects.get(pk=company_id)
-        drivers = Driver.objects.filter(company=company)
-        return Response({
-            "company": CompanySerializer(company).data,
-            "drivers": DriverSerializer(drivers, many=True).data
-        })
-    except Company.DoesNotExist:
-        return Response({"error": "Company not found"}, status=404)
+# @api_view(['GET'])
+# def company_profile(request, company_id):
+#     try:
+#         company = Company.objects.get(pk=company_id)
+#         drivers = Driver.objects.filter(company=company)
+#         return Response({
+#             "company": CompanySerializer(company).data,
+#             "drivers": DriverSerializer(drivers, many=True).data
+#         })
+#     except Company.DoesNotExist:
+#         return Response({"error": "Company not found"}, status=404)

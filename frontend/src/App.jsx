@@ -28,6 +28,8 @@ import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
+import DriverProfile from './pages/Driverapproal';
+
 
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
@@ -58,11 +60,13 @@ function App() {
           {/* Registration Management */}
           <Route path="/registration-management" element={<Reg_ma_new_request />} />
           <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
+          <Route path="/registration-management/aproval_status/driver/:id" element={<DriverProfile />} />
+
           <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
           <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
           <Route path="/platform-list" element={<Reg_ma_platform_list />} />
 
-          {/* Company */}
+
           <Route path="/company-profile/:id" element={<CompanyProfile />} />
           <Route path="/company-registration" element={<CompanyRegistrationForm />} />
           <Route path="/company/:id/edit" element={<EditCompany />} />

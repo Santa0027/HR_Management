@@ -6,12 +6,16 @@ from .models import Driver
 class DriverSerializer(serializers.ModelSerializer):
     class Meta:
         model = Driver
-        fields = '__all__'  # Or list all the fields explicitly
+        fields = '__all__'  # or a specific list of fields
 
     def validate(self, data):
-        # Example: Check that expiry dates are not in the past
-        if data['iqama_expiry'] < data['dob']:
-            raise serializers.ValidationError("Iqama expiry must be after DOB.")
+        # Safely access fields even during PATCH
+        iqama_expiry = data.get('iqama_expiry', getattr(self.instance, 'iqama_expiry', None))
+        dob = data.get('dob', getattr(self.instance, 'dob', None))
+
+        if iqama_expiry and dob and iqama_expiry < dob:
+            raise serializers.ValidationError("Iqama expiry must be after Date of Birth.")
+
         return data
 
 
