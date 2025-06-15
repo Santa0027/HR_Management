@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import {
+  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+} from 'lucide-react';
 
 const Badge = ({ status }) => {
   const color =
@@ -32,7 +35,17 @@ export default function DriverManagement() {
   }, []);
 
   return (
-    <div className="min-h-screen w-auto bg-gray-900 text-white">
+    <div className="min-h-screen w-auto bg-black text-white p-10">
+      {/* Header */}
+              <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8 p-5 ">
+                <div className="text-sm text-gray-400">Organization / Registration Management</div>
+                <div className="flex items-center space-x-4">
+                  <button className="flex items-center px-3 py-1 bg-gray-900 rounded-full text-sm hover:bg-gray-800 transition-colors">
+                    English <ChevronDown size={16} className="ml-1" />
+                  </button>
+                  <CircleUserRound size={24} className="text-green-400" />
+                </div>
+              </header>
       <h1 className="text-3xl font-bold mb-6">Driver Management</h1>
 
       {/* Filters */}
