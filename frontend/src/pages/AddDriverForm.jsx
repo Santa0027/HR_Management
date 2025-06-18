@@ -1,466 +1,383 @@
-import React, { useState, useEffect, useCallback, memo } from 'react'; // Added memo and useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { ChevronDown, CircleUserRound, Upload } from 'lucide-react'; // Added Upload icon
+import { Upload } from 'lucide-react';
 
 const AddDriverForm = () => {
-  const [activeTab, setActiveTab] = useState('info'); // State to control active tab
+  const [mode, setMode] = useState('partial');
+  const [activeTab, setActiveTab] = useState('info');
   const [vehicles, setVehicles] = useState([]);
   const [companies, setCompanies] = useState([]);
 
-  const [value, setValue] = useState("");
-
+  // --- UPDATED formData STATE ---
   const [formData, setFormData] = useState({
-    driver_name: '',
-    gender: '',
-    iqama: '',
-    mobile: '',
-    city: '',
-    nationality: '',
-    dob: '',
-    vehicleType: '', // This should be vehicle_id if linking to backend vehicle ID
-    company: '',     // This should be company_id if linking to backend company ID
+    driver_name: '', gender: '', iqama: '', mobile: '', city: '',
+    nationality: '', dob: '', vehicleType: '', company: '',
     documents: {
-      iqama_document: null,
-      iqama_expiry: '',
-      passport_document: null,
-      passport_expiry: '',
-      license_document: null,
-      license_expiry: '',
-      visa_document: null,
-      visa_expiry: '',
-      medical_document: null,
-      medical_expiry: '',
+      iqama_document: null, iqama_expiry: '',
+      passport_document: null, passport_expiry: '',
+      license_document: null, license_expiry: '',
+      visa_document: null, visa_expiry: '',
+      medical_document: null, medical_expiry: '',
+      // --- NEW DOCUMENT FIELDS ---
+      insurance_document: null, insurance_expiry: '',
+      accommodation_document: null, accommodation_expiry: '',
+      phone_bill_document: null, phone_bill_expiry: ''
     },
+    // --- NEW PAID_BY FIELDS ---
+    insurance_paid_by: '',
+    accommodation_paid_by: '',
+    phone_bill_paid_by: ''
   });
 
-  useEffect(() => {
-    fetch('http://localhost:8000/vehicles/')
-      .then(res => res.json())
-      .then(data => setVehicles(data))
-      .catch(err => console.error('Vehicle error:', err));
+  const PAID_BY_OPTIONS = [
+    { value: '', label: 'Select' }, // Default empty option
+    { value: 'own', label: 'Own' },
+    { value: 'company', label: 'Company' }
+  ];
 
-    fetch('http://localhost:8000/company/')
-      .then(res => res.json())
-      .then(data => setCompanies(data))
-      .catch(err => console.error('Company error:', err));
+  useEffect(() => {
+    // Correct API endpoints for vehicles and companies
+    // Assuming your Django app serves these at these paths
+    axios.get('http://localhost:8000/vehicles/').then(res => setVehicles(res.data)).catch(err => console.error("Error fetching vehicles:", err));
+    axios.get('http://localhost:8000/company/').then(res => setCompanies(res.data)).catch(err => console.error("Error fetching companies:", err));
   }, []);
 
-  // Memoized change handlers to prevent unnecessary re-renders of child components
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Special handling for foreign keys if they need to be numbers
+    // Assuming Django expects integer IDs for vehicleType and company
+    if (name === 'vehicleType' || name === 'company') {
+      setFormData(prev => ({ ...prev, [name]: value ? parseInt(value, 10) : '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   }, []);
 
   const handleFileChange = useCallback((e) => {
     const { name, files } = e.target;
     setFormData(prev => ({
       ...prev,
-      documents: {
-        ...prev.documents,
-        [name]: files[0]
-      }
+      documents: { ...prev.documents, [name]: files[0] }
     }));
   }, []);
 
-  const handleDateChange = useCallback((e) => {
+  // Updated handleDateChange to handle new expiry fields for insurance, accommodation, phone_bill
+  const handleDocumentExpiryChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      documents: {
-        ...prev.documents,
-        [name]: value
-      }
+      documents: { ...prev.documents, [name]: value }
     }));
   }, []);
 
-  const refreshAccessToken = async () => {
+  const refreshToken = async () => {
     const refresh = localStorage.getItem('refresh_token');
-    const res = await fetch('http://localhost:8000/api/token/refresh/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh }),
-    });
-
-    if (!res.ok) {
-      throw new Error('Token refresh failed');
+    try {
+      const res = await axios.post('http://localhost:8000/api/token/refresh/', { refresh });
+      localStorage.setItem('access_token', res.data.access);
+      return res.data.access;
+    } catch (err) {
+      console.error("Token refresh failed:", err);
+      // Handle refresh token failure (e.g., redirect to login)
+      throw err;
     }
-
-    const data = await res.json();
-    localStorage.setItem('access_token', data.access);
-    return data.access;
   };
 
-  const submitDriver = async (token, data) => {
-    const response = await fetch('http://localhost:8000/Register/drivers/', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: data,
-    });
-
-    return response;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === 'documents') {
-        Object.entries(value).forEach(([docKey, docValue]) => {
-          if (docValue) data.append(docKey, docValue);
+  const submitDriver = async data => {
+    let token = localStorage.getItem('access_token');
+    try {
+      const res = await axios.post('http://localhost:8000/Register/drivers/', data, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return res;
+    } catch (err) {
+      if (err.response?.status === 401) {
+        token = await refreshToken(); // Attempt to refresh token
+        // Retry the request with the new token
+        return axios.post('http://localhost:8000/Register/drivers/', data, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-      } else {
-        data.append(key, value);
+      }
+      throw err; // Re-throw other errors
+    }
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    const data = new FormData();
+
+    // --- UPDATED keysToAppend for 'full' mode ---
+    const keysToAppend = mode === 'full'
+      ? [
+          'driver_name', 'gender', 'iqama', 'mobile', 'city',
+          'nationality', 'dob', 'vehicleType', 'company',
+          'insurance_paid_by', 'accommodation_paid_by', 'phone_bill_paid_by' // Add new fields
+        ]
+      : ['driver_name', 'iqama', 'mobile', 'city', 'gender'];
+
+    keysToAppend.forEach(key => {
+      // Handle the 'documents' object (including new document fields)
+      if (key === 'documents') { // This key won't be in keysToAppend directly, but it's handled here for completeness
+        Object.entries(formData.documents).forEach(([docKey, docValue]) => {
+          // Append file if not null
+          if (docValue instanceof File) {
+            data.append(docKey, docValue);
+          }
+          // Append expiry dates
+          else if (docKey.endsWith('_expiry') && docValue) {
+            data.append(docKey, docValue);
+          }
+        });
+      } else if (key === 'vehicleType' || key === 'company') {
+          // Append foreign key IDs if they exist and are numbers
+          if (formData[key]) {
+            data.append(key, formData[key]);
+          }
+      }
+      else {
+        // Append other form data fields
+        if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+            data.append(key, formData[key]);
+        }
       }
     });
 
-    let token = localStorage.getItem('access_token');
+    // Explicitly append all document related fields from formData.documents
+    // This is safer than relying on 'documents' being in keysToAppend as a top-level key.
+    Object.entries(formData.documents).forEach(([docKey, docValue]) => {
+      if (docValue instanceof File) { // It's a file input
+        data.append(docKey, docValue);
+      } else if (docKey.endsWith('_expiry') && docValue) { // It's an expiry date
+        data.append(docKey, docValue);
+      }
+    });
+
+    // Ensure paid_by fields are appended even if not in original keysToAppend (if you decide to separate logic)
+    if (mode === 'full') {
+      if (formData.insurance_paid_by) data.append('insurance_paid_by', formData.insurance_paid_by);
+      if (formData.accommodation_paid_by) data.append('accommodation_paid_by', formData.accommodation_paid_by);
+      if (formData.phone_bill_paid_by) data.append('phone_bill_paid_by', formData.phone_bill_paid_by);
+    }
+
 
     try {
-      let res = await submitDriver(token, data);
-
-      if (res.status === 401) {
-        // Token might be expired
-        token = await refreshAccessToken();
-        res = await submitDriver(token, data);
-      }
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(JSON.stringify(errData));
-      }
-
-      const result = await res.json();
+      await submitDriver(data);
       alert('Driver added successfully!');
-      console.log(result);
-      // Optionally reset form after successful submission
+      // --- RESET formData STATE ---
       setFormData({
-        driver_name: '',
-        gender: '',
-        iqama: '',
-        mobile: '',
-        city: '',
-        nationality: '',
-        dob: '',
-        vehicleType: '',
-        company: '',
+        driver_name: '', gender: '', iqama: '', mobile: '', city: '',
+        nationality: '', dob: '', vehicleType: '', company: '',
         documents: {
-          iqama_document: null,
-          iqama_expiry: '',
-          passport_document: null,
-          passport_expiry: '',
-          license_document: null,
-          license_expiry: '',
-          visa_document: null,
-          visa_expiry: '',
-          medical_document: null,
-          medical_expiry: '',
+          iqama_document: null, iqama_expiry: '',
+          passport_document: null, passport_expiry: '',
+          license_document: null, license_expiry: '',
+          visa_document: null, visa_expiry: '',
+          medical_document: null, medical_expiry: '',
+          // --- NEW DOCUMENT FIELDS RESET ---
+          insurance_document: null, insurance_expiry: '',
+          accommodation_document: null, accommodation_expiry: '',
+          phone_bill_document: null, phone_bill_expiry: ''
         },
+        // --- NEW PAID_BY FIELDS RESET ---
+        insurance_paid_by: '',
+        accommodation_paid_by: '',
+        phone_bill_paid_by: ''
       });
-      setActiveTab('info'); // Go back to first tab
+      setActiveTab('info'); // Go back to info tab after successful submission
     } catch (err) {
-      console.error('Error submitting driver:', err);
-      alert('Failed to submit driver. Please log in again or check your data.' + err.message);
+      console.error("Submission failed:", err);
+      alert('Submission failed: ' + (err.response?.data?.detail || err.message || 'An unknown error occurred.'));
     }
   };
 
-  // Helper to get file name for display
-  const getFileName = (file) => {
-    return file ? file.name : 'No file chosen';
-  };
+  const getFileName = file => file?.name || 'No file chosen';
 
-  // Memoized InputField component
-  const InputField = memo(({ label, type = "text", name, value, onChange, placeholder }) => (
+  // --- Re-using existing InputField for date and text inputs ---
+  const InputField = ({ label, ...props }) => (
     <div>
-      <label htmlFor={name} className="block text-sm mb-1 text-white">{label}</label>
-      <input
-        type={type}
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full p-2 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-700"
-        autoComplete="off"
-      />
+      <label className="block text-sm mb-1 text-white">{label}</label>
+      <input className="w-full p-2 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-700" {...props} />
     </div>
-  ));
+  );
 
-  // Memoized SelectField component
-  const SelectField = memo(({ label, name, value, onChange, options }) => (
+  // --- Re-using existing SelectField for dropdowns ---
+  const SelectField = ({ label, options, ...props }) => (
     <div>
-      <label htmlFor={name} className="block text-sm mb-1 text-white">{label}</label>
-      <select
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full p-2 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-700"
-      >
-        {options.map(option => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
+      <label className="block text-sm mb-1 text-white">{label}</label>
+      <select className="w-full p-2 border rounded bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-700" {...props}>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
-  ));
+  );
 
-  // FileUploadField does not need to be memoized itself, as it's not a standalone component that receives props from a list.
-  // Its internal InputField is already memoized.
-  const FileUploadField = ({ label, name, file, onFileChange, expiryKey, expiryValue, onExpiryChange }) => (
+  // --- Re-using existing FileUploadField for documents ---
+  const FileUploadField = ({ label, name, file, expiryKey, expiryValue, onExpiryChange }) => (
     <div>
       <label className="block text-sm mb-1 text-white">{label} Document:</label>
-      <div className="relative flex items-stretch border border-gray-700 rounded-md overflow-hidden">
-        <input
-          type="text"
-          readOnly
-          value={getFileName(file)}
-          className="flex-1 bg-gray-800 py-2 px-3 text-white focus:outline-none"
-        />
-        <label htmlFor={name} className="cursor-pointer bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 flex items-center h-full">
-          <Upload size={18} className="mr-2" /> Upload
+      <div className="flex border border-gray-700 rounded overflow-hidden">
+        <input type="text" readOnly value={getFileName(file)} className="flex-1 bg-gray-800 p-2 text-white" />
+        <label htmlFor={name} className="cursor-pointer bg-blue-700 hover:bg-blue-800 text-white px-4 py-2">
+          <Upload size={18} />
         </label>
-        <input
-          type="file"
-          name={name}
-          id={name}
-          onChange={onFileChange}
-          className="hidden"
-        />
+        <input type="file" name={name} id={name} onChange={handleFileChange} className="hidden" />
       </div>
-      <label className="block text-sm mb-1 mt-2 text-white">{label} Expiry:</label>
-      <InputField // This InputField is already memoized
-        type="date"
-        name={expiryKey}
-        value={expiryValue}
-        onChange={onExpiryChange}
-        // Tailwind classes are passed via className prop in InputField, not directly here.
-      />
+      <label className="block text-sm mt-2 mb-1 text-white">{label} Expiry:</label>
+      <InputField type="date" name={expiryKey} value={expiryValue} onChange={onExpiryChange} />
     </div>
   );
 
-  const infoTabContent = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <InputField label="Driver Name" name="driver_name" value={formData.driver_name} onChange={handleChange} placeholder="Enter driver's full name" />
-      <InputField label="Iqama Number" name="iqama" value={formData.iqama} onChange={handleChange} placeholder="Enter Iqama number" />
-      <InputField label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="Enter mobile number" />
-      <InputField label="City" name="city" value={formData.city} onChange={handleChange} placeholder="Enter city" />
-      <SelectField
-        label="Gender"
-        name="gender"
-        value={formData.gender}
-        onChange={handleChange}
-        options={[
-          { value: '', label: 'Select Gender' },
-          { value: 'male', label: 'Male' },
-          { value: 'female', label: 'Female' },
-          { value: 'other', label: 'Other' },
-        ]}
-      />
-      <InputField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} placeholder="Enter nationality" />
-      <InputField label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
-    </div>
-  );
-
-  const documentsTabContent = (
-    <div className="space-y-6">
-      <FileUploadField
-        label="Iqama"
-        name="iqama_document"
-        file={formData.documents.iqama_document}
-        onFileChange={handleFileChange}
-        expiryKey="iqama_expiry"
-        expiryValue={formData.documents.iqama_expiry}
-        onExpiryChange={handleDateChange}
-      />
-      <FileUploadField
-        label="Passport"
-        name="passport_document"
-        file={formData.documents.passport_document}
-        onFileChange={handleFileChange}
-        expiryKey="passport_expiry"
-        expiryValue={formData.documents.passport_expiry}
-        onExpiryChange={handleDateChange}
-      />
-      <FileUploadField
-        label="License"
-        name="license_document"
-        file={formData.documents.license_document}
-        onFileChange={handleFileChange}
-        expiryKey="license_expiry"
-        expiryValue={formData.documents.license_expiry}
-        onExpiryChange={handleDateChange}
-      />
-      <FileUploadField
-        label="Visa"
-        name="visa_document"
-        file={formData.documents.visa_document}
-        onFileChange={handleFileChange}
-        expiryKey="visa_expiry"
-        expiryValue={formData.documents.visa_expiry}
-        onExpiryChange={handleDateChange}
-      />
-      <FileUploadField
-        label="Medical"
-        name="medical_document"
-        file={formData.documents.medical_document}
-        onFileChange={handleFileChange}
-        expiryKey="medical_expiry"
-        expiryValue={formData.documents.medical_expiry}
-        onExpiryChange={handleDateChange}
-      />
-
-      <SelectField
-        label="Assign Vehicle"
-        name="vehicleType"
-        value={formData.vehicleType}
-        onChange={handleChange}
-        options={[
-          { value: '', label: 'Select Vehicle' },
-          ...vehicles.map(v => ({ value: v.id, label: `${v.vehicle_name} (${v.vehicle_number})` }))
-        ]}
-      />
-      <SelectField
-        label="Assign Company"
-        name="company"
-        value={formData.company}
-        onChange={handleChange}
-        options={[
-          { value: '', label: 'Select Company' },
-          ...companies.map(c => ({ value: c.id, label: c.company_name }))
-        ]}
-      />
-    </div>
-  );
-
-  const reviewTabContent = (
-    <div className="space-y-3 text-sm text-white">
-      <h3 className="text-lg font-semibold mb-2 text-white">Review Driver Details</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-        {Object.entries(formData).map(([key, value]) => {
-          if (key !== 'documents' && value !== '') {
-            return (
-              <p key={key}>
-                <strong className="text-gray-300 capitalize">{key.replace(/_/g, ' ')}:</strong> {value}
-              </p>
-            );
-          }
-          return null;
-        })}
-      </div>
-      <h4 className="text-lg font-semibold mt-6 mb-2 text-white">Documents & Assignment</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-        {Object.entries(formData.documents).map(([key, value]) => {
-          if (value !== null && value !== '') {
-            const displayValue = key.includes('_document') ? (value?.name || 'Uploaded') : value;
-            return (
-              <p key={key}>
-                <strong className="text-gray-300 capitalize">{key.replace(/_/g, ' ')}:</strong> {displayValue}
-              </p>
-            );
-          }
-          return null;
-        })}
-      </div>
-    </div>
-  );
-
-  // Define the order of tabs for progress bar and navigation
-  const tabs = ['info', 'documents', 'review'];
-  const currentStepIndex = tabs.indexOf(activeTab) + 1;
-  const totalSteps = tabs.length;
-
+  const infoHints = mode === 'full'
+    ? 'You can fill all sections including documents and assignments.'
+    : 'Only essential fields are required in partial mode.';
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col p-8"> {/* Main container with black background, white text */}
-      {/* Header Component */}
-      <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
-        <div className="text-sm text-gray-400">Organization / Registration Management / Add Driver</div>
-        <div className="flex items-center space-x-4">
-          <button className="flex items-center px-3 py-1 bg-gray-900 rounded-full text-sm hover:bg-gray-800 text-white transition-colors">
-            English <ChevronDown size={16} className="ml-1" />
-          </button>
-          <CircleUserRound size={24} className="text-green-400" />
+    <div className="max-w-3xl mx-auto p-8 bg-gray-800 rounded-lg shadow-lg space-y-6">
+      <header className="flex justify-between">
+        <h2 className="text-2xl font-bold text-white">Add New Driver</h2>
+        <div>
+          <label className="mr-4 text-white">Mode:</label>
+          <select
+            value={mode}
+            onChange={e => setMode(e.target.value)}
+            className="bg-gray-800 border border-gray-700 p-2 rounded text-white"
+          >
+            <option value="partial">Partial Details</option>
+            <option value="full">Full Details</option>
+          </select>
         </div>
       </header>
 
-      <div className="flex-grow flex items-center justify-center">
-        <div className="bg-gray-900 p-6 rounded-lg w-full max-w-4xl shadow-lg"> {/* Form container background */}
-          <h2 className="text-2xl font-bold mb-4">Add New Driver</h2>
+      <p className="text-sm text-gray-400">{infoHints}</p>
 
-          {/* Progress Bar */}
-          <div className="w-full h-2 bg-gray-700 mb-6 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-700 rounded-full" style={{ width: `${(currentStepIndex / totalSteps) * 100}%` }} />
-          </div>
-
-          {/* Tabs */}
-          <div className="flex space-x-4 mb-6 border-b border-gray-700">
-            <button
-              type="button"
-              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'info' ? 'bg-blue-700 text-white' : 'bg-gray-700 text-white'}`}
-              onClick={() => setActiveTab('info')}
-            >
-              Driver Info
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'documents' ? 'bg-blue-700' : 'bg-gray-700'}`}
-              onClick={() => setActiveTab('documents')}
-            >
-              Documents & Assignment
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'review' ? 'bg-blue-700' : 'bg-gray-700'}`}
-              onClick={() => setActiveTab('review')}
-            >
-              Review
-            </button>
-          </div>
-          <form onSubmit={handleSubmit}>
-
-
-            {/* Conditionally display tab content using hidden/block classes */}
-            <div className={activeTab === 'info' ? 'block' : 'hidden'}>{infoTabContent}</div>
-            <div className={activeTab === 'documents' ? 'block' : 'hidden'}>{documentsTabContent}</div>
-            <div className={activeTab === 'review' ? 'block' : 'hidden'}>{reviewTabContent}</div>
-
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-6">
-              {currentStepIndex > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(tabs[currentStepIndex - 2])} // Go to previous tab
-                  className="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-600 text-white font-medium transition-colors"
-                >
-                  Back
-                </button>
-              )}
-              {currentStepIndex < totalSteps && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab(tabs[currentStepIndex])} // Go to next tab
-                  className="bg-blue-700 px-4 py-2 rounded-lg hover:bg-blue-800 text-white font-medium transition-colors ml-auto"
-                >
-                  Next
-                </button>
-              )}
-              {currentStepIndex === totalSteps && (
-                <button
-                  type="submit"
-                  className="bg-green-600 px-4 py-2 rounded-lg hover:bg-green-700 text-white font-medium transition-colors ml-auto"
-                >
-                  Submit
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
+      <div className="flex space-x-4">
+        <button
+          type="button"
+          className={`px-4 py-2 rounded ${
+            activeTab === 'info' ? 'bg-blue-700 text-white' : 'bg-gray-700 text-gray-300'
+          }`}
+          onClick={() => setActiveTab('info')}
+        >
+          Driver Info
+        </button>
+        {mode === 'full' && (
+          <button
+            type="button"
+            className={`px-4 py-2 rounded ${
+              activeTab === 'documents' ? 'bg-blue-700 text-white' : 'bg-gray-700 text-gray-300'
+            }`}
+            onClick={() => setActiveTab('documents')}
+          >
+            Documents & Assignment
+          </button>
+        )}
       </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {activeTab === 'info' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <InputField label="Driver Name" name="driver_name" value={formData.driver_name} onChange={handleChange} placeholder="Enter name" required />
+            <InputField label="Iqama Number" name="iqama" value={formData.iqama} onChange={handleChange} placeholder="Enter Iqama" required />
+            <InputField label="Mobile" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="Enter Mobile" required />
+            <InputField label="City" name="city" value={formData.city} onChange={handleChange} placeholder="Enter City" required />
+            <SelectField label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={[
+              { value: '', label: 'Select Gender' },
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' }
+            ]} required />
+            <InputField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} placeholder="Enter Nationality" />
+            <InputField label="Date of Birth" type="date" name="dob" value={formData.dob} onChange={handleChange} />
+          </div>
+        )}
+
+        {mode === 'full' && activeTab === 'documents' && (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-white mt-8 mb-4">Mandatory Documents</h3>
+            {['iqama', 'passport', 'license', 'visa', 'medical'].map(doc => (
+              <FileUploadField
+                key={doc}
+                label={doc.charAt(0).toUpperCase() + doc.slice(1)}
+                name={`${doc}_document`}
+                file={formData.documents[`${doc}_document`]}
+                expiryKey={`${doc}_expiry`}
+                expiryValue={formData.documents[`${doc}_expiry`]}
+                onExpiryChange={handleDocumentExpiryChange} // Use the specific handler
+              />
+            ))}
+
+            {/* --- NEW SECTIONS FOR EXPENSES/BILLS --- */}
+            <h3 className="text-xl font-semibold text-white mt-8 mb-4">Expenses & Bills</h3>
+
+            {/* Insurance */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SelectField
+                label="Insurance Paid By"
+                name="insurance_paid_by"
+                value={formData.insurance_paid_by}
+                onChange={handleChange}
+                options={PAID_BY_OPTIONS}
+              />
+     
+            </div>
+
+            {/* Accommodation Rent */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SelectField
+                label="Accommodation Paid By"
+                name="accommodation_paid_by"
+                value={formData.accommodation_paid_by}
+                onChange={handleChange}
+                options={PAID_BY_OPTIONS}
+              />
+         
+            </div>
+
+            {/* Phone Bill */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SelectField
+                label="Phone Bill Paid By"
+                name="phone_bill_paid_by"
+                value={formData.phone_bill_paid_by}
+                onChange={handleChange}
+                options={PAID_BY_OPTIONS}
+              />
+          
+            </div>
+
+            {/* Existing Assignment Fields */}
+            <h3 className="text-xl font-semibold text-white mt-8 mb-4">Assignment</h3>
+            <SelectField
+              label="Assign Vehicle"
+              name="vehicleType"
+              value={formData.vehicleType}
+              onChange={handleChange}
+              options={[
+                { value: '', label: 'Select Vehicle' },
+                ...vehicles.map(v => ({
+                  value: v.id,
+                  label: `${v.vehicle_name} (${v.vehicle_number})`
+                }))
+              ]}
+            />
+            <SelectField
+              label="Assign Company"
+              name="company"
+              value={formData.company}
+              onChange={handleChange}
+              options={[
+                { value: '', label: 'Select Company' },
+                ...companies.map(c => ({ value: c.id, label: c.company_name }))
+              ]}
+            />
+          </div>
+        )}
+
+        <div className="text-right">
+          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+            Submit
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

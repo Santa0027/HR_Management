@@ -13,7 +13,7 @@ from rest_framework.decorators import api_view
 
 
 class DriverViewSet(viewsets.ModelViewSet):
-    queryset = Driver.objects.all().order_by('-submitted_at')
+    queryset = Driver.objects.all().order_by('-created_at')
     serializer_class = DriverSerializer
     # permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]  # 👈 Required to parse file uploads
@@ -35,7 +35,7 @@ class DriverViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='new-requests')
     def new_requests(self, request):
-        pending_drivers = Driver.objects.filter(status='pending').order_by('-submitted_at')
+        pending_drivers = Driver.objects.filter(status='pending').order_by('-created_at')
         serializer = self.get_serializer(pending_drivers, many=True)
         return Response(serializer.data)
         

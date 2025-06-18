@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, memo } from 'react'; // Added memo and useCallback for optimization
 import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import { ChevronDown, CircleUserRound, Upload } from 'lucide-react'; // Import necessary icons for the header and Upload icon
 
 // Assuming axiosInstance is defined elsewhere and handles token logic

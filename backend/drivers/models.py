@@ -4,60 +4,104 @@ from company.models import Company
 from vehicle.models import VehicleRegistration
 
 class Driver(models.Model):
-    GENDER_CHOICES = (
+    GENDER_CHOICES = [
         ('male', 'Male'),
         ('female', 'Female'),
         ('other', 'Other'),
-    )
+    ]
 
-    # Step 1: Personal Information
-    driver_name = models.CharField(max_length=100)
-    driverId = models.IntegerField( null=False,blank=False,default='1')
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True ,related_name='drivers')  # ✅ important
-    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.CASCADE, null=True, blank=True ,related_name='drivers')  # ✅ important
+       # Choices for who pays for the bill/expense
+    PAID_BY_CHOICES = [
+        ('own', 'Own'),
+        ('company', 'Company'),
+    ]
+
+    driver_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
-    iqama = models.CharField(max_length=20, unique=True)
+    iqama = models.CharField(max_length=100, unique=True)
     mobile = models.CharField(max_length=20)
     city = models.CharField(max_length=100)
-    nationality = models.CharField(max_length=100)
-    dob = models.DateField()
-    password = models.CharField(max_length=20 ,null=False,blank=False,default="user@123")
+    nationality = models.CharField(max_length=100, blank=True, null=True)
+    dob = models.DateField(blank=True, null=True)
 
-    # Step 2: Documents 
-    iqama_document = models.FileField(upload_to='drivers/iqama/')
-    iqama_expiry = models.DateField()
+    # ForeignKey relationships
+    vehicleType = models.ForeignKey(VehicleRegistration, on_delete=models.SET_NULL, null=True, blank=True)
+    company = models.ForeignKey(
+    Company,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    related_name='drivers'  # 👈 Add this!
+)
 
-    passport_document = models.FileField(upload_to='drivers/passport/')
-    passport_expiry = models.DateField()
+    # Document fields
+    iqama_document = models.FileField(upload_to='drivers/iqama/', null=True, blank=True)
+    iqama_expiry = models.DateField(null=True, blank=True)
 
-    license_document = models.FileField(upload_to='drivers/license/')
-    license_expiry = models.DateField()
+    passport_document = models.FileField(upload_to='drivers/passport/', null=True, blank=True)
+    passport_expiry = models.DateField(null=True, blank=True)
 
-    visa_document = models.FileField(upload_to='drivers/visa/')
-    visa_expiry = models.DateField()
+    license_document = models.FileField(upload_to='drivers/license/', null=True, blank=True)
+    license_expiry = models.DateField(null=True, blank=True)
 
-    medical_document = models.FileField(upload_to='drivers/medical/')
-    medical_expiry = models.DateField()
+    visa_document = models.FileField(upload_to='drivers/visa/', null=True, blank=True)
+    visa_expiry = models.DateField(null=True, blank=True)
 
-    # Log & Audit Fields
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    submitted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_drivers')
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='updated_drivers')
-    
-    status = models.CharField(
-        max_length=20,
-        choices=(
-            ('pending', 'Pending'),
-            ('approved', 'Approved'),
-            ('rejected', 'Rejected'),
-        ),
-        default='pending'
+    medical_document = models.FileField(upload_to='drivers/medical/', null=True, blank=True)
+    medical_expiry = models.DateField(null=True, blank=True)    
+
+
+      # New fields for expenses/bills
+    # Insurance
+    insurance_paid_by = models.CharField(
+        max_length=10,
+        choices=PAID_BY_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Who pays for the driver's insurance?"
     )
-    remarks = models.TextField(blank=True, help_text="Admin or HR remarks for approval, rejection, or additional notes")
+    # insurance_document = models.FileField(upload_to='drivers/insurance/', null=True, blank=True)
+    # insurance_expiry = models.DateField(null=True, blank=True)
+
+
+    # Accommodation Rent
+    accommodation_paid_by = models.CharField(
+        max_length=10,
+        choices=PAID_BY_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Who pays for the driver's accommodation rent?"
+    )
+    # accommodation_document = models.FileField(upload_to='drivers/accommodation/', null=True, blank=True)
+    # accommodation_expiry = models.DateField(null=True, blank=True)
+
+
+    # Phone Bill
+    phone_bill_paid_by = models.CharField(
+        max_length=10,
+        choices=PAID_BY_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Who pays for the driver's phone bill?"
+    )
+    # phone_bill_document = models.FileField(upload_to='drivers/phone_bill/', null=True, blank=True)
+    # phone_bill_expiry = models.DateField(null=True, blank=True)
+
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.driver_name
+
+
+
+
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.driver_name
+
 
 
 
