@@ -139,6 +139,12 @@ const Sidebar = () => {
           />
          
         </SidebarItem>
+         <SidebarItem
+          icon={<MdManageAccounts />}
+          label="HR Management"
+          to="/" // Base path for the dropdown group (optional, can be removed if parent is not a clickable page)
+          active={location.pathname.startsWith("/")} // Parent active if any sub-item path matches
+        ></SidebarItem>
       </nav>
 
       {/* Accounts Management (Add if needed, currently not in the provided Sidebar code) */}

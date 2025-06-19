@@ -1,0 +1,167 @@
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from .models import (
+    Driver, Company, 
+    CheckinLocation, ApartmentLocation,
+    Attendance, MonthlyAttendanceSummary,
+    WarningLetter, Termination
+
+)
+from vehicle.models import VehicleRegistration
+# # User Serializer
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['id', 'username', 'first_name', 'last_name', 'email']
+
+
+# Company Serializer
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = '__all__'
+
+
+# Vehicle Registration Serializer
+class VehicleRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleRegistration
+        fields = '__all__'
+
+
+# Driver Serializer
+class DriverSerializer(serializers.ModelSerializer):
+    company = CompanySerializer(read_only=True)
+    company_id = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True,
+        allow_null=True
+    )
+    vehicleType = VehicleRegistrationSerializer(read_only=True)
+    vehicleType_id = serializers.PrimaryKeyRelatedField(
+        queryset=VehicleRegistration.objects.all(),
+        source='vehicleType',
+        write_only=True,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Driver
+        fields = '__all__'
+
+
+# Checkin Location Serializer
+class CheckinLocationSerializer(serializers.ModelSerializer):
+    company = CompanySerializer(read_only=True)
+    company_id = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True
+    )
+
+    class Meta:
+        model = CheckinLocation
+        fields = '__all__'
+
+
+# Apartment Location Serializer
+class ApartmentLocationSerializer(serializers.ModelSerializer):
+    company = CompanySerializer(read_only=True)
+    company_id = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True
+    )
+
+    class Meta:
+        model = ApartmentLocation
+        fields = '__all__'
+
+
+# Attendance Serializer
+class AttendanceSerializer(serializers.ModelSerializer):
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        source='driver',
+        write_only=True
+    )
+    checked_in_location = CheckinLocationSerializer(read_only=True)
+    checked_in_location_id = serializers.PrimaryKeyRelatedField(
+        queryset=CheckinLocation.objects.all(),
+        source='checked_in_location',
+        write_only=True,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Attendance
+        fields = '__all__'
+        read_only_fields = ['driver_name']
+
+
+from rest_framework import serializers
+from .models import CheckinLocation
+
+class CheckinLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CheckinLocation
+        fields = ['id', 'company', 'name', 'latitude', 'longitude', 'radius_meters', 'is_active']
+
+
+
+# Monthly Attendance Summary Serializer
+class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        source='driver',
+        write_only=True
+    )
+
+    class Meta:
+        model = MonthlyAttendanceSummary
+        fields = '__all__'
+
+
+# # Warning Letter Serializer
+# class WarningLetterSerializer(serializers.ModelSerializer):
+#     driver = DriverSerializer(read_only=True)
+#     driver_id = serializers.PrimaryKeyRelatedField(
+#         queryset=Driver.objects.all(),
+#         source='driver',
+#         write_only=True
+#     )
+#     issued_by = UserSerializer(read_only=True)
+#     issued_by_id = serializers.PrimaryKeyRelatedField(
+#         queryset=User.objects.all(),
+#         source='issued_by',
+#         write_only=True,
+#         allow_null=True
+#     )
+
+#     class Meta:
+#         model = WarningLetter
+#         fields = '__all__'
+
+
+# # Termination Serializer
+# class TerminationSerializer(serializers.ModelSerializer):
+#     driver = DriverSerializer(read_only=True)
+#     driver_id = serializers.PrimaryKeyRelatedField(
+#         queryset=Driver.objects.all(),
+#         source='driver',
+#         write_only=True
+#     )
+#     processed_by = UserSerializer(read_only=True)
+#     processed_by_id = serializers.PrimaryKeyRelatedField(
+#         queryset=User.objects.all(),
+#         source='processed_by',
+#         write_only=True,
+#         allow_null=True
+#     )
+
+#     class Meta:
+#         model = Termination
+#         fields = '__all__'

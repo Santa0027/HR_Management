@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
+// import UserList from './pages/UserList';
+// import UserForm from './pages/UserForm';
+// import UserEditForm from './pages/UserEditForm';
+
+
 // Public pages
 import LoginPage from './pages/LoginPage';
 
@@ -38,6 +43,12 @@ import VehicleProfile from './pages/VehicleProfile';
 import VehicleEdit from './pages/VehicleEdit';
 
 
+
+
+
+
+import AttendanceDashboard from './pages/AttendanceDashboard'
+
 import EditCompany from './pages/EditCompany';
 
 function App() {
@@ -53,6 +64,10 @@ function App() {
         {/* Protected Routes inside Layout */}
         <Route element={
           <ProtectedRoute>
+            {/* <Route path="/user-management" element={<UserList />} />
+<Route path="/user-management/create" element={<UserForm />} />
+<Route path="/user-management/edit/:id" element={<UserEditForm />} /> */}
+
             <Layout />
           </ProtectedRoute>
         }>
@@ -87,6 +102,13 @@ function App() {
           <Route path="/vehicles/:id" element={<VehicleProfile />} />
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
           <Route path="/vehicleapprovel/" element={<PendingApprovalTabContent />} />
+
+
+
+          <Route path="/AttendanceDashboard/" element={<AttendanceDashboard />} />
+
+
+      
 
         </Route>
       </Routes>

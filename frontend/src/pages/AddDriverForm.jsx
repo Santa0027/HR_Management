@@ -107,13 +107,13 @@ const AddDriverForm = () => {
     const data = new FormData();
 
     // --- UPDATED keysToAppend for 'full' mode ---
-    const keysToAppend = mode === 'full'
-      ? [
-          'driver_name', 'gender', 'iqama', 'mobile', 'city',
-          'nationality', 'dob', 'vehicleType', 'company',
-          'insurance_paid_by', 'accommodation_paid_by', 'phone_bill_paid_by' // Add new fields
-        ]
-      : ['driver_name', 'iqama', 'mobile', 'city', 'gender'];
+    // const keysToAppend = mode === 'full'
+    //   ? [
+    //       'driver_name', 'gender', 'iqama', 'mobile', 'city',
+    //       'nationality', 'dob', 'vehicleType', 'company',
+    //       'insurance_paid_by', 'accommodation_paid_by', 'phone_bill_paid_by' // Add new fields
+    //     ]
+    //   : ['driver_name', 'iqama', 'mobile', 'city', 'gender'];
 
     keysToAppend.forEach(key => {
       // Handle the 'documents' object (including new document fields)

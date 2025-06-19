@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import VehicleRegistration
+from .models import VehicleRegistration,VehicleLog
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 

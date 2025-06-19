@@ -13,7 +13,7 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://13.235.76.227:8000/api/token/', {
+      const response = await axios.post('http://localhost:8000/api/token/', {
         username: email,
         password: password,
       });

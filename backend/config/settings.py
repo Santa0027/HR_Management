@@ -43,8 +43,12 @@ INSTALLED_APPS = [
     'accounts_module',
     'vehicle',
     'logs',
+    'usermanagement',
     'company',
 ]
+# settings.py
+# AUTH_USER_MODEL = 'usermanagement.CustomUser'
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # must be first

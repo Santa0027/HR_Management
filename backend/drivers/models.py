@@ -16,6 +16,17 @@ class Driver(models.Model):
         ('company', 'Company'),
     ]
 
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ('pending', 'Pending'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+        ),
+        default='pending'
+    )
+    remarks = models.TextField(blank=True, help_text="Admin or HR remarks for approval, rejection, or additional notes")
+
     driver_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     iqama = models.CharField(max_length=100, unique=True)
@@ -93,14 +104,6 @@ class Driver(models.Model):
     def __str__(self):
         return self.driver_name
 
-
-
-
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.driver_name
 
 
 
