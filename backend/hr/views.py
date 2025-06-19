@@ -177,37 +177,61 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
         return queryset
 
-
-class MonthlyAttendanceSummaryViewSet(viewsets.ModelViewSet):
+class MonthlyAttendanceSummaryViewSet(viewsets.ModelViewSet): # Changed to ModelViewSet
+    """
+    A ViewSet for viewing and managing monthly attendance summaries.
+    Allows read, create, update, and delete operations.
+    Includes a custom action to calculate summaries for a specific month and driver.
+    """
     queryset = MonthlyAttendanceSummary.objects.all()
     serializer_class = MonthlyAttendanceSummarySerializer
-    # permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated] # Uncomment if authentication is required
 
-    # Optional: Action to trigger monthly summary calculation (e.g., from admin UI)
+    # Optional: Action to trigger monthly summary calculation (e.g., from admin UI or another service)
+    # This action can be accessed at: /api/attendance/monthly-summary/calculate-for-month/
     @action(detail=False, methods=['post'], url_path='calculate-for-month')
     def calculate_for_month(self, request):
+        """
+        Calculates and updates the monthly attendance summary for a specific driver, month, and year.
+        Expects 'driver_id', 'month', and 'year' in the POST request data.
+        """
         driver_id = request.data.get('driver_id')
         month = request.data.get('month')
         year = request.data.get('year')
 
         if not all([driver_id, month, year]):
-            return Response({"detail": "Missing driver_id, month, or year."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Missing driver_id, month, or year."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         try:
             driver = Driver.objects.get(id=driver_id)
             month = int(month)
             year = int(year)
-        except (Driver.DoesNotExist, ValueError):
-            return Response({"detail": "Invalid driver ID, month, or year."}, status=status.HTTP_400_BAD_REQUEST)
+            # Basic validation for month/year ranges
+            if not (1 <= month <= 12 and year >= 2000 and year <= 2100): # Adjust year range as needed
+                 return Response({"detail": "Invalid month or year value."}, status=status.HTTP_400_BAD_REQUEST)
+        except Driver.DoesNotExist:
+            return Response({"detail": f"Driver with ID {driver_id} not found."}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"detail": "Month and year must be valid integers."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            summary, created = MonthlyAttendanceSummary.objects.get_or_create(
+                driver=driver,
+                month=month,
+                year=year
+            )
+            summary.calculate_summary() # Call the model method to populate/re-calculate fields
+            serializer = self.get_serializer(summary)
+            # Return appropriate status based on whether a new summary was created or an existing one updated
+            response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+            return Response(serializer.data, status=response_status)
+        except Exception as e:
+            # Catch any other unexpected errors during summary calculation/save
+            return Response({"detail": f"An error occurred during calculation: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        summary, created = MonthlyAttendanceSummary.objects.get_or_create(
-            driver=driver,
-            month=month,
-            year=year
-        )
-        summary.calculate_summary() # Call the model method to populate fields
-        serializer = self.get_serializer(summary)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 # class WarningLetterViewSet(viewsets.ModelViewSet):
@@ -228,6 +252,7 @@ class MonthlyAttendanceSummaryViewSet(viewsets.ModelViewSet):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.shortcuts import render
 from .models import CheckinLocation, Company
 from .serializers import CheckinLocationSerializer
 
@@ -238,3 +263,19 @@ class CheckinLocationCreateView(APIView):
             serializer.save()
             return Response({'message': 'Check-in location created successfully.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from .models import CheckinLocation, ApartmentLocation
+
+from .serializers import CheckinLocationSerializer, ApartmentLocationSerializer
+
+class LocationDashboardAPIView(APIView):
+    def get(self, request):
+        checkin_locations = CheckinLocation.objects.all()
+        apartment_locations = ApartmentLocation.objects.all()
+
+        checkin_serializer = CheckinLocationSerializer(checkin_locations, many=True)
+        apartment_serializer = ApartmentLocationSerializer(apartment_locations, many=True)
+
+        return Response({
+            'checkin_locations': checkin_serializer.data,
+            'apartment_locations': apartment_serializer.data
+        }, status=status.HTTP_200_OK)

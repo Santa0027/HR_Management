@@ -51,32 +51,27 @@ class DriverSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# Checkin Location Serializer
+
 class CheckinLocationSerializer(serializers.ModelSerializer):
-    company = CompanySerializer(read_only=True)
-    company_id = serializers.PrimaryKeyRelatedField(
-        queryset=Company.objects.all(),
-        source='company',
-        write_only=True
+    driver = DriverSerializer(read_only=True)
+    driver_name = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(), write_only=True
     )
 
     class Meta:
         model = CheckinLocation
-        fields = '__all__'
+        fields = ['id', 'name', 'latitude', 'longitude', 'radius_meters', 'is_active', 'created_at', 'updated_at', 'driver_name', 'driver']
 
-
-# Apartment Location Serializer
 class ApartmentLocationSerializer(serializers.ModelSerializer):
-    company = CompanySerializer(read_only=True)
-    company_id = serializers.PrimaryKeyRelatedField(
-        queryset=Company.objects.all(),
-        source='company',
-        write_only=True
+    driver = DriverSerializer(read_only=True)
+    driver_name = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(), write_only=True
     )
 
     class Meta:
         model = ApartmentLocation
-        fields = '__all__'
+        fields = ['id', 'name', 'latitude', 'longitude', 'alarm_radius_meters', 'is_active', 'created_at', 'updated_at', 'driver_name', 'driver']
+
 
 
 # Attendance Serializer
@@ -125,43 +120,43 @@ class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# # Warning Letter Serializer
-# class WarningLetterSerializer(serializers.ModelSerializer):
-#     driver = DriverSerializer(read_only=True)
-#     driver_id = serializers.PrimaryKeyRelatedField(
-#         queryset=Driver.objects.all(),
-#         source='driver',
-#         write_only=True
-#     )
-#     issued_by = UserSerializer(read_only=True)
-#     issued_by_id = serializers.PrimaryKeyRelatedField(
-#         queryset=User.objects.all(),
-#         source='issued_by',
-#         write_only=True,
-#         allow_null=True
-#     )
+# Warning Letter Serializer
+class WarningLetterSerializer(serializers.ModelSerializer):
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        source='driver',
+        write_only=True
+    )
+    issued_by = UserSerializer(read_only=True)
+    issued_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='issued_by',
+        write_only=True,
+        allow_null=True
+    )
 
-#     class Meta:
-#         model = WarningLetter
-#         fields = '__all__'
+    class Meta:
+        model = WarningLetter
+        fields = '__all__'
 
 
-# # Termination Serializer
-# class TerminationSerializer(serializers.ModelSerializer):
-#     driver = DriverSerializer(read_only=True)
-#     driver_id = serializers.PrimaryKeyRelatedField(
-#         queryset=Driver.objects.all(),
-#         source='driver',
-#         write_only=True
-#     )
-#     processed_by = UserSerializer(read_only=True)
-#     processed_by_id = serializers.PrimaryKeyRelatedField(
-#         queryset=User.objects.all(),
-#         source='processed_by',
-#         write_only=True,
-#         allow_null=True
-#     )
+# Termination Serializer
+class TerminationSerializer(serializers.ModelSerializer):
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        source='driver',
+        write_only=True
+    )
+    processed_by = UserSerializer(read_only=True)
+    processed_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='processed_by',
+        write_only=True,
+        allow_null=True
+    )
 
-#     class Meta:
-#         model = Termination
-#         fields = '__all__'
+    class Meta:
+        model = Termination
+        fields = '__all__'
