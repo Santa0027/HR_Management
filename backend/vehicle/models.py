@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 class VehicleRegistration(models.Model):
     VEHICLE_TYPE_CHOICES = [
@@ -37,7 +37,7 @@ class VehicleRegistration(models.Model):
 
     approval_status = models.CharField(max_length=20, choices=APPROVAL_STATUS_CHOICES, default='PENDING')
 
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -52,7 +52,7 @@ class VehicleLog(models.Model):
     ]
 
     vehicle = models.ForeignKey('VehicleRegistration', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=10, choices=ACTION_CHOICES)
     timestamp = models.DateTimeField(auto_now_add=True)
     remarks = models.TextField(blank=True, null=True)

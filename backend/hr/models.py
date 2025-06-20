@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings 
 from django.utils import timezone
 from company.models import Company
 from drivers.models import Driver
@@ -42,7 +42,8 @@ class ApartmentLocation(models.Model):
         ordering = ['company', 'name']
 
     def __str__(self):
-        return f"{self.name} ({self.company.name})"
+        return f"{self.name} ({self.company.company_name})"
+
 
 
 class Attendance(models.Model):
@@ -163,7 +164,7 @@ class WarningLetter(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=WARNING_STATUS_CHOICES, default='active')
     document = models.FileField(upload_to='drivers/warning_letters/', null=True, blank=True)
-    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_warning_letters')
+    issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_warning_letters')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -191,7 +192,7 @@ class Termination(models.Model):
     reason = models.CharField(max_length=100, choices=TERMINATION_REASON_CHOICES)
     details = models.TextField(blank=True, null=True)
     document = models.FileField(upload_to='drivers/terminations/', null=True, blank=True)
-    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_terminations')
+    processed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_terminations')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

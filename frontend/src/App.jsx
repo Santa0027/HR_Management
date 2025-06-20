@@ -1,12 +1,7 @@
+// src/App.jsx
 import React from 'react';
-import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-
-// import UserList from './pages/UserList';
-// import UserForm from './pages/UserForm';
-// import UserEditForm from './pages/UserEditForm';
-
 
 // Public pages
 import LoginPage from './pages/LoginPage';
@@ -15,41 +10,38 @@ import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Dashboard and Management
+// Dashboard
 import DriverManagement from './pages/Drivermanagement';
-import AddDriverForm from './pages/AddDriverForm';
-import DriverProfileEditDelete from './pages/Reg_ma_driver_information'
+
 // Registration Management
 import Reg_ma_new_request from './pages/Reg-ma_new_request';
 import Reg_ma_aprovel from './pages/Reg_ma_aprovel';
+import DriverProfile from './pages/Driverapproal';
+import DriverProfileEditDelete from './pages/Reg_ma_driver_information';
 import Reg_ma_vehicle_registration from './pages/Reg_ma_vehicle_registration';
 import Reg_ma_vehicle_list from './pages/Reg_ma_vehicle_list';
 import Reg_ma_platform_list from './pages/Reg_ma_platform_list';
 import CompanyRegistrationForm from './pages/Reg_ma_company_form';
 import CompanyProfile from './pages/Reg_ma_company_profile';
-
+import EditCompany from './pages/EditCompany';
 
 // Driver Management
+import AddDriverForm from './pages/AddDriverForm';
 import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
-import DriverProfile from './pages/Driverapproal';
-import PendingApprovalTabContent from './pages/Reg_ma_vehicle_approval';
-
 
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
 import VehicleEdit from './pages/VehicleEdit';
+import PendingApprovalTabContent from './pages/Reg_ma_vehicle_approval';
 
-
-
-
-
-
-import AttendanceDashboard from './pages/AttendanceDashboard'
-
-import EditCompany from './pages/EditCompany';
+// HR & Attendance
+import AttendanceDashboard from './pages/AttendanceDashboard';
+import HRDashboard from './pages/HRDashboard';
+import WarningLetters from './pages/WarningLetter';
+import TerminationManagement from './pages/TerminationLetter';
 
 function App() {
   return (
@@ -58,19 +50,17 @@ function App() {
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" />} />
 
-        {/* Public Route */}
+        {/* Public route */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected Routes inside Layout */}
-        <Route element={
-          <ProtectedRoute>
-            {/* <Route path="/user-management" element={<UserList />} />
-<Route path="/user-management/create" element={<UserForm />} />
-<Route path="/user-management/edit/:id" element={<UserEditForm />} /> */}
-
-            <Layout />
-          </ProtectedRoute>
-        }>
+        {/* Protected Routes */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
           {/* Dashboard */}
           <Route path="/dashboard" element={<DriverManagement />} />
 
@@ -79,17 +69,12 @@ function App() {
           <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
           <Route path="/registration-management/aproval_status/driver/:id" element={<DriverProfile />} />
           <Route path="/profileedit/:driverId" element={<DriverProfileEditDelete />} />
-
-
           <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
           <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
           <Route path="/platform-list" element={<Reg_ma_platform_list />} />
-
-
           <Route path="/company-profile/:id" element={<CompanyProfile />} />
           <Route path="/company-registration" element={<CompanyRegistrationForm />} />
           <Route path="/company/:id/edit" element={<EditCompany />} />
-
 
           {/* Driver Management */}
           <Route path="/driver-management/Driver_profile/:id" element={<Driver_mange_DrProfile />} />
@@ -101,15 +86,13 @@ function App() {
           {/* Vehicle Details */}
           <Route path="/vehicles/:id" element={<VehicleProfile />} />
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
-          <Route path="/vehicleapprovel/" element={<PendingApprovalTabContent />} />
+          <Route path="/vehicleapprovel" element={<PendingApprovalTabContent />} />
 
-
-
-          <Route path="/AttendanceDashboard/" element={<AttendanceDashboard />} />
-
-
-      
-
+          {/* HR & Attendance */}
+          <Route path="/AttendanceDashboard" element={<AttendanceDashboard />} />
+          <Route path="/HRDashboard" element={<HRDashboard />} />
+          <Route path="/warningletter" element={<WarningLetters />} />
+          <Route path="/terminationletter" element={<TerminationManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>

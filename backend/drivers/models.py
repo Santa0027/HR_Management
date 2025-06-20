@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
+
 from company.models import Company
 from vehicle.models import VehicleRegistration
 
@@ -111,7 +112,7 @@ class Driver(models.Model):
 class DriverLog(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
     action = models.CharField(max_length=100)  # e.g., "Uploaded Document", "Updated Expiry"
-    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     note = models.TextField(blank=True)
 

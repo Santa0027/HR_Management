@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'company',
 ]
 # settings.py
-# AUTH_USER_MODEL = 'usermanagement.CustomUser'
+AUTH_USER_MODEL = 'usermanagement.CustomUser'
+
 
 
 MIDDLEWARE = [

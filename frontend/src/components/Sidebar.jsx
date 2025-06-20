@@ -144,7 +144,28 @@ const Sidebar = () => {
           label="HR Management"
           to="/" // Base path for the dropdown group (optional, can be removed if parent is not a clickable page)
           active={location.pathname.startsWith("/")} // Parent active if any sub-item path matches
-        ></SidebarItem>
+        >
+          <SidebarItem
+            label="HRDashboard"
+            to="/HRDashboard"
+            active={location.pathname === "/HRDashboard"}
+          />
+          <SidebarItem
+            label="Attendence Report"
+            to="/AttendanceDashboard"
+            active={location.pathname === "/AttendanceDashboard"}
+          />
+          <SidebarItem
+            label="warning Report"
+            to="/warningletter"
+            active={location.pathname === "/warningletter"}
+          />
+          <SidebarItem
+            label="termination Report"
+            to="/terminationletter"
+            active={location.pathname === "/terminationletter"}
+          />
+        </SidebarItem>
       </nav>
 
       {/* Accounts Management (Add if needed, currently not in the provided Sidebar code) */}
