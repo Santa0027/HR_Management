@@ -5,6 +5,8 @@ from rest_framework.decorators import action
 from django.utils import timezone
 import math # For haversine distance
 from django.db import transaction
+from rest_framework.permissions import AllowAny
+
 
 from .models import (
     Driver, CheckinLocation, Attendance,
@@ -14,7 +16,7 @@ from .models import (
 from vehicle.models import VehicleRegistration
 from .serializers import (
     DriverSerializer, CheckinLocationSerializer, AttendanceSerializer,
-    MonthlyAttendanceSummarySerializer, 
+    MonthlyAttendanceSummarySerializer, TerminationSerializer,WarningLetterSerializer,
     ApartmentLocationSerializer, CompanySerializer, VehicleRegistrationSerializer
 )
 
@@ -234,15 +236,18 @@ class MonthlyAttendanceSummaryViewSet(viewsets.ModelViewSet): # Changed to Model
 
 
 
-# class WarningLetterViewSet(viewsets.ModelViewSet):
-#     queryset = WarningLetter.objects.all()
-#     serializer_class = WarningLetterSerializer
-#     # permission_classes = [IsAuthenticated]
+class WarningLetterViewSet(viewsets.ModelViewSet):
+    queryset = WarningLetter.objects.all()
+    serializer_class = WarningLetterSerializer
+    permission_classes = [AllowAny]  
+    # permission_classes = [IsAuthenticated]
 
-# class TerminationViewSet(viewsets.ModelViewSet):
-#     queryset = Termination.objects.all()
-#     serializer_class = TerminationSerializer
-#     # permission_classes = [IsAuthenticated]
+class TerminationViewSet(viewsets.ModelViewSet):
+    queryset = Termination.objects.all()
+    serializer_class = TerminationSerializer
+    permission_classes = [AllowAny]  
+
+    # permission_classes = [IsAuthenticated]
 
 
 

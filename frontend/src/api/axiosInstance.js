@@ -6,22 +6,31 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const axiosInstance = axios.create({
   baseURL,
   headers: {
-    'Content-Type': 'multipart/form-data',
-    accept: 'application/json',
+    'Accept': 'application/json',
   },
 });
 
-// Token utility (you can extract this to a separate utils file)
+// Token utility functions
 const getAccessToken = () => localStorage.getItem('access_token');
 const getRefreshToken = () => localStorage.getItem('refresh_token');
 
-// Request interceptor: attach token per request
+// Request interceptor: attach token and set appropriate content-type
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Set Content-Type based on the data being sent
+    if (config.data instanceof FormData) {
+      // For file uploads, let the browser set the Content-Type with boundary
+      delete config.headers['Content-Type'];
+    } else if (config.data && typeof config.data === 'object') {
+      // For JSON data
+      config.headers['Content-Type'] = 'application/json';
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -43,26 +52,37 @@ axiosInstance.interceptors.response.use(
 
       if (!refreshToken) {
         console.warn('No refresh token available');
+        // Clear any remaining tokens
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
         return Promise.reject(error);
       }
 
       try {
+        // Use a fresh axios instance for token refresh to avoid interceptor loops
         const response = await axios.post(`${baseURL}/api/token/refresh/`, {
           refresh: refreshToken,
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
 
         const newAccessToken = response.data.access;
         localStorage.setItem('access_token', newAccessToken);
 
+        // Update the original request with new token
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
+        // Retry the original request
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        console.error('Token refresh failed', refreshError);
+        console.error('Token refresh failed:', refreshError);
+        // Clear tokens and redirect to login
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login'; // Force re-auth
+        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }

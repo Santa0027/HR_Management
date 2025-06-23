@@ -7,21 +7,23 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .models import VehicleRegistration,VehicleLog
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-
-
-
-
-from .models import VehicleRegistration
 from .serializers import VehicleRegistrationSerializer
+
+
+
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 
 class VehicleRegistrationViewSet(viewsets.ModelViewSet):
     queryset = VehicleRegistration.objects.all().order_by('-created_at')
     serializer_class = VehicleRegistrationSerializer
-    # authentication_classes = [SessionAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
 
 @api_view(['GET'])
 def vehicle_list(request):
