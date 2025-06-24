@@ -14,3 +14,5 @@ export default function Modal({ title, children, onClose }) {
     </div>
   );
 }
+
+
