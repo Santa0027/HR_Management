@@ -16,6 +16,7 @@ export default function Terminations() {
     details: '',
     document: null,
     processed_by: 1,
+    
   });
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
