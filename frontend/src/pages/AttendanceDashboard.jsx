@@ -52,7 +52,7 @@ const AttendanceReport = () => {
         } else {
           console.error('Failed to fetch daily data:', results[0].reason);
           // You might want to show a user-friendly error message here
-        }
+        } 
 
         // Process monthly data result
         if (results[1].status === 'fulfilled') {
