@@ -6,6 +6,8 @@ from django.utils import timezone
 import math # For haversine distance
 from django.db import transaction
 from rest_framework.permissions import AllowAny
+from usermanagement.serializers import CustomUserSerializer
+
 
 
 from .models import (
@@ -48,29 +50,30 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    # permission_classes = [IsAuthenticated] # Example: require authentication
+    permission_classes = [AllowAny] # Example: require authentication
 
 class VehicleRegistrationViewSet(viewsets.ModelViewSet):
     queryset = VehicleRegistration.objects.all()
     serializer_class = VehicleRegistrationSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class DriverViewSet(viewsets.ModelViewSet):
     queryset = Driver.objects.all()
     serializer_class = DriverSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class CheckinLocationViewSet(viewsets.ModelViewSet):
     queryset = CheckinLocation.objects.all()
     serializer_class = CheckinLocationSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class ApartmentLocationViewSet(viewsets.ModelViewSet):
     queryset = ApartmentLocation.objects.all()
     serializer_class = ApartmentLocationSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class AttendanceViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]  
     queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
     # permission_classes = [IsAuthenticated]

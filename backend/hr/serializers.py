@@ -131,8 +131,6 @@ class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
 
 
 # -----------------------------
-# Warning Letter Serializer
-# -----------------------------
 class WarningLetterSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -147,14 +145,18 @@ class WarningLetterSerializer(serializers.ModelSerializer):
         write_only=True,
         allow_null=True
     )
+    driver_name = serializers.SerializerMethodField()
 
     class Meta:
         model = WarningLetter
         fields = '__all__'
 
     def get_issued_by(self, obj):
-        from usermanagement.serializers import UserSerializer  # Lazy import to avoid circular import
-        return UserSerializer(obj.issued_by).data if obj.issued_by else None
+        from usermanagement.serializers import CustomUserSerializer
+        return CustomUserSerializer(obj.issued_by).data if obj.issued_by else None
+
+    def get_driver_name(self, obj):
+        return obj.driver.driver_name if obj.driver else ''
 
 
 # -----------------------------
@@ -180,5 +182,5 @@ class TerminationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_processed_by(self, obj):
-        from usermanagement.serializers import UserSerializer  # Lazy import to avoid circular import
-        return UserSerializer(obj.processed_by).data if obj.processed_by else None
+        from usermanagement.serializers import CustomUserSerializer
+        return CustomUserSerializer(obj.processed_by).data if obj.processed_by else None
