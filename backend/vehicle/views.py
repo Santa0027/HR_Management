@@ -21,8 +21,8 @@ class VehicleRegistrationViewSet(viewsets.ModelViewSet):
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+    # def perform_create(self, serializer):
+    #     serializer.save(created_by=self.request.user)
 
 
 @api_view(['GET'])
