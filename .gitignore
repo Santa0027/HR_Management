@@ -1,1 +1,101 @@
-/venv
+# === PYTHON / DJANGO ===
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env.*
+*.db
+db.sqlite3
+instance/
+media/
+staticfiles/
+local_settings.py
+secrets.json
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Django Migrations
+**/migrations/*.py
+!**/migrations/__init__.py
+**/migrations/*.pyc
+
+# === REACT / NODE.JS ===
+# dependencies
+node_modules/
+bower_components/
+
+# production
+build/
+dist/
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# testing
+coverage/
+coverage-final.json
+npx-debug.log
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# lockfiles (optional if you want reproducible installs)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === OS-SPECIFIC FILES ===
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# === IDEs / TEXT EDITORS ===
+# VS Code
+.vscode/
+.history/
+
+# PyCharm
+.idea/
+
+# Sublime
+*.sublime-workspace
+*.sublime-project
+
+# JetBrains
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# === OTHERS ===
+# compiled React static files (if served by Django)
+frontend/static/

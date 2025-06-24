@@ -106,9 +106,10 @@ function Reg_ma_new_request() {
               onChange={e => setFilterVehicleType(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
             >
-              <option value="">Select Vehicle Type</option>
-              {getUniqueOptions("vehicle").map(type => (
-                <option key={type} value={type}>{type}</option>
+              {getUniqueOptions("vehicle").map(vehicle => (
+                <option key={vehicle.id} value={vehicle.vehicle_type}>
+                  {vehicle.vehicle_type}
+                </option>
               ))}
             </select>
           </div>
@@ -201,17 +202,23 @@ function Reg_ma_new_request() {
               ) : filteredDrivers.length > 0 ? (
                 filteredDrivers.map((driver, index) => (
                   <tr key={index} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                    <td className="py-3 px-6">{driver.id}</td>
+                    <td className="py-3 px-6">{driver.driver_}</td>
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
                     <td className="py-3 px-6">{driver.mobile}</td>
                     <td className="py-3 px-6">{driver.company}</td>
                     <td className="py-3 px-6">{driver.approval}</td>
-                    <td className="py-3 px-6">{driver.vehicle}</td>
+                    <td className="py-3 px-6">
+                      {driver.vehicle ? driver.vehicle.vehicle_type : 'No Vehicle Assigned'}
+                    </td>
                     <td className="py-3 px-6">{driver.city}</td>
                     <td className="py-3 px-6">{driver.status}</td>
                     <td className="py-3 px-6 text-center">
-                      <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">View</button>
+                      <Link to={`/profileedit/${driver.id}`}>
+                        <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">
+                          View
+                        </button>
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -234,3 +241,5 @@ function Reg_ma_new_request() {
 }
 
 export default Reg_ma_new_request;
+
+

@@ -97,39 +97,92 @@ function CompanyProfile() {
               e.target.src = 'https://placehold.co/80x80/535c9b/ffffff?text=Logo';
             }}
           />
-          <div>
-            <h2 className="text-2xl font-semibold text-white mb-2">{companyData.company_name}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
-              <div>
-                <span className="font-semibold text-gray-300">GST Number:</span>{' '}
-                {companyData.gst_number}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Commission:</span>{' '}
-                {companyData.commission_percentage}%
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Total Drivers:</span>{' '}
-                {companyDrivers.length}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Address:</span>{' '}
-                {companyData.address}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Contact Person:</span>{' '}
-                {companyData.contact_person}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Email:</span>{' '}
-                {companyData.contact_email}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Phone:</span>{' '}
-                {companyData.contact_phone}
-              </div>
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
+  <div>
+    <span className="font-semibold text-gray-300">Registration Number:</span>{' '}
+    {companyData.registration_number}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">GST Number:</span>{' '}
+    {companyData.gst_number || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Address:</span>{' '}
+    {companyData.address}, {companyData.city}, {companyData.country}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Contact Person:</span>{' '}
+    {companyData.contact_person}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Email:</span>{' '}
+    {companyData.contact_email}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Phone:</span>{' '}
+    {companyData.contact_phone}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Bank:</span>{' '}
+    {companyData.bank_name}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Account Number:</span>{' '}
+    {companyData.account_number}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">IFSC Code:</span>{' '}
+    {companyData.ifsc_code}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">SWIFT Code:</span>{' '}
+    {companyData.swift_code || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">IBAN Code:</span>{' '}
+    {companyData.iban_code || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Commission Type:</span>{' '}
+    {companyData.commission_type}
+  </div>
+
+  {/* Conditionally show commission values based on type */}
+  {companyData.commission_type === 'km' && (
+    <>
+      <div>
+        <span className="font-semibold text-gray-300">Rate per KM:</span>{' '}
+        ₹{companyData.rate_per_km}
+      </div>
+      <div>
+        <span className="font-semibold text-gray-300">Min KM:</span>{' '}
+        {companyData.min_km}
+      </div>
+    </>
+  )}
+  {companyData.commission_type === 'order' && (
+    <div>
+      <span className="font-semibold text-gray-300">Rate per Order:</span>{' '}
+      ₹{companyData.rate_per_order}
+    </div>
+  )}
+  {companyData.commission_type === 'fixed' && (
+    <div>
+      <span className="font-semibold text-gray-300">Fixed Commission:</span>{' '}
+      ₹{companyData.fixed_commission}
+    </div>
+  )}
+
+  <div>
+    <span className="font-semibold text-gray-300">Total Drivers:</span>{' '}
+    {companyDrivers.length}
+  </div>
+  <div>
+    <span className="font-semibold text-gray-300">Created At:</span>{' '}
+    {new Date(companyData.created_at).toLocaleString()}
+  </div>
+</div>
+  
         </div>
 
         {/* Drivers List */}
@@ -155,10 +208,14 @@ function CompanyProfile() {
                     key={index}
                     className="border-b border-gray-800 hover:bg-gray-700"
                   >
-                    <td className="py-3 px-6">{driver.driver_id}</td>
-                    <td className="py-3 px-6">{driver.name}</td>
-                    <td className="py-3 px-6">{driver.phone}</td>
-                    <td className="py-3 px-6">{driver.vehicle_name}</td>
+                    <td className="py-3 px-6">{driver.id}</td>
+                    <td className="py-3 px-6">{driver.driver_name}</td>
+                    <td className="py-3 px-6">{driver.mobile}</td>
+                    <td className="py-3 px-6">
+  {driver.vehicle 
+    ? `${driver.vehicle.vehicle_name} (${driver.vehicle.vehicle_number})` 
+    : 'No Vehicle Assigned'}
+</td>
                     <td className="py-3 px-6">
                       <span
                         className={`py-1 px-3 rounded-full text-xs font-medium ${
@@ -173,12 +230,14 @@ function CompanyProfile() {
                       </span>
                     </td>
                     <td className="py-3 px-6 text-center">
+                      <Link to={`/profileedit/${driver.id}`} >
                       <button
-                        onClick={() => handleViewDriverClick(driver.driver_id)}
+                        
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-xs"
                       >
                         View
                       </button>
+                      </Link>
                     </td>
                   </tr>
                 ))

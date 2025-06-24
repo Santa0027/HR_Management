@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axiosInstance from '../api/axiosInstance'; // Ensure this is correctly configured
+import axiosInstance from '../api/axiosInstance';
 
 function DriverProfile() {
   const { id } = useParams();
@@ -33,8 +33,9 @@ function DriverProfile() {
 
     try {
       await axiosInstance.patch(`/Register/drivers/${id}/`, {
-        status: status.toLowerCase(), // must match the Django model's lowercase choices
+        status: status.toLowerCase(), // ensure backend expects "approved"/"rejected"
       });
+
       navigate('/registration-management');
     } catch (err) {
       console.error('Error updating status:', err);
@@ -55,7 +56,6 @@ function DriverProfile() {
         <p><strong>City:</strong> {driver.city}</p>
         <p><strong>Vehicle Type:</strong> {driver.vehicleType || 'N/A'}</p>
         <p><strong>Status:</strong> {driver.status}</p>
-        {/* Add more fields as needed */}
       </div>
 
       <div className="flex space-x-4">

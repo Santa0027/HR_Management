@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, CircleUserRound } from 'lucide-react';
 import { Link } from "react-router-dom";
-import axiosInstance from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance'; // Make sure this path is correct
 
 function Reg_ma_platform_list() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -15,6 +15,7 @@ function Reg_ma_platform_list() {
   const itemsPerPage = 8;
 
   useEffect(() => {
+    // Corrected API endpoint if it's 'company/'
     axiosInstance.get("company/")
       .then((response) => {
         setAllRegistrations(response.data);
@@ -43,9 +44,50 @@ function Reg_ma_platform_list() {
     setCurrentPage(1);
   };
 
-  const handleViewClick = (companyName) => {
-    alert(`Viewing details for: ${companyName}`);
+  // Removed handleViewClick as it's replaced by Link
+  // const handleViewClick = (companyName) => {
+  //   alert(`Viewing details for: ${companyName}`);
+  // };
+
+  // Helper function to render the correct commission rate based on type
+  const renderCommissionDetails = (company) => {
+    const commonClasses = "font-medium"; // For styling the numbers
+    switch (company.commission_type) {
+      case 'km':
+        return (
+          <>
+            <span className="text-gray-400">KM Based: </span>
+            <span className={commonClasses}>
+              {company.rate_per_km ? `${parseFloat(company.rate_per_km).toFixed(2)}/km` : '-'}
+            </span>
+            {company.min_km && (
+              <span className="text-gray-400 ml-1"> (Min: <span className={commonClasses}>{parseFloat(company.min_km).toFixed(2)}km</span>)</span>
+            )}
+          </>
+        );
+      case 'order':
+        return (
+          <>
+            <span className="text-gray-400">Order Based: </span>
+            <span className={commonClasses}>
+              {company.rate_per_order ? `${parseFloat(company.rate_per_order).toFixed(2)}/order` : '-'}
+            </span>
+          </>
+        );
+      case 'fixed':
+        return (
+          <>
+            <span className="text-gray-400">Fixed: </span>
+            <span className={commonClasses}>
+              {company.fixed_commission ? `${parseFloat(company.fixed_commission).toFixed(2)}` : '-'}
+            </span>
+          </>
+        );
+      default:
+        return <span className="text-gray-500">N/A</span>; // Or a specific message for no commission type
+    }
   };
+
 
   return (
     <div className="min-h-screen font-inter p-8 bg-black text-gray-200">
@@ -107,32 +149,33 @@ function Reg_ma_platform_list() {
               <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Logo</th>
                 <th className="py-3 px-6 text-left">Company Name</th>
-                <th className="py-3 px-6 text-left">GST Number</th>
-                <th className="py-3 px-6 text-left">Commission %</th>
+                <th className="py-3 px-6 text-left">Registration Number</th>
+                <th className="py-3 px-6 text-left">Commission Details</th> {/* Changed header */}
                 <th className="py-3 px-6 text-left">Drivers Allotted</th>
                 <th className="py-3 px-6 text-center">Action</th>
               </tr>
             </thead>
             <tbody className="text-gray-400 text-sm font-light">
               {currentRegistrations.map((reg, index) => (
-                <tr key={index} className="border-b border-gray-800 hover:bg-gray-700">
+                <tr key={reg.id || index} className="border-b border-gray-800 hover:bg-gray-700"> {/* Use reg.id for key */}
                   <td className="py-3 px-6">
+                    {/* Assuming reg.logo will be a URL */}
                     <img src={reg.logo || 'https://placehold.co/40x40'} alt="Logo" className="w-10 h-10 rounded-full object-cover" />
                   </td>
                   <td className="py-3 px-6">{reg.company_name}</td>
-                  <td className="py-3 px-6">{reg.gst_number}</td>
-                  <td className="py-3 px-6">{reg.commission_percentage || '-'}</td>
-                  <td className="py-3 px-6">{reg.drivers_allotted || '-'}</td>
+                  <td className="py-3 px-6">{reg.registration_number || '-'}</td>
+                  <td className="py-3 px-6">
+                    {renderCommissionDetails(reg)} {/* Dynamic commission display */}
+                  </td>
+                  <td className="py-3 px-6">{reg.driver_count || '-'}</td>
                   <td className="py-3 px-6 text-center">
                     <Link to={`/company-profile/${reg.id}`}>
                       <button
-                      
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-xs"
                       >
                         View
                       </button>
                     </Link>
-
                   </td>
                 </tr>
               ))}

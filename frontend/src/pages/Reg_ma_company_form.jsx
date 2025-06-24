@@ -18,6 +18,7 @@ function CompanyRegistrationForm() {
     account_number: '',
     ifsc_code: '',
     swift_code: '',
+    iban_code: '',
     commission_percentage: '',
   });
 
@@ -44,7 +45,7 @@ function CompanyRegistrationForm() {
     }
   };
 
-  const totalSteps = 2;
+  const totalSteps = 3;
 
   return (
     <div className="min-h-screen font-inter p-8 bg-black text-gray-200">
@@ -75,7 +76,7 @@ function CompanyRegistrationForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Company Name" name="company_name" value={formData.company_name} onChange={handleChange} />
                   <Input label="Registration Number" name="registration_number" value={formData.registration_number} onChange={handleChange} />
-                  <Input label="GST Number" name="gst_number" value={formData.gst_number} onChange={handleChange} />
+
                   <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
                   <Input label="City" name="city" value={formData.city} onChange={handleChange} />
                   <Input label="Country" name="country" value={formData.country} onChange={handleChange} />
@@ -94,10 +95,50 @@ function CompanyRegistrationForm() {
                   <Input label="Account Number" name="account_number" value={formData.account_number} onChange={handleChange} />
                   <Input label="IFSC Code" name="ifsc_code" value={formData.ifsc_code} onChange={handleChange} />
                   <Input label="SWIFT Code" name="swift_code" value={formData.swift_code} onChange={handleChange} />
-                  <Input label="Commission Percentage (%)" name="commission_percentage" type="number" value={formData.commission_percentage} onChange={handleChange} />
+                  <Input label="IBAN code" name="iban_code" value={formData.iban_code} onChange={handleChange} />
+                  {/* <Input label="Commission Percentage (%)" name="commission_percentage" type="number" value={formData.commission_percentage} onChange={handleChange} /> */}
                 </div>
               </div>
             )}
+            {step === 3 && (
+              <div className="space-y-6">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Commission Details</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="commission_type" className="block text-sm mb-2 text-gray-300">Commission Type</label>
+                    <select
+                      id="commission_type"
+                      name="commission_type"
+                      value={formData.commission_type || ''}
+                      onChange={handleChange}
+                      className="mt-1 p-2 w-full border rounded bg-gray-900 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Select Type</option>
+                      <option value="km">KM Based</option>
+                      <option value="order">Order Based</option>
+                      <option value="fixed">Fixed Commission</option>
+                    </select>
+                  </div>
+
+                  {formData.commission_type === 'km' && (
+                    <>
+                      <Input label="Rate per KM" name="rate_per_km" type="number" value={formData.rate_per_km || ''} onChange={handleChange} />
+                      <Input label="Minimum KM" name="min_km" type="number" value={formData.min_km || ''} onChange={handleChange} />
+                    </>
+                  )}
+
+                  {formData.commission_type === 'order' && (
+                    <Input label="Rate per Order" name="rate_per_order" type="number" value={formData.rate_per_order || ''} onChange={handleChange} />
+                  )}
+
+                  {formData.commission_type === 'fixed' && (
+                    <Input label="Fixed Commission Amount" name="fixed_commission" type="number" value={formData.fixed_commission || ''} onChange={handleChange} />
+                  )}
+                </div>
+              </div>
+            )}
+
 
             <div className="flex justify-between mt-6">
               {step > 1 && (
