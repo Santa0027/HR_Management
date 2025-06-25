@@ -82,29 +82,29 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # PostgreSQL Database Config (update user/password if needed)
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql',
+#       'NAME': 'hr_management_db',
+#        'USER': 'admin',
+#        'PASSWORD': 'admin@vellore',
+#        'HOST': 'localhost',
+#        'PORT': '5432',
+#    }
+#}
+import os   
+
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hr_management_db',
-        'USER': 'admin',
-        'PASSWORD': 'admin@vellore',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-# import os   
-
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
-#         'USER': os.getenv('DATABASE_USER', 'admin'),
-#         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
-#         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-#         'PORT': os.getenv('DATABASE_PORT', '5432'),
-#     }
-# }
+     'default': {
+         'ENGINE': 'django.db.backends.postgresql',
+         'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
+         'USER': os.getenv('DATABASE_USER', 'admin'),
+         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
+         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+         'PORT': os.getenv('DATABASE_PORT', '5432'),
+     }
+ }
 
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -148,7 +148,7 @@ class WarningLetter(models.Model):
         ('other', 'Other'),
     ]
 
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='warning_letters')
+    driver = models.ForeignKey(Driver,null=True,blank=True, on_delete=models.CASCADE, related_name='warning_letters')
     issued_date = models.DateField(default=timezone.now)
     reason = models.CharField(max_length=100, choices=WARNING_REASON_CHOICES)
     description = models.TextField(blank=True, null=True)
