@@ -1,14 +1,35 @@
 # Dockerfile.backend
-FROM python:3.11-slim
+    FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+    ENV PYTHONDONTWRITEBYTECODE 1
+    ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app
+    WORKDIR /app
 
-COPY backend/ /app/
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+    # IMPORTANT: Add this block to install system dependencies required by WeasyPrint.
+    # These libraries (like libgobject, cairo, pango, etc.) are NOT included
+    # in the slim Python image by default and are necessary for WeasyPrint's
+    # rendering engine to function.
+    RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+        build-essential \
+        libffi-dev \
+        libcairo2 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libgdk-pixbuf2.0-0 \
+        libxml2-dev \
+        libxslt1-dev \
+        zlib1g-dev \
+        pkg-config \
+        # Add a comment or small change here to invalidate Docker build cache
+        # For example, change this comment slightly, or add a blank line.
+        # This will force the apt-get install step to re-run. (Added this line for rebuild)
+        && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    COPY backend/ /app/
+    RUN pip install --upgrade pip
+    RUN pip install -r requirements.txt
+
+    EXPOSE 8000
+    CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

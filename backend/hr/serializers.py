@@ -60,94 +60,79 @@ class DriverSerializer(serializers.ModelSerializer):
 # -----------------------------
 class CheckinLocationSerializer(serializers.ModelSerializer):
     # Removed: driver = DriverSerializer(read_only=True)
-    driver_id = serializers.PrimaryKeyRelatedField( # For writing/updating (expects driver ID)
-        queryset=Driver.objects.all(),
-        write_only=True
-    )
+    driver_id = serializers.PrimaryKeyRelatedField(read_only=True)
+
+
 
     class Meta:
         model = CheckinLocation
-        fields = [
-            'id', 'name', 'latitude', 'longitude', 'radius_meters',
-            'is_active', 'created_at', 'updated_at',
-            'driver_id', 'driver'
-            # 'driver' is no longer in fields because the field is removed above
-        ]
+        fields = "__all__"
+    # def create(self, validated_data):
+    #     driver_id = validated_data.get("driver_id")
+    #     if not driver_id:
+    #         raise serializers.ValidationError({"driver_id": "This field is required."})
+        
+    #     # Proceed using driver_id now safely
+    #     return CheckinLocation.objects.create(**validated_data)
 
-    def create(self, validated_data):
-        driver_id = validated_data.pop('driver_id') 
-        
-        try:
-            driver_instance = Driver.objects.get(id=driver_id)
-        except Driver.DoesNotExist:
-            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
-        
-        # This line remains correct as your model field is named 'driver'
-        checkin_location = CheckinLocation.objects.create(driver=driver_instance, **validated_data)
-        return checkin_location
 
-    def update(self, instance, validated_data):
-        driver_id = validated_data.pop('driver_id', None)
+    # def update(self, instance, validated_data):
+    #     driver_id = validated_data.pop('driver_id', None)
         
-        if driver_id is not None:
-            try:
-                # This line remains correct as your model field is named 'driver'
-                instance.driver = Driver.objects.get(id=driver_id)
-            except Driver.DoesNotExist:
-                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    #     if driver_id is not None:
+    #         try:
+    #             # This line remains correct as your model field is named 'driver'
+    #             instance.driver = Driver.objects.get(id=driver_id)
+    #         except Driver.DoesNotExist:
+    #             raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+    #     for attr, value in validated_data.items():
+    #         setattr(instance, attr, value)
         
-        instance.save()
-        return instance
+    #     instance.save()
+    #     return instance
 
 
 # -----------------------------
 # Apartment Location Serializer (REMOVED DRIVER NESTED FIELD)
 # -----------------------------
 class ApartmentLocationSerializer(serializers.ModelSerializer):
-    # Removed: driver = DriverSerializer(read_only=True)
-    driver_id = serializers.PrimaryKeyRelatedField(
-        queryset=Driver.objects.all(),
-        write_only=True
-    )
+    # driver_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=Driver.objects.all(),
+    #     write_only=True # <--- This is the key.
+    # )
+    driver_id = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = ApartmentLocation
-        fields = [
-            'id', 'name', 'latitude', 'longitude', 'alarm_radius_meters',
-            'is_active', 'created_at', 'updated_at',
-            'driver_id', 
-            # 'driver' is no longer in fields because the field is removed above
-        ]
+        fields = "__all__" # <--- This is interacting with the above.
 
-    def create(self, validated_data):
-        driver_id = validated_data.pop('driver_id') 
-        try:
-            driver_instance = Driver.objects.get(id=driver_id)
-        except Driver.DoesNotExist:
-            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    # def create(self, validated_data):
+    #     driver_id = validated_data.pop('driver_id') # Correctly pops the ID
+    #     try:
+    #         driver_instance = Driver.objects.get(id=driver_id) # Correctly gets the Driver instance
+    #     except Driver.DoesNotExist:
+    #         raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
         
-        # This line remains correct as your model field is named 'driver'
-        apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
-        return apartment_location
+    #     # This line remains correct as your model field is named 'driver'
+    #     apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
+    #     return apartment_location
 
-    def update(self, instance, validated_data):
-        driver_id = validated_data.pop('driver_id', None)
+    # def update(self, instance, validated_data):
+    #     driver_id = validated_data.pop('driver_id', None)
         
-        if driver_id is not None:
-            try:
-                # This line remains correct as your model field is named 'driver'
-                instance.driver = Driver.objects.get(id=driver_id)
-            except Driver.DoesNotExist:
-                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    #     if driver_id is not None:
+    #         try:
+    #             # This line remains correct as your model field is named 'driver'
+    #             instance.driver = Driver.objects.get(id=driver_id)
+    #         except Driver.DoesNotExist:
+    #             raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+    #     for attr, value in validated_data.items():
+    #         setattr(instance, attr, value)
         
-        instance.save()
-        return instance
+    #     instance.save()
+    #     return instance
 
 
 # -----------------------------

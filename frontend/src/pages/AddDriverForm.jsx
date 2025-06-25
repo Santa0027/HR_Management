@@ -59,21 +59,24 @@ const FileUploadField = ({ label, name, file, expiryKey, expiryValue, onFileChan
 // By defining these outside the main component, they won't be recreated on every render.
 // This is the key fix for the "losing focus" issue.
 
-const DriverInfoForm = ({ formData, isEditing, handleChange }) => (
+const DriverInfoForm = ({ formData, isEditing, handleChange, handleImageChange }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <EditableField label="Driver Name" name="driver_name" value={formData.driver_name} onChange={handleChange} isEditing={isEditing} placeholder="Enter full name" required/>
-        <EditableField label="Iqama Number" name="iqama" value={formData.iqama} onChange={handleChange} isEditing={isEditing} placeholder="Enter Iqama number" required/>
-        <EditableField label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange} isEditing={isEditing} placeholder="Enter mobile number" required/>
-        <EditableField label="City" name="city" value={formData.city} onChange={handleChange} isEditing={isEditing} placeholder="Enter city" required/>
+        <ImageUploadField label="Driver Profile Image" name="driver_profile_img" imageFile={formData.documents.driver_profile_img} oonFileChange={handleFileChange} onExpiryChange={handleDocumentExpiryChange} isEditing={isEditing}  />
+        <EditableField label="Driver Profile Image" name="driver_profile_img" value={formData.driver_profile_img} onChange={handleChange} isEditing={isEditing} type="file"/>
+        <EditableField label="Driver Name" name="driver_name" value={formData.driver_name} onChange={handleChange} isEditing={isEditing} placeholder="Enter full name" required />
+        <EditableField label="Iqama Number" name="iqama" value={formData.iqama} onChange={handleChange} isEditing={isEditing} placeholder="Enter Iqama number" required />
+        <EditableField label="Mobile Number" name="mobile" value={formData.mobile} onChange={handleChange} isEditing={isEditing} placeholder="Enter mobile number" required />
+        <EditableField label="City" name="city" value={formData.city} onChange={handleChange} isEditing={isEditing} placeholder="Enter city" required />
         <EditableField label="Gender" name="gender" value={formData.gender} onChange={handleChange} isEditing={isEditing} required>
             <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white" required>
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
+                <option value="other">other</option>
             </select>
         </EditableField>
-        <EditableField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} isEditing={isEditing} placeholder="Enter nationality"/>
-        <EditableField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} isEditing={isEditing}/>
+        <EditableField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} isEditing={isEditing} placeholder="Enter nationality" />
+        <EditableField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} isEditing={isEditing} />
     </div>
 );
 
@@ -83,7 +86,7 @@ const DocumentsAndAssignmentsForm = ({ formData, isEditing, handleChange, handle
             <h4 className="text-lg font-semibold text-gray-200 mb-4">Mandatory Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {['iqama', 'passport', 'license', 'visa', 'medical'].map(doc => (
-                    <FileUploadField key={doc} label={doc.charAt(0).toUpperCase() + doc.slice(1)} name={`${doc}_document`} file={formData.documents[`${doc}_document`]} expiryKey={`${doc}_expiry`} expiryValue={formData.documents[`${doc}_expiry`]} onFileChange={handleFileChange} onExpiryChange={handleDocumentExpiryChange} isEditing={isEditing}/>
+                    <FileUploadField key={doc} label={doc.charAt(0).toUpperCase() + doc.slice(1)} name={`${doc}_document`} file={formData.documents[`${doc}_document`]} expiryKey={`${doc}_expiry`} expiryValue={formData.documents[`${doc}_expiry`]} onFileChange={handleFileChange} onExpiryChange={handleDocumentExpiryChange} isEditing={isEditing} />
                 ))}
             </div>
         </div>
@@ -97,7 +100,7 @@ const DocumentsAndAssignmentsForm = ({ formData, isEditing, handleChange, handle
                                 {PAID_BY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                         </EditableField>
-                        <FileUploadField label="" name={`${expense}_document`} file={formData.documents[`${expense}_document`]} expiryKey={`${expense}_expiry`} expiryValue={formData.documents[`${expense}_expiry`]} onFileChange={handleFileChange} onExpiryChange={handleDocumentExpiryChange} isEditing={isEditing}/>
+                        <FileUploadField label="" name={`${expense}_document`} file={formData.documents[`${expense}_document`]} expiryKey={`${expense}_expiry`} expiryValue={formData.documents[`${expense}_expiry`]} onFileChange={handleFileChange} onExpiryChange={handleDocumentExpiryChange} isEditing={isEditing} />
                     </div>
                 ))}
             </div>
@@ -106,16 +109,16 @@ const DocumentsAndAssignmentsForm = ({ formData, isEditing, handleChange, handle
             <h4 className="text-lg font-semibold text-gray-200 mb-4">Vehicle & Company Assignment</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <EditableField label="Assign Vehicle" name="vehicleType" value={formData.vehicleType} onChange={handleChange} isEditing={isEditing}>
-                   <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
-                       <option value="">{loadingInitialData ? 'Loading...' : 'Select Vehicle'}</option>
-                       {vehicles.map(v => <option key={v.id} value={v.id}>{`${v.vehicle_name} (${v.vehicle_number})`}</option>)}
-                   </select>
+                    <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                        <option value="">{loadingInitialData ? 'Loading...' : 'Select Vehicle'}</option>
+                        {vehicles.map(v => <option key={v.id} value={v.id}>{`${v.vehicle_name} (${v.vehicle_number})`}</option>)}
+                    </select>
                 </EditableField>
                 <EditableField label="Assign Company" name="company" value={formData.company} onChange={handleChange} isEditing={isEditing}>
-                   <select name="company" value={formData.company} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                    <select name="company" value={formData.company} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
                         <option value="">{loadingInitialData ? 'Loading...' : 'Select Company'}</option>
-                       {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-                   </select>
+                        {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                    </select>
                 </EditableField>
             </div>
         </div>
@@ -137,35 +140,36 @@ const AddDriverForm = () => {
         driver_name: '', gender: '', iqama: '', mobile: '', city: '',
         nationality: '', dob: '', vehicleType: '', company: '',
         documents: {
-          iqama_document: null, iqama_expiry: '', passport_document: null, passport_expiry: '',
-          license_document: null, license_expiry: '', visa_document: null, visa_expiry: '',
-          medical_document: null, medical_expiry: '', insurance_document: null, insurance_expiry: '',
-          accommodation_document: null, accommodation_expiry: '', phone_bill_document: null, phone_bill_expiry: ''
+            driver_profile_img:null,
+            iqama_document: null, iqama_expiry: '', passport_document: null, passport_expiry: '',
+            license_document: null, license_expiry: '', visa_document: null, visa_expiry: '',
+            medical_document: null, medical_expiry: '', insurance_document: null, insurance_expiry: '',
+            accommodation_document: null, accommodation_expiry: '', phone_bill_document: null, phone_bill_expiry: ''
         },
         insurance_paid_by: '', accommodation_paid_by: '', phone_bill_paid_by: ''
-      };
+    };
 
     const [formData, setFormData] = useState(initialFormData);
 
-    const PAID_BY_OPTIONS = [ { value: '', label: 'Select Payer' }, { value: 'own', label: 'Own' }, { value: 'company', label: 'Company' }];
+    const PAID_BY_OPTIONS = [{ value: '', label: 'Select Payer' }, { value: 'own', label: 'Own' }, { value: 'company', label: 'Company' }];
 
     useEffect(() => {
         const fetchInitialData = async () => {
-          try {
-            const [vehiclesRes, companiesRes] = await Promise.all([
-              axios.get('http://localhost:8000/vehicles/'),
-              axios.get('http://localhost:8000/company/')
-            ]);
-            setVehicles(vehiclesRes.data);
-            setCompanies(companiesRes.data);
-          } catch (err) {
-            console.error("Error fetching initial data:", err);
-          } finally {
-            setLoadingInitialData(false);
-          }
+            try {
+                const [vehiclesRes, companiesRes] = await Promise.all([
+                    axios.get('http://localhost:8000/vehicles/'),
+                    axios.get('http://localhost:8000/company/')
+                ]);
+                setVehicles(vehiclesRes.data);
+                setCompanies(companiesRes.data);
+            } catch (err) {
+                console.error("Error fetching initial data:", err);
+            } finally {
+                setLoadingInitialData(false);
+            }
         };
         fetchInitialData();
-      }, []);
+    }, []);
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -181,7 +185,7 @@ const AddDriverForm = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, documents: { ...prev.documents, [name]: value } }));
     }, []);
-    
+
     const handleModeChange = (newMode) => {
         setMode(newMode);
         setActiveTab('info');
@@ -207,16 +211,16 @@ const AddDriverForm = () => {
         if (mode === 'full') {
             const fullModeKeys = ['vehicleType', 'company', 'insurance_paid_by', 'accommodation_paid_by', 'phone_bill_paid_by'];
             fullModeKeys.forEach(key => {
-                if(formData[key]) data.append(key, formData[key]);
+                if (formData[key]) data.append(key, formData[key]);
             });
-            
+
             Object.entries(formData.documents).forEach(([docKey, docValue]) => {
                 if (docValue instanceof File || (typeof docValue === 'string' && docValue)) {
                     data.append(docKey, docValue);
                 }
             });
         }
-        
+
         try {
             await submitDriver(data);
             alert(`Driver submitted in ${mode} mode successfully!`);
@@ -228,26 +232,26 @@ const AddDriverForm = () => {
             alert('Submission failed.');
         }
     };
-    
+
     return (
         <div className="min-h-screen font-sans p-4 sm:p-8 bg-[#1a1a2e]">
             <header className="flex justify-between items-center mb-6">
-                 <div>
+                <div>
                     <h1 className="text-2xl font-bold text-white">Add New Driver</h1>
                     <p className="text-sm text-gray-400">Current Mode: <span className="font-semibold text-cyan-400">{mode === 'partial' ? 'Partial Details' : 'Full Details'}</span></p>
                 </div>
                 <div className="flex items-center space-x-4">
-                <label htmlFor="mode-select" className="text-white text-sm">Mode:</label>
-                <select
-                    id="mode-select"
-                    value={mode}
-                    onChange={e => handleModeChange(e.target.value)}
-                    className="bg-gray-700 border border-gray-600 p-2 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    <option value="partial">Partial Details</option>
-                    <option value="full">Full Details</option>
-                </select>
-                <CircleUserRound size={24} className="text-gray-400"/>
+                    <label htmlFor="mode-select" className="text-white text-sm">Mode:</label>
+                    <select
+                        id="mode-select"
+                        value={mode}
+                        onChange={e => handleModeChange(e.target.value)}
+                        className="bg-gray-700 border border-gray-600 p-2 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="partial">Partial Details</option>
+                        <option value="full">Full Details</option>
+                    </select>
+                    <CircleUserRound size={24} className="text-gray-400" />
                 </div>
             </header>
 
@@ -265,20 +269,20 @@ const AddDriverForm = () => {
                             </nav>
                         </div>
                     )}
-                    
+
                     {/* Render content based on mode and tab */}
-                    <div className={ (mode === 'partial' || (mode === 'full' && activeTab === 'info')) ? 'block' : 'hidden' }>
-                        <DriverInfoForm 
-                            formData={formData} 
-                            isEditing={isEditing} 
-                            handleChange={handleChange} 
+                    <div className={(mode === 'partial' || (mode === 'full' && activeTab === 'info')) ? 'block' : 'hidden'}>
+                        <DriverInfoForm
+                            formData={formData}
+                            isEditing={isEditing}
+                            handleChange={handleChange}
                         />
                     </div>
-                    <div className={ (mode === 'full' && activeTab === 'documents') ? 'block' : 'hidden'}>
-                        <DocumentsAndAssignmentsForm 
-                            formData={formData} 
-                            isEditing={isEditing} 
-                            handleChange={handleChange} 
+                    <div className={(mode === 'full' && activeTab === 'documents') ? 'block' : 'hidden'}>
+                        <DocumentsAndAssignmentsForm
+                            formData={formData}
+                            isEditing={isEditing}
+                            handleChange={handleChange}
                             handleFileChange={handleFileChange}
                             handleDocumentExpiryChange={handleDocumentExpiryChange}
                             vehicles={vehicles}

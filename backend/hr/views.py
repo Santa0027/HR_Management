@@ -292,26 +292,66 @@ from django.shortcuts import render
 from .models import CheckinLocation, Company
 from .serializers import CheckinLocationSerializer
 
-class CheckinLocationCreateView(APIView):
-    def post(self, request):
-        serializer = CheckinLocationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'message': 'Check-in location created successfully.'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-from .models import CheckinLocation, ApartmentLocation
+# class CheckinLocationCreateView(APIView):
+#     def post(self, request):
+#         serializer = CheckinLocationSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response({'message': 'Check-in location created successfully.'}, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# from .models import CheckinLocation, ApartmentLocation
 
-from .serializers import CheckinLocationSerializer, ApartmentLocationSerializer
+# from .serializers import CheckinLocationSerializer, ApartmentLocationSerializer
 
-class LocationDashboardAPIView(APIView):
-    def get(self, request):
-        checkin_locations = CheckinLocation.objects.all()
-        apartment_locations = ApartmentLocation.objects.all()
+# class LocationDashboardAPIView(APIView):
+#     def get(self, request):
+#         checkin_locations = CheckinLocation.objects.all()
+#         apartment_locations = ApartmentLocation.objects.all()
 
-        checkin_serializer = CheckinLocationSerializer(checkin_locations, many=True)
-        apartment_serializer = ApartmentLocationSerializer(apartment_locations, many=True)
+#         checkin_serializer = CheckinLocationSerializer(checkin_locations, many=True)
+#         apartment_serializer = ApartmentLocationSerializer(apartment_locations, many=True)
 
-        return Response({
-            'checkin_locations': checkin_serializer.data,
-            'apartment_locations': apartment_serializer.data
-        }, status=status.HTTP_200_OK)
+#         return Response({
+#             'checkin_locations': checkin_serializer.data,
+#             'apartment_locations': apartment_serializer.data
+#         }, status=status.HTTP_200_OK)
+
+from rest_framework import serializers
+from .models import CheckinLocation, ApartmentLocation, Driver # Make sure Driver is imported
+
+class DriverSerializer(serializers.ModelSerializer):
+    """Serializer for the Driver model."""
+    class Meta:
+        model = Driver
+        fields = ['id', 'driver_name'] # Explicitly list fields for clarity and control
+
+class CheckinLocationSerializer(serializers.ModelSerializer):
+    """Serializer for CheckinLocation model."""
+    # This correctly handles the ForeignKey:
+    # For POST/PUT (input), it expects an integer ID for the 'driver' field.
+    # For GET (output), it will display the driver's ID by default.
+    driver = serializers.PrimaryKeyRelatedField(queryset=Driver.objects.all())
+
+    # Add a read-only field to display the driver's name when retrieving data (GET requests).
+    # This is a common pattern to include related data without requiring it for input.
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+
+    class Meta:
+        model = CheckinLocation
+        # Include both 'driver' (for input/output as ID) and 'driver_name' (for display only)
+        fields = "__all__"
+
+class ApartmentLocationSerializer(serializers.ModelSerializer):
+    """Serializer for ApartmentLocation model."""
+    # This correctly handles the ForeignKey:
+    # For POST/PUT (input), it expects an integer ID for the 'driver' field.
+    # For GET (output), it will display the driver's ID by default.
+    driver = serializers.PrimaryKeyRelatedField(queryset=Driver.objects.all())
+
+    # Add a read-only field to display the driver's name when retrieving data (GET requests).
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+
+    class Meta:
+        model = ApartmentLocation
+        # Include both 'driver' (for input/output as ID) and 'driver_name' (for display only)
+        fields = "_all__"

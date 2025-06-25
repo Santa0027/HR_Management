@@ -145,11 +145,11 @@ const Sidebar = () => {
           to="/" // Base path for the dropdown group (optional, can be removed if parent is not a clickable page)
           active={location.pathname.startsWith("/")} // Parent active if any sub-item path matches
         >
-          {/* <SidebarItem
+          <SidebarItem
             label="HRDashboard"
             to="/HRDashboard"
             active={location.pathname === "/HRDashboard"}
-          /> */}
+          />
           <SidebarItem
             label="Attendence Report"
             to="/AttendanceDashboard"
