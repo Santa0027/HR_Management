@@ -7,7 +7,7 @@ function Reg_ma_platform_list() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     company_name: '',
-    gst_number: '',
+    // Removed gst_number filter
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,10 +28,9 @@ function Reg_ma_platform_list() {
       });
   }, []);
 
-  // Filtering logic
+  // Filtering logic - removed gst_number from filtering
   const filteredRegistrations = allRegistrations.filter(reg =>
-    reg.company_name?.toLowerCase().includes(filters.company_name.toLowerCase()) &&
-    reg.gst_number?.toLowerCase().includes(filters.gst_number.toLowerCase())
+    reg.company_name?.toLowerCase().includes(filters.company_name.toLowerCase())
   );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -43,11 +42,6 @@ function Reg_ma_platform_list() {
     setFilters(prev => ({ ...prev, [id]: value }));
     setCurrentPage(1);
   };
-
-  // Removed handleViewClick as it's replaced by Link
-  // const handleViewClick = (companyName) => {
-  //   alert(`Viewing details for: ${companyName}`);
-  // };
 
   // Helper function to render the correct commission rate based on type
   const renderCommissionDetails = (company) => {
@@ -123,20 +117,11 @@ function Reg_ma_platform_list() {
             className="w-full border rounded-md py-2 px-3 bg-gray-800 border-gray-700 text-white"
           />
         </div>
-        <div>
-          <label htmlFor="gst_number" className="block text-sm mb-2 text-gray-400">GST Number</label>
-          <input
-            type="text"
-            id="gst_number"
-            value={filters.gst_number}
-            onChange={handleFilterChange}
-            placeholder="Enter GST Number"
-            className="w-full border rounded-md py-2 px-3 bg-gray-800 border-gray-700 text-white"
-          />
-        </div>
+        {/* Removed GST Number filter input */}
         <div className="flex space-x-2 col-span-full justify-end">
           <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md">Sorting</button>
-          <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md" onClick={() => setFilters({ company_name: '', gst_number: '' })}>Reset All</button>
+          {/* Reset All now only affects company_name filter */}
+          <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md" onClick={() => setFilters({ company_name: '' })}>Reset All</button>
         </div>
       </div>
 
@@ -160,7 +145,7 @@ function Reg_ma_platform_list() {
                 <tr key={reg.id || index} className="border-b border-gray-800 hover:bg-gray-700"> {/* Use reg.id for key */}
                   <td className="py-3 px-6">
                     {/* Assuming reg.logo will be a URL */}
-                    <img src={reg.logo || 'https://placehold.co/40x40'} alt="Logo" className="w-10 h-10 rounded-full object-cover" />
+                    <img src={reg.company_logo || 'https://placehold.co/40x40'} alt="Logo" className="w-10 h-10 rounded-full object-cover" />
                   </td>
                   <td className="py-3 px-6">{reg.company_name}</td>
                   <td className="py-3 px-6">{reg.registration_number || '-'}</td>

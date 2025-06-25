@@ -69,6 +69,8 @@ const Reg_ma_vehicle_registration = () => {
     vehicle_number: '',
     vehicle_type: 'CAR',
     image: null,
+    // Added Chassis_Number here
+    Chassis_Number: '',
     insurance_number: '',
     insurance_document: null,
     insurance_expiry_date: '',
@@ -113,6 +115,8 @@ const Reg_ma_vehicle_registration = () => {
         vehicle_number: '',
         vehicle_type: 'CAR',
         image: null,
+        // Reset Chassis_Number here too
+        Chassis_Number: '',
         insurance_number: '',
         insurance_document: null,
         insurance_expiry_date: '',
@@ -152,6 +156,7 @@ const Reg_ma_vehicle_registration = () => {
                 <FileUploadField label="Vehicle Image Profile" name="image" file={formData.image} onChange={handleChange} />
                 <InputField label="Vehicle Name" name="vehicle_name" value={formData.vehicle_name} onChange={handleChange} placeholder="Enter vehicle name" />
                 <InputField label="Vehicle Number" name="vehicle_number" value={formData.vehicle_number} onChange={handleChange} placeholder="Enter vehicle number" />
+                <InputField label="Chassis Number" name="Chassis_Number" value={formData.Chassis_Number} onChange={handleChange} placeholder="Enter chassis number" /> {/* Added this field */}
                 <SelectField
                   label="Vehicle Type"
                   name="vehicle_type"

@@ -247,21 +247,28 @@ class WarningLetterViewSet(viewsets.ModelViewSet):
 
 
 
-# views.py
 from django.template.loader import render_to_string
 from django.core.files.base import ContentFile
 from weasyprint import HTML
-# from .models import TerminationLetter
-from rest_framework import viewsets
-# from .serializers import TerminationLetterSerializer
-class TerminationViewSet(viewsets.ModelViewSet):
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.http import FileResponse, Http404
+import os
+from django.utils import timezone # Import timezone for default date values
 
+# Assuming these imports are already correct based on your setup
+from .models import Termination, Driver # Make sure Driver is imported
+from .serializers import TerminationSerializer # Ensure your TerminationSerializer is imported
+from django.conf import settings
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+
+class TerminationViewSet(viewsets.ModelViewSet):
     queryset = Termination.objects.all()
     serializer_class = TerminationSerializer
-    permission_classes = [AllowAny]  
-
-    # permission_classes = [IsAuthenticated]
-
+    permission_classes = [AllowAny] # Or [IsAuthenticated] if you uncomment later
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -272,17 +279,63 @@ class TerminationViewSet(viewsets.ModelViewSet):
         self.generate_letter(instance)
 
     def generate_letter(self, instance):
+        # Ensure driver is loaded for the template
+        # This pre-fetching helps avoid extra database hits if driver isn't already loaded
+        if not hasattr(instance, 'driver') or not instance.driver_id:
+             instance.driver = Driver.objects.get(id=instance.driver_id) # Fetch driver if not already loaded
+
+        # --- FIX FOR 'replace' FILTER ---
+        # Preprocess the reason string in Python before passing to the template
+        formatted_reason = instance.reason.replace('_', ' ').title()
+        # --- END FIX ---
+
         html_string = render_to_string('termination_letter_template.html', {
             'termination': instance,
-            'company_name': 'Your Company Name',
+            'driver_name': instance.driver.driver_name,
+            'company_name': 'Your Company Name', # Make this dynamic or configurable
+            'current_date': timezone.now().strftime("%Y-%m-%d"),
+            'formatted_reason': formatted_reason, # Pass the pre-formatted reason
+            # Add any other context variables needed for your template
         })
 
-        pdf_file = HTML(string=html_string).write_pdf()
+        pdf_file = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
 
-        file_name = f"termination_letter_{instance.id}.pdf"
+        # Ensure directory exists before saving
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'termination_letters')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        file_name = f"termination_letter_{instance.driver.driver_name.replace(' ', '_')}_{instance.id}.pdf"
         instance.generated_letter.save(file_name, ContentFile(pdf_file), save=True)
 
 
+    @action(detail=True, methods=['get'], url_path='generate_pdf')
+    def generate_pdf_action(self, request, pk=None):
+        """
+        Generates and returns the termination letter PDF for a specific Termination instance.
+        If the letter is already generated and saved, it returns the existing file.
+        Otherwise, it generates it and then returns it.
+        """
+        try:
+            termination = self.get_object()
+        except Http404:
+            return Response({"detail": "Termination record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the generated_letter already exists
+        # This check should ideally also confirm the file exists on disk
+        if termination.generated_letter and os.path.exists(termination.generated_letter.path):
+            file_path = termination.generated_letter.path
+        else:
+            # If not generated or file is missing, generate it now
+            self.generate_letter(termination) # This will save it to the instance
+            termination.refresh_from_db() # Refresh instance to get the new generated_letter path
+            file_path = termination.generated_letter.path # Get the path after saving
+
+        if not os.path.exists(file_path):
+            return Response({"detail": "Generated letter file not found on server after generation attempt."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+        return response
 
 
 from rest_framework.views import APIView
