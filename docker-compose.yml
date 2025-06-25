@@ -33,15 +33,15 @@ services:
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
 
-  # frontend:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.frontend
-  #   container_name: hr_frontend
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - backend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: hr_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
