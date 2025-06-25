@@ -137,3 +137,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
 }
+
+
+
+# AUTHENTICATION_BACKENDS = [
+#     'usermanagement.backends.EmailBackend',
+#     'django.contrib.auth.backends.ModelBackend',
+# ]
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
