@@ -1,32 +1,22 @@
-// vite.config.js
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+    import { defineConfig } from 'vite';
+    import react from '@vitejs/plugin-react';
 
-// vite.config.js
-export default {
-  // ...other settings
-  server: {
-    host: '0.0.0.0',
-    port: 5173,
-  },
-  build: {
-    outDir: 'dist',
-  },
-  // 👇 THIS is the fix
-  preview: {
-    port: 4173,
-  },
-  // 👇 AND THIS
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
-  },
-  // 👇 MAIN FIX for history mode routing
-  base: '/',
-  plugins: 
-    [react(), tailwindcss()],
-    // your plugins here
-  
-};
+  import tailwindcss from '@tailwindcss/vite';
+
+    export default defineConfig({
+      plugins: [react(),tailwindcss()],
+      server: {
+        host: '0.0.0.0',
+        port: 5173,    
+        hmr: {
+         
+          host: process.env.VITE_HMR_HOST || 'localhost',
+          clientPort: process.env.VITE_HMR_PORT ? parseInt(process.env.VITE_HMR_PORT) : 5173,
+          overlay: true,
+        },
+        watch: {
+          usePolling: true 
+        }
+      }
+    });
+    

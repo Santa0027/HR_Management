@@ -1,17 +1,19 @@
 # Dockerfile.frontend
 FROM node:lts
+ # Confirmed 'lts' is correct as per your logs
 
+# Force rebuild: Added comment to invalidate cache (2025-06-25)
 WORKDIR /app
 
-# Copy package.json and package-lock.json first to leverage Docker cache
-# Changes to these files invalidate this layer, but not the npm install layer if cache is hit
+# Corrected COPY path: Copies package.json from the 'frontend' subdirectory
 COPY frontend/package*.json ./
 
 # Install npm dependencies
 RUN npm install
 
-# Copy the rest of your frontend application code
-COPY . .
+# Corrected COPY path: Copies all other frontend files from the 'frontend' subdirectory
+COPY frontend/ .
 
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+

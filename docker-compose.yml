@@ -1,36 +1,28 @@
-version: '3.8'
+# version: '3.8'
+#     version: '3.9'
 
-services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    volumes:
-      - ./backend:/app
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
+# services:
+#   backend:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.backend
+#     volumes:
+#       - ./backend:/app
+#     ports:
+#       - "8000:8000"
+#     depends_on:
+#       - db
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    volumes:
-      - ./frontend:/app
-    ports:
-      - "3000:3000"
+#   frontend:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.frontend
+#     container_name: hr_frontend
+#     ports:
+#       - "5173:5173"
+#     depends_on:
+#       - backend
 
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: hr_management
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-volumes:
-  postgres_data:
+#     volumes:
+#       postgres_data:
+    

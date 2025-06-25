@@ -111,7 +111,7 @@ class Driver(models.Model):
 
 
 class DriverLog(models.Model):
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    driver = models.ForeignKey(Driver,null=True,blank=True, on_delete=models.CASCADE)
     action = models.CharField(max_length=100)  # e.g., "Uploaded Document", "Updated Expiry"
     performed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
