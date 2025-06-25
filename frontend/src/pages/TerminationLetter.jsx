@@ -1,9 +1,9 @@
-// File: src/pages/Terminations.jsx
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from '../components/Model';
+import DownloadTerminationLetter from './DownloadTerminationLetter';
 
 export default function Terminations() {
   const [terminations, setTerminations] = useState([]);
@@ -76,10 +76,16 @@ export default function Terminations() {
       toast.error('Please fill required fields');
       return;
     }
+
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => {
-      if (v != null) fd.append(k, v);
-    });
+    fd.append('driver_id', form.driver);
+    fd.append('termination_date', form.termination_date);
+    fd.append('reason', form.reason);
+    fd.append('details', form.details || '');
+    fd.append('processed_by_id', form.processed_by);
+    if (form.document) {
+      fd.append('document', form.document);
+    }
 
     try {
       if (editingId) {
@@ -177,9 +183,9 @@ export default function Terminations() {
                 <td className="p-2">{item.termination_date}</td>
                 <td className="p-2">{item.reason.replace(/_/g, ' ')}</td>
                 <td className="p-2">
-                  {item.document && (
-                    <a href={item.document} className="text-blue-400 underline" target="_blank" rel="noopener noreferrer">View</a>
-                  )}
+
+                 <DownloadTerminationLetter terminationId={item.id} />
+
                 </td>
                 <td className="p-2 space-x-2">
                   <button onClick={() => handleEdit(item)} className="text-blue-400">Edit</button>
@@ -233,3 +239,4 @@ export default function Terminations() {
     </div>
   );
 }
+// generated_letter
