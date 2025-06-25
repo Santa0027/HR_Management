@@ -74,7 +74,7 @@ export default function DriverManagement() {
 
       // Vehicle Type Filter (assuming vehicleType is an object with vehicle_make/model)
       if (vehicleTypeFilter) {
-        const vehicleInfo = `${driver.vehicleType?.vehicle_make || ''} ${driver.vehicleType?.vehicle_model || ''}`.toLowerCase();
+        const vehicleInfo = `${driver.vehicleType?.vehicle_type || ''} ${driver.vehicleType?.vehicle_model || ''}`.toLowerCase();
         if (!vehicleInfo.includes(vehicleTypeFilter.toLowerCase())) {
           return false;
         }

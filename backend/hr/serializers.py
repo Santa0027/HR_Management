@@ -227,12 +227,12 @@ class TerminationSerializer(serializers.ModelSerializer):
     )
     generated_letter = serializers.FileField(read_only=True)
     processed_by = serializers.SerializerMethodField(read_only=True)
-    processed_by_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        source='processed_by',
-        write_only=True,
-        allow_null=True
-    )
+    # processed_by_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=User.objects.all(),
+    #     source='processed_by',
+    #     write_only=True,
+    #     allow_null=True
+    # )
 
     class Meta:
         model = Termination

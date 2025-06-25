@@ -191,8 +191,8 @@ const AddDriverForm = () => {
     const submitDriver = async (data) => {
         console.log("Submitting data:", Object.fromEntries(data.entries()));
         // Replace with your actual axios post request
-        // return axios.post('http://localhost:8000/Register/drivers/', data, { ... });
-        return Promise.resolve({ status: 200 }); // Placeholder for success
+        return axios.post('http://localhost:8000/Register/drivers/', data);
+        
     };
 
     const handleSubmit = async (e) => {

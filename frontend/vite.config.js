@@ -8,12 +8,12 @@
       server: {
         host: '0.0.0.0',
         port: 5173,    
-        hmr: {
+        // hmr: {
          
-          host: process.env.VITE_HMR_HOST || 'localhost',
-          clientPort: process.env.VITE_HMR_PORT ? parseInt(process.env.VITE_HMR_PORT) : 5173,
-          overlay: true,
-        },
+        //   host: process.env.VITE_HMR_HOST || 'localhost',
+        //   clientPort: process.env.VITE_HMR_PORT ? parseInt(process.env.VITE_HMR_PORT) : 5173,
+        //   overlay: true,
+        // },
         watch: {
           usePolling: true 
         }
