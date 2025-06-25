@@ -38,7 +38,7 @@ function Reg_ma_new_request() {
   // Filtered drivers based on selected filters
   const filteredDrivers = drivers.filter(driver => {
     return (
-      (filterVehicleType === '' || driver.vehicle === filterVehicleType) &&
+      (filterVehicleType === '' || driver.vehicle_type === filterVehicleType) &&
       (filterRequestStatus === '' || driver.status === filterRequestStatus) &&
       (filterRequestId === '' || String(driver.id).includes(filterRequestId)) &&
       (filterCity === '' || driver.city === filterCity) &&

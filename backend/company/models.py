@@ -11,7 +11,7 @@ class Company(models.Model):
     # Step 1: Company Info
     company_name = models.CharField(max_length=255)
     registration_number = models.CharField(max_length=100, unique=True)
-    gst_number = models.CharField(max_length=100, blank=True, null=True)
+    # gst_number = models.CharField(max_length=100, blank=True, null=True)
 
     address = models.TextField()
     city = models.CharField(max_length=100)

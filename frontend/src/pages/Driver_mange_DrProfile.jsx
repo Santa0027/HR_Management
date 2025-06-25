@@ -79,7 +79,8 @@ function Driver_mange_DrProfile() {
     try {
       // Ensure this URL is correct for deleting a single vehicle by ID
       await axiosInstance.delete(`/vehicles/${assignedVehicle.id}/`);
-      alert('Vehicle deleted successfully!'); // Using alert for now, consider custom modal
+      alert('Vehicle deleted successfully!'); 
+      redirect('/registration-management')// Using alert for now, consider custom modal
       setAssignedVehicle(null); // Clear the vehicle data after deletion
       // You might want to refresh driver data if the backend automatically unlinks the vehicle
       // Or simply show a message that the vehicle is no longer assigned.
