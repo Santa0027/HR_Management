@@ -38,7 +38,7 @@ class Driver(models.Model):
     dob = models.DateField(blank=True, null=True)
 
     # ForeignKey relationships
-    vehicleType = models.ForeignKey(VehicleRegistration, on_delete=models.SET_NULL, null=True, blank=True)
+    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.SET_NULL, null=True, blank=True)
     company = models.ForeignKey(
     Company,
     on_delete=models.SET_NULL,

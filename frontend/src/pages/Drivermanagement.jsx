@@ -74,12 +74,12 @@ export default function DriverManagement() {
 
       // Vehicle Type Filter (assuming vehicleType is an object with vehicle_make/model)
       if (vehicleTypeFilter) {
-        const vehicleInfo = `${driver.vehicleType?.vehicle_make || ''} ${driver.vehicleType?.vehicle_model || ''}`.toLowerCase();
+        const vehicleInfo = `${driver.vehicle.vehicle_type || ''} ${driver.vehicle_type || ''}`.toLowerCase();
         if (!vehicleInfo.includes(vehicleTypeFilter.toLowerCase())) {
           return false;
         }
       }
-
+      
       // Account Status Filter (maps to Django 'status' field: 'approved', 'pending', 'rejected')
       if (accountStatusFilter && String(driver.status).toLowerCase() !== accountStatusFilter.toLowerCase()) {
         return false;
