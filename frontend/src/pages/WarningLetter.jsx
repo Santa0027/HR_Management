@@ -175,7 +175,7 @@ export default function WarningLetters() {
               <th className="p-3">Date</th>
               <th className="p-3">Reason</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Document</th>
+              {/* <th className="p-3">Document</th> */}
               <th className="p-3">Actions</th>
             </tr>
           </thead>
@@ -196,7 +196,7 @@ export default function WarningLetters() {
                     {letter.status}
                   </span>
                 </td>
-                <td className="p-3">
+                {/* <td className="p-3">
                   {letter.document && (
                     <a
                       href={letter.document}
@@ -207,7 +207,7 @@ export default function WarningLetters() {
                       View
                     </a>
                   )}
-                </td>
+                </td> */}
                 <td className="p-3 space-x-2">
                   <button
                     onClick={() => handleEdit(letter)}

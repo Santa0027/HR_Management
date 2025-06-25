@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
+# Assuming these imports are correct based on your setup
 from .models import (
     Driver, Company, 
     CheckinLocation, ApartmentLocation,
@@ -13,7 +14,7 @@ User = get_user_model()
 
 
 # -----------------------------
-# Company Serializer
+# Company Serializer (No changes needed)
 # -----------------------------
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,7 +23,7 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 # -----------------------------
-# Vehicle Registration Serializer
+# Vehicle Registration Serializer (No changes needed)
 # -----------------------------
 class VehicleRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,7 +32,7 @@ class VehicleRegistrationSerializer(serializers.ModelSerializer):
 
 
 # -----------------------------
-# Driver Serializer
+# Driver Serializer (No changes needed)
 # -----------------------------
 class DriverSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
@@ -55,12 +56,13 @@ class DriverSerializer(serializers.ModelSerializer):
 
 
 # -----------------------------
-# Check-in Location Serializer
+# Check-in Location Serializer (REMOVED DRIVER NESTED FIELD)
 # -----------------------------
 class CheckinLocationSerializer(serializers.ModelSerializer):
-    driver = DriverSerializer(read_only=True)
-    driver_name = serializers.PrimaryKeyRelatedField(
-        queryset=Driver.objects.all(), write_only=True
+    # Removed: driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField( # For writing/updating (expects driver ID)
+        queryset=Driver.objects.all(),
+        write_only=True
     )
 
     class Meta:
@@ -68,17 +70,47 @@ class CheckinLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'latitude', 'longitude', 'radius_meters',
             'is_active', 'created_at', 'updated_at',
-            'driver_name', 'driver'
+            'driver_id', 'driver'
+            # 'driver' is no longer in fields because the field is removed above
         ]
 
+    def create(self, validated_data):
+        driver_id = validated_data.pop('driver_id') 
+        
+        try:
+            driver_instance = Driver.objects.get(id=driver_id)
+        except Driver.DoesNotExist:
+            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+        
+        # This line remains correct as your model field is named 'driver'
+        checkin_location = CheckinLocation.objects.create(driver=driver_instance, **validated_data)
+        return checkin_location
+
+    def update(self, instance, validated_data):
+        driver_id = validated_data.pop('driver_id', None)
+        
+        if driver_id is not None:
+            try:
+                # This line remains correct as your model field is named 'driver'
+                instance.driver = Driver.objects.get(id=driver_id)
+            except Driver.DoesNotExist:
+                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
+
 
 # -----------------------------
-# Apartment Location Serializer
+# Apartment Location Serializer (REMOVED DRIVER NESTED FIELD)
 # -----------------------------
 class ApartmentLocationSerializer(serializers.ModelSerializer):
-    driver = DriverSerializer(read_only=True)
-    driver_name = serializers.PrimaryKeyRelatedField(
-        queryset=Driver.objects.all(), write_only=True
+    # Removed: driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        write_only=True
     )
 
     class Meta:
@@ -86,12 +118,40 @@ class ApartmentLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'latitude', 'longitude', 'alarm_radius_meters',
             'is_active', 'created_at', 'updated_at',
-            'driver_name', 'driver'
+            'driver_id', 
+            # 'driver' is no longer in fields because the field is removed above
         ]
+
+    def create(self, validated_data):
+        driver_id = validated_data.pop('driver_id') 
+        try:
+            driver_instance = Driver.objects.get(id=driver_id)
+        except Driver.DoesNotExist:
+            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+        
+        # This line remains correct as your model field is named 'driver'
+        apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
+        return apartment_location
+
+    def update(self, instance, validated_data):
+        driver_id = validated_data.pop('driver_id', None)
+        
+        if driver_id is not None:
+            try:
+                # This line remains correct as your model field is named 'driver'
+                instance.driver = Driver.objects.get(id=driver_id)
+            except Driver.DoesNotExist:
+                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 
 # -----------------------------
-# Attendance Serializer
+# Other Serializers (No changes needed)
 # -----------------------------
 class AttendanceSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
@@ -114,9 +174,6 @@ class AttendanceSerializer(serializers.ModelSerializer):
         read_only_fields = ['driver_name']
 
 
-# -----------------------------
-# Monthly Attendance Summary Serializer
-# -----------------------------
 class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -130,7 +187,6 @@ class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# -----------------------------
 class WarningLetterSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -152,16 +208,16 @@ class WarningLetterSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_issued_by(self, obj):
-        from usermanagement.serializers import CustomUserSerializer
-        return CustomUserSerializer(obj.issued_by).data if obj.issued_by else None
+        try:
+            from usermanagement.serializers import CustomUserSerializer
+            return CustomUserSerializer(obj.issued_by).data if obj.issued_by else None
+        except ImportError:
+            return None
 
     def get_driver_name(self, obj):
         return obj.driver.driver_name if obj.driver else ''
 
 
-# -----------------------------
-# Termination Serializer
-# -----------------------------
 class TerminationSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -169,6 +225,7 @@ class TerminationSerializer(serializers.ModelSerializer):
         source='driver',
         write_only=True
     )
+    generated_letter = serializers.FileField(read_only=True)
     processed_by = serializers.SerializerMethodField(read_only=True)
     processed_by_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -182,5 +239,8 @@ class TerminationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_processed_by(self, obj):
-        from usermanagement.serializers import CustomUserSerializer
-        return CustomUserSerializer(obj.processed_by).data if obj.processed_by else None
+        try:
+            from usermanagement.serializers import CustomUserSerializer
+            return CustomUserSerializer(obj.processed_by).data if obj.processed_by else None
+        except ImportError:
+            return None

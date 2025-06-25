@@ -27,6 +27,7 @@ function Driver_mange_DrProfile() {
         console.log('Driver data fetched:', driverData);
         console.log('Driver\'s vehicle property:', driverData.vehicle);
         // --- DEBUGGING LOGS END ---
+        console.log("vehicle id",driverData.vehicleType)
 
 
         if (driverData.profile_picture_url) {
@@ -36,11 +37,11 @@ function Driver_mange_DrProfile() {
         // Fetch assigned vehicle data if vehicle ID exists in driverData
         // IMPORTANT: Ensure driverData.vehicle contains the actual ID of the vehicle,
         // and that your backend endpoint for vehicles is correctly structured.
-        if (driverData.vehicle) { // Assuming 'vehicle' key holds the vehicle ID (e.g., 1, 2, 3...)
+        if (driverData.vehicleType) { // Assuming 'vehicle' key holds the vehicle ID (e.g., 1, 2, 3...)
           setLoadingVehicleData(true);
           try {
             // Ensure this URL is correct for fetching a single vehicle by ID
-            const vehicleResponse = await axiosInstance.get(`/vehicles/${driverData.vehicle}/`);
+            const vehicleResponse = await axiosInstance.get(`/vehicles/${driverData.vehicleType}/`);
             setAssignedVehicle(vehicleResponse.data);
           } catch (vehicleError) {
             console.error('Failed to fetch assigned vehicle data:', vehicleError);
@@ -374,11 +375,11 @@ function Driver_mange_DrProfile() {
         <div className="bg-gray-900 p-6 rounded-lg">
           <h3 className="text-xl font-semibold text-white mb-4">Uploaded Documents</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {renderDocument('Iqama Document', driverData.iqama_document_url, driverData.iqama_expiry)}
-            {renderDocument('Passport Document', driverData.passport_document_url, driverData.passport_expiry)}
-            {renderDocument('Driving License Document', driverData.license_document_url, driverData.license_expiry)}
-            {renderDocument('Visa Document', driverData.visa_document_url, driverData.visa_expiry)}
-            {renderDocument('Medical Document', driverData.medical_document_url, driverData.medical_expiry)}
+            {renderDocument('Iqama Document', driverData.iqama_document, driverData.iqama_expiry)}
+            {renderDocument('Passport Document', driverData.passport_document, driverData.passport_expiry)}
+            {renderDocument('Driving License Document', driverData.license_document, driverData.license_expiry)}
+            {renderDocument('Visa Document', driverData.visa_document, driverData.visa_expiry)}
+            {renderDocument('Medical Document', driverData.medical_document, driverData.medical_expiry)}
           </div>
         </div>
       )}
