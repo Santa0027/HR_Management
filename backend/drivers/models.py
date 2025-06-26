@@ -29,6 +29,7 @@ class Driver(models.Model):
     remarks = models.TextField(blank=True, help_text="Admin or HR remarks for approval, rejection, or additional notes")
 
     driver_name = models.CharField(max_length=255)
+    driver_profile_img= models.FileField(upload_to='drivers/profileimg/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     iqama = models.CharField(max_length=100, unique=True)
     mobile = models.CharField(max_length=20)
@@ -37,7 +38,7 @@ class Driver(models.Model):
     dob = models.DateField(blank=True, null=True)
 
     # ForeignKey relationships
-    vehicleType = models.ForeignKey(VehicleRegistration, on_delete=models.SET_NULL, null=True, blank=True)
+    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.SET_NULL, null=True, blank=True)
     company = models.ForeignKey(
     Company,
     on_delete=models.SET_NULL,

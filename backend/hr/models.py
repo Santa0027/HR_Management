@@ -137,6 +137,8 @@ class MonthlyAttendanceSummary(models.Model):
         self.save()
 
 
+
+
 class WarningLetter(models.Model):
     WARNING_STATUS_CHOICES = [('active', 'Active'), ('inactive', 'Inactive')]
     WARNING_REASON_CHOICES = [
@@ -154,17 +156,20 @@ class WarningLetter(models.Model):
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=WARNING_STATUS_CHOICES, default='active')
     document = models.FileField(upload_to='drivers/warning_letters/', null=True, blank=True)
+    generated_letter = models.FileField(upload_to='warning_letters_generated/', null=True, blank=True) # <<< ADD THIS LINE
     issued_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_warning_letters')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-issued_date', 'driver__driver_name']
+        # ordering = ['-issued_date', 'driver__driver_name']
         verbose_name = "Warning Letter"
         verbose_name_plural = "Warning Letters"
 
     def __str__(self):
         return f"Warning for {self.driver.driver_name} - {self.reason} on {self.issued_date}"
+
+# ... (Your Termination model and other code) ..
 
 
 class Termination(models.Model):
@@ -188,7 +193,7 @@ class Termination(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-termination_date', 'driver__driver_name']
+        # ordering = ['-termination_date', 'driver__driver_name']
         verbose_name = "Termination"
         verbose_name_plural = "Terminations"
 

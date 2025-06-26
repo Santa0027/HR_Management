@@ -93,6 +93,7 @@ function App() {
           <Route path="/HRDashboard" element={<HRDashboard />} />
           <Route path="/warningletter" element={<WarningLetters />} />
           <Route path="/terminationletter" element={<TerminationManagement />} />
+          
         </Route>
       </Routes>
     </BrowserRouter>

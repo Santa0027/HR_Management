@@ -1,6 +1,48 @@
 import React, { useState } from 'react';
-import { ChevronDown, CircleUserRound } from 'lucide-react';
+import { ChevronDown, CircleUserRound, Upload } from 'lucide-react'; // Import Upload icon
 import axiosInstance from '../api/axiosInstance';
+
+// Reusable Input field
+const Input = ({ label, name, type = "text", value, onChange }) => (
+  <div>
+    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
+    <input
+      type={type}
+      id={name}
+      name={name}
+      value={value}
+      onChange={onChange}
+      className="mt-1 p-2 w-full border rounded focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-900 border-gray-700 text-white"
+    />
+  </div>
+);
+
+// Reusable FileUploadField component (adapted for this context)
+const FileUploadField = ({ label, name, file, onChange }) => (
+  <div>
+    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
+    <div className="flex items-center space-x-2">
+      <input
+        type="text"
+        readOnly
+        value={file ? file.name : 'No file chosen'}
+        className="flex-1 p-2 border rounded bg-gray-900 border-gray-700 text-white truncate"
+      />
+      <label htmlFor={name} className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+        <Upload size={18} className="mr-2" /> Upload
+      </label>
+      <input
+        type="file"
+        id={name}
+        name={name}
+        onChange={onChange}
+        className="hidden"
+        accept="image/*" // Restrict to image files
+      />
+    </div>
+  </div>
+);
+
 
 function CompanyRegistrationForm() {
   const [step, setStep] = useState(1);
@@ -14,17 +56,26 @@ function CompanyRegistrationForm() {
     contact_person: '',
     contact_email: '',
     contact_phone: '',
+    // Add company_logo to the state
+    company_logo: null,
     bank_name: '',
     account_number: '',
     ifsc_code: '',
     swift_code: '',
     iban_code: '',
-    commission_percentage: '',
+    commission_type: '', // Added for commission details
+    rate_per_km: '',
+    min_km: '',
+    rate_per_order: '',
+    fixed_commission: '',
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, files } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'file' ? files[0] : value // Handle file input correctly
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -32,16 +83,48 @@ function CompanyRegistrationForm() {
     const form = new FormData();
 
     for (const key in formData) {
-      form.append(key, formData[key]);
+      // Only append non-empty string values or File objects
+      if (formData[key] !== null && formData[key] !== '' && formData[key] !== undefined) {
+        form.append(key, formData[key]);
+      }
     }
 
     try {
-      const response = await axiosInstance.post('/company/', form);
+      const response = await axiosInstance.post('/company/', form, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Essential for sending files
+        },
+      });
       console.log("Success:", response.data);
       alert("Company added successfully!");
+      // Reset form after successful submission
+      setFormData({
+        company_name: '',
+        registration_number: '',
+        gst_number: '',
+        address: '',
+        city: '',
+        country: '',
+        contact_person: '',
+        contact_email: '',
+        contact_phone: '',
+        company_logo: null, // Reset logo
+        bank_name: '',
+        account_number: '',
+        ifsc_code: '',
+        swift_code: '',
+        iban_code: '',
+        commission_type: '',
+        rate_per_km: '',
+        min_km: '',
+        rate_per_order: '',
+        fixed_commission: '',
+      });
+      setStep(1); // Go back to the first step
     } catch (error) {
       console.error("Error:", error.response?.data || error.message);
-      alert("Failed to submit. Please check the form fields.");
+      const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      alert(`Failed to submit. Error: ${errorMsg}`);
     }
   };
 
@@ -76,6 +159,8 @@ function CompanyRegistrationForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Company Name" name="company_name" value={formData.company_name} onChange={handleChange} />
                   <Input label="Registration Number" name="registration_number" value={formData.registration_number} onChange={handleChange} />
+                  {/* Add the company_logo upload field here */}
+                  <FileUploadField label="Company Logo" name="company_logo" file={formData.company_logo} onChange={handleChange} />
 
                   <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
                   <Input label="City" name="city" value={formData.city} onChange={handleChange} />
@@ -83,6 +168,8 @@ function CompanyRegistrationForm() {
                   <Input label="Contact Person" name="contact_person" value={formData.contact_person} onChange={handleChange} />
                   <Input label="Contact Email" name="contact_email" type="email" value={formData.contact_email} onChange={handleChange} />
                   <Input label="Contact Phone" name="contact_phone" type="tel" value={formData.contact_phone} onChange={handleChange} />
+                  <Input label="GST Number" name="gst_number" value={formData.gst_number} onChange={handleChange} />
+
                 </div>
               </div>
             )}
@@ -96,7 +183,6 @@ function CompanyRegistrationForm() {
                   <Input label="IFSC Code" name="ifsc_code" value={formData.ifsc_code} onChange={handleChange} />
                   <Input label="SWIFT Code" name="swift_code" value={formData.swift_code} onChange={handleChange} />
                   <Input label="IBAN code" name="iban_code" value={formData.iban_code} onChange={handleChange} />
-                  {/* <Input label="Commission Percentage (%)" name="commission_percentage" type="number" value={formData.commission_percentage} onChange={handleChange} /> */}
                 </div>
               </div>
             )}
@@ -142,17 +228,17 @@ function CompanyRegistrationForm() {
 
             <div className="flex justify-between mt-6">
               {step > 1 && (
-                <button onClick={() => setStep(step - 1)} className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors">
+                <button type="button" onClick={() => setStep(step - 1)} className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors">
                   Back
                 </button>
               )}
               {step < totalSteps && (
-                <button onClick={() => setStep(step + 1)} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
+                <button type="button" onClick={() => setStep(step + 1)} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
                   Next
                 </button>
               )}
               {step === totalSteps && (
-                <button onClick={handleSubmit} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
+                <button type="submit" onClick={handleSubmit} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
                   Submit
                 </button>
               )}
@@ -163,19 +249,5 @@ function CompanyRegistrationForm() {
     </div>
   );
 }
-
-const Input = ({ label, name, type = "text", value, onChange }) => (
-  <div>
-    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
-    <input
-      type={type}
-      id={name}
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="mt-1 p-2 w-full border rounded focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-900 border-gray-700 text-white"
-    />
-  </div>
-);
 
 export default CompanyRegistrationForm;

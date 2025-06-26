@@ -79,7 +79,8 @@ function Driver_mange_DrProfile() {
     try {
       // Ensure this URL is correct for deleting a single vehicle by ID
       await axiosInstance.delete(`/vehicles/${assignedVehicle.id}/`);
-      alert('Vehicle deleted successfully!'); // Using alert for now, consider custom modal
+      alert('Vehicle deleted successfully!'); 
+      redirect('/registration-management')// Using alert for now, consider custom modal
       setAssignedVehicle(null); // Clear the vehicle data after deletion
       // You might want to refresh driver data if the backend automatically unlinks the vehicle
       // Or simply show a message that the vehicle is no longer assigned.
@@ -112,7 +113,7 @@ function Driver_mange_DrProfile() {
 
   // Helper function to render a document link, preview, and expiry date
   const renderDocument = (docName, docUrl, expiryDate) => (
-    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col space-y-3">
+    <div className="bg-[#3C6E71] p-4 rounded-lg border border-gray-700 flex flex-col space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-gray-300 font-medium text-lg">{docName}</span>
         {docUrl ? (
@@ -131,7 +132,7 @@ function Driver_mange_DrProfile() {
 
       {docUrl && isImageUrl(docUrl) && (
         <div className="mt-2 p-2 bg-gray-900 rounded-md border border-gray-700 flex flex-col items-center">
-          <label className="text-sm font-medium text-gray-400 mb-2 flex items-center">
+          <label className="text-sm font-medium text-[#353535]0 mb-2 flex items-center">
             <Image size={16} className="mr-1" /> Preview:
           </label>
           <img
@@ -149,7 +150,7 @@ function Driver_mange_DrProfile() {
       )}
 
       <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-        <span className="text-gray-400 text-sm font-medium">Expiry Date:</span>
+        <span className="text-white text-sm font-medium">Expiry Date:</span>
         <span className="text-gray-200 text-sm">{expiryDate || 'N/A'}</span>
       </div>
     </div>
@@ -177,8 +178,8 @@ function Driver_mange_DrProfile() {
   // Generic Detail component for consistent styling
   const Detail = ({ label, value }) => (
     <div className="flex flex-col">
-      <label className="text-sm font-medium text-gray-400 mb-1">{label}</label>
-      <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+      <label className="text-sm font-medium text-[#353535]0 mb-1">{label}</label>
+      <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
         {value}
       </p>
     </div>
@@ -262,107 +263,107 @@ function Driver_mange_DrProfile() {
 
       {/* Tab Content */}
       {activeTab === 'Driver Information' && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Personal Details</h3>
+        <div className="bg-[#D9D9D9] p-6 rounded-lg">
+          <h3 className="text-xl font-semibold text-[#353535] mb-4">Personal Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">Driver Name</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">Driver Name</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.driver_name || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">Date of Birth</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">Date of Birth</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.dob || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">ID/Iqama</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">ID/Iqama</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.iqama || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">Nationality</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">Nationality</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.nationality || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">ID/Iqama Expiry Date</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">ID/Iqama Expiry Date</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.iqama_expiry || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-400 mb-1">City</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="text-sm font-medium text-[#353535] mb-1">City</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.city || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Gender</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535] mb-1">Gender</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 {driverData.gender || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535] mb-1">Status</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                  {driverData.status || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Mobile</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535] mb-1">Mobile</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                  {driverData.mobile || 'N/A'}
               </p>
             </div>
              <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Company</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535]0 mb-1">Company</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                  {driverData.company?.company_name || 'N/A'}
               </p>
             </div>
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Created At</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535]0 mb-1">Created At</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                  {driverData.created_at ? new Date(driverData.created_at).toLocaleString() : 'N/A'}
               </p>
             </div>
             {/* Displaying password directly is not recommended. If you need to show it's set, use a placeholder. */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
-              <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+              <label className="block text-sm font-medium text-[#353535]0 mb-1">Password</label>
+              <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                 ******** {/* Placeholder for password */}
               </p>
             </div>
 
 
-            <h3 className="text-lg font-semibold text-white mt-4 md:col-span-3">Expense Information</h3>
+            <h3 className="text-lg font-semibold text-[#353535] mt-4 md:col-span-3">Expense Information</h3>
             <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-400 mb-1">Insurance Paid By</label>
-                <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+                <label className="text-sm font-medium text-[#353535]0 mb-1">Insurance Paid By</label>
+                <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                     {driverData.insurance_paid_by || 'N/A'}
                 </p>
             </div>
             <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-400 mb-1">Accommodation Paid By</label>
-                <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+                <label className="text-sm font-medium text-[#353535]0 mb-1">Accommodation Paid By</label>
+                <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                     {driverData.accommodation_paid_by || 'N/A'}
                 </p>
             </div>
             <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-400 mb-1">Phone Bill Paid By</label>
-                <p className="px-4 py-2 rounded bg-gray-800 text-white border border-gray-700">
+                <label className="text-sm font-medium text-[#353535]0 mb-1">Phone Bill Paid By</label>
+                <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                     {driverData.phone_bill_paid_by || 'N/A'}
                 </p>
             </div>
 
             <div className="md:col-span-2 lg:col-span-3 flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Remarks / Notes</label>
-              <p className="w-full px-4 py-2 rounded bg-gray-800 text-white border border-gray-700 min-h-24">
+              <label className="block text-sm font-medium text-[#353535]0 mb-1">Remarks / Notes</label>
+              <p className="w-full px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700 min-h-24">
                 {driverData.remarks || 'N/A'}
               </p>
             </div>
@@ -372,8 +373,8 @@ function Driver_mange_DrProfile() {
 
       {/* Documents Tab Content */}
       {activeTab === 'Documents' && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Uploaded Documents</h3>
+        <div className="bg-[#D9D9D9] p-6 rounded-lg">
+          <h3 className="text-xl font-semibold text-[#353535] mb-4">Uploaded Documents</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {renderDocument('Iqama Document', driverData.iqama_document, driverData.iqama_expiry)}
             {renderDocument('Passport Document', driverData.passport_document, driverData.passport_expiry)}
@@ -386,13 +387,13 @@ function Driver_mange_DrProfile() {
 
       {/* Vehicle Tab Content */}
       {activeTab === 'Vehicle' && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Assigned Vehicle Information</h3>
+        <div className="bg-[#D9D9D9] p-6 rounded-lg">
+          <h3 className="text-xl font-semibold text-[#353535] mb-4">Assigned Vehicle Information</h3>
           {loadingVehicleData ? (
             <p className="text-gray-500">Loading vehicle information...</p>
           ) : assignedVehicle ? (
             <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-800 p-6 rounded-xl border border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#D9D9D9] p-6 rounded-xl">
                 <Detail label="Vehicle Name" value={assignedVehicle.vehicle_name || '—'} />
                 <Detail label="Vehicle Number" value={assignedVehicle.vehicle_number || '—'} />
                 <Detail label="Vehicle Type" value={assignedVehicle.vehicle_type || '—'} />
@@ -408,7 +409,7 @@ function Driver_mange_DrProfile() {
 
                 {/* New: Vehicle Image */}
                 <div className="flex flex-col md:col-span-2">
-                  <label className="text-sm font-medium text-gray-400 mb-1">Vehicle Image</label>
+                  <label className="text-sm font-medium text-white mb-1">Vehicle Image</label>
                   {assignedVehicle.image ? (
                     <img
                       src={assignedVehicle.image}
@@ -422,7 +423,7 @@ function Driver_mange_DrProfile() {
                       }}
                     />
                   ) : (
-                    <p className="px-4 py-2 rounded bg-gray-800 text-gray-500 border border-gray-700">
+                    <p className="px-4 py-2 rounded bg-[#3C6E71] text-white border border-gray-700">
                       No image uploaded
                     </p>
                   )}
@@ -466,19 +467,19 @@ function Driver_mange_DrProfile() {
 
       {/* Logs Tab Content */}
       {activeTab === 'logs' && (
-        <div className="bg-gray-900 p-6 rounded-lg">
-          <h3 className="text-xl font-semibold text-white mb-4">Driver Activity Logs</h3>
+        <div className="bg-[#D9D9D9] p-6 rounded-lg">
+          <h3 className="text-xl font-semibold text-[#353535] mb-4">Driver Activity Logs</h3>
           {driverData.logs && driverData.logs.length > 0 ? (
             <div className="space-y-3">
               {driverData.logs.map((log, index) => (
-                <div key={index} className="bg-gray-800 p-3 rounded-md flex items-center space-x-3">
+                <div key={index} className="bg-[#3C6E71] p-3 rounded-md flex items-center space-x-3">
                   <span className="text-gray-500 text-sm">
                     {log.formatted_timestamp || 'N/A'}:
                   </span>
                   <span className="text-gray-300">
                     {log.action || 'N/A'} {log.note && `(${log.note})`}
                   </span>
-                  {log.performed_by && <span className="text-gray-400 text-xs">- By {log.performed_by}</span>}
+                  {log.performed_by && <span className="text-[#353535] text-xs">- By {log.performed_by}</span>}
                 </div>
               ))}
             </div>

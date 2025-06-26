@@ -1,56 +1,47 @@
-// src/pages/DownloadTerminationLetter.js
+// src/pages/DownloadWarningLetter.js
 import React, { useState } from 'react';
-import axiosInstance from '../api/axiosInstance';
-import { Download } from 'lucide-react';
+import axiosInstance from '../api/axiosInstance'; // Adjust path if necessary
+import { Download } from 'lucide-react'; // Make sure lucide-react is installed: npm install lucide-react
 import { toast } from 'react-toastify';
 
 /**
- * Component to trigger the download of a termination letter PDF.
- * Assumes backend has an endpoint like `/terminationletter/{id}/generate_pdf/`
+ * Component to trigger the download of a warning letter PDF.
+ * Assumes backend has an endpoint like `/warningletter/{id}/generate_pdf/`
  * that returns a PDF file.
  */
-function DownloadTerminationLetter({ terminationId }) {
+function DownloadWarningLetter({ letterId }) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      // Make a GET request to your backend PDF generation endpoint
+      // API endpoint for warning letter PDF generation
       const response = await axiosInstance.get(
-        `/terminationletter/${terminationId}/generate_pdf/`, // Adjust this URL to your actual backend endpoint
+        `/warningletter/${letterId}/generate_pdf/`, // <<< Specific endpoint for Warning Letters
         {
-          responseType: 'blob', // Important: responseType must be 'blob' for file downloads
+          responseType: 'blob', // Important for file downloads
         }
       );
 
-      // Create a Blob from the response data
       const blob = new Blob([response.data], { type: 'application/pdf' });
-
-      // Create a URL for the Blob
       const url = window.URL.createObjectURL(blob);
-
-      // Create a temporary link element
       const link = document.createElement('a');
       link.href = url;
 
-      // Set the download attribute with a desired filename
-      // You might want to get the filename from response headers (e.g., Content-Disposition)
+      // You might get a more specific filename from response headers (Content-Disposition)
       // For now, a generic name:
-      link.setAttribute('download', `termination_letter_${terminationId}.pdf`);
+      link.setAttribute('download', `warning_letter_${letterId}.pdf`);
 
-      // Append to body and trigger click
       document.body.appendChild(link);
       link.click();
 
-      // Clean up: remove the link and revoke the object URL
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success('Termination letter downloaded!');
+      toast.success('Warning letter downloaded!');
     } catch (error) {
-      console.error('Error downloading termination letter:', error);
-      toast.error('Failed to download termination letter. Please try again.');
-      // Optional: if the backend sends an error message in JSON, try to parse it
+      console.error('Error downloading warning letter:', error);
+      toast.error('Failed to download warning letter. Please try again.');
       if (error.response && error.response.data) {
         try {
           const reader = new FileReader();
@@ -72,9 +63,9 @@ function DownloadTerminationLetter({ terminationId }) {
   return (
     <button
       onClick={handleDownload}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center space-x-1"
+      className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded flex items-center space-x-1 text-sm"
       disabled={isDownloading}
-      title="Download Termination Letter"
+      title="Download Warning Letter"
     >
       <Download size={16} />
       <span>{isDownloading ? 'Downloading...' : 'Download PDF'}</span>
@@ -82,4 +73,4 @@ function DownloadTerminationLetter({ terminationId }) {
   );
 }
 
-export default DownloadTerminationLetter;
+export default DownloadWarningLetter;

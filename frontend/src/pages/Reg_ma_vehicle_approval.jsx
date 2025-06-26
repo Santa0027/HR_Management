@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, CircleUserRound, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from "react-router-dom";
-import axios from 'axios';
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
 
 function PendingApprovalTabContent() {
   const [activeTab, setActiveTab] = useState('All Vehicles');
-  const [currentPageAll, setCurrentPageAll] = useState(1); // Separate state for All Vehicles pagination
-  const [currentPagePending, setCurrentPagePending] = useState(1); // Separate state for Pending Approval pagination
-  const [allVehicles, setAllVehicles] = useState([]); // Holds all fetched vehicle data
+  const [currentPageAll, setCurrentPageAll] = useState(1);
+  const [currentPagePending, setCurrentPagePending] = useState(1);
+  const [allVehicles, setAllVehicles] = useState([]);
   const [filters, setFilters] = useState({
     vehicleType: '',
     registrationStatus: '', // This will map to approval_status
@@ -20,15 +21,16 @@ function PendingApprovalTabContent() {
 
   useEffect(() => {
     // Fetch data when the component mounts
-    axios.get('http://localhost:8000/vehicles/')
+    // Use axiosInstance.get and provide only the endpoint path
+    axiosInstance.get('vehicles/') // Removed 'http://localhost:8000/'
       .then(response => {
-        // Assuming your API returns an array of vehicle objects
-        // Each object should ideally have an 'id' and 'approval_status'
+        // Axios puts the response data directly in .data
         setAllVehicles(response.data);
       })
       .catch(error => {
         console.error('Error fetching vehicle data:', error);
         // Fallback to sample data if API fails, for development purposes
+        // Your existing fallback data is fine here, it will be used if the API call fails
         setAllVehicles([
           { id: 'VHC001', vehicle_number: '098765isyfdapsoy', vehicle_name: 'Santha Kumar', vehicle_type: 'CAR', approval_status: 'APPROVED', insurance_expiry_date: '2026-06-15', service_date: '2025-06-12', Chassis_Number: 'CHAS001' },
           { id: 'VHC002', vehicle_number: '1122334455', vehicle_name: 'Honda City', vehicle_type: 'CAR', approval_status: 'PENDING', insurance_expiry_date: '2025-01-20', service_date: '2024-10-01', Chassis_Number: 'CHAS002' },
@@ -110,6 +112,29 @@ function PendingApprovalTabContent() {
   const handleApproveReject = (vehicleId, status) => {
     // In a real application, you would make an API call to update the status on the backend.
     // For this example, we'll just update the local state.
+    // If you were to use axiosInstance for this, it would look like:
+    /*
+    axiosInstance.patch(`vehicles/${vehicleId}/`, { approval_status: status })
+        .then(response => {
+            setAllVehicles(prevVehicles =>
+                prevVehicles.map(vehicle =>
+                    vehicle.id === vehicleId
+                        ? { ...vehicle, approval_status: response.data.approval_status }
+                        : vehicle
+                )
+            );
+            alert(`Vehicle ${vehicleId} has been ${status}.`);
+            if (activeTab === 'Pending Approval') {
+                setCurrentPagePending(1);
+            } else {
+                setCurrentPageAll(1);
+            }
+        })
+        .catch(error => {
+            console.error(`Failed to update vehicle ${vehicleId}:`, error);
+            alert(`Failed to update vehicle ${vehicleId}.`);
+        });
+    */
     setAllVehicles(prevVehicles =>
       prevVehicles.map(vehicle =>
         vehicle.id === vehicleId
@@ -281,9 +306,9 @@ function PendingApprovalTabContent() {
                 <td className="py-3 px-6 text-left whitespace-nowrap">{vehicle.vehicle_type}</td>
                 <td className="py-3 px-6 text-left whitespace-nowrap">
                   <span className={`py-1 px-3 rounded-full text-xs font-medium ${
-                    vehicle.approval_status === 'APPROVED' ? 'bg-[#0430DE] text-white' : // Approved status
-                    vehicle.approval_status === 'PENDING' ? 'bg-[#2750F5] text-white' : // Pending status, a different shade of blue
-                    'bg-[#9F2626] text-white' // Rejected/Expired status
+                    vehicle.approval_status === 'APPROVED' ? 'bg-[#0430DE] text-white' :
+                    vehicle.approval_status === 'PENDING' ? 'bg-[#2750F5] text-white' :
+                    'bg-[#9F2626] text-white'
                   }`}>
                     {vehicle.approval_status}
                   </span>
@@ -308,7 +333,7 @@ function PendingApprovalTabContent() {
                       </button>
                     </div>
                   ) : (
-                    <Link to={`/vehicles/${vehicle.id}`}> {/* Assuming a view page for individual vehicles */}
+                    <Link to={`/vehicles/${vehicle.id}`}>
                       <button className="bg-[#0430DE] hover:bg-[#2750F5] text-white px-4 py-2 rounded-full text-xs font-medium transition-colors">
                         View
                       </button>

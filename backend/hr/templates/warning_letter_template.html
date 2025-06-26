@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Warning Letter</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; color: #333; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #f44336; } /* Red color for warning */
+        .date { text-align: right; margin-bottom: 20px; }
+        .section { margin-bottom: 20px; }
+        .footer { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 0.9em; text-align: center; color: #777; }
+        .attention { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="date">
+            {{ current_date }}
+        </div>
+
+        <h1>Official Warning Letter</h1>
+
+        <div class="section">
+            <p>Dear {{ driver_name }},</p>
+            <p>This letter serves as a formal warning regarding your conduct/performance at <strong>{{ company_name }}</strong>, specifically concerning the following issue:</p>
+        </div>
+
+        <div class="section">
+            <h2>Reason for Warning:</h2>
+            <p class="attention"><strong>{{ formatted_reason }}</strong></p>
+            {% if letter.description %}
+                <p>Further details regarding this issue are as follows:</p>
+                <p>{{ letter.description }}</p>
+            {% else %}
+                <p>No additional details were provided for this warning.</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2>Expectations:</h2>
+            <p>We expect immediate improvement in this area. Failure to adhere to company policies and standards may lead to further disciplinary action, up to and including termination of employment.</p>
+            <p>We are committed to helping our employees succeed and encourage you to reach out to your supervisor or Human Resources if you require support or clarification.</p>
+        </div>
+
+        <div class="section">
+            <p>This warning letter will be placed in your personnel file.</p>
+        </div>
+
+        <div class="section">
+            <p>Sincerely,</p>
+            <p><strong>{{ issued_by_username }}</strong></p>
+            <p>Human Resources</p>
+            <p>{{ company_name }}</p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ company_name }} {{ current_date|date:"Y" }}</p>
+        </div>
+    </div>
+</body>
+</html>

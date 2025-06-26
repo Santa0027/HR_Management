@@ -1,52 +1,44 @@
-    version: '3.9'
+version: '3.9'
 
-    services:
-      db:
-        image: postgres:14
-        container_name: hr_postgres
-        volumes:
-          - postgres_data:/var/lib/postgresql/data/
-        environment:
-          POSTGRES_DB: hr_management_db
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: admin@vellore
-        ports:
-          - "5432:5432"
-
-      backend:
-        build:
-          context: .
-          dockerfile: Dockerfile.backend
-        container_name: hr_backend
-        command: python manage.py runserver 0.0.0.0:8000
-        volumes:
-          - ./backend:/app
-        ports:
-          - "8000:8000"
-        depends_on:
-          - db
-        environment:
-          - DEBUG=1
-          - DATABASE_NAME=hr_management_db
-          - DATABASE_USER=admin
-          - DATABASE_PASSWORD=admin@vellore
-          - DATABASE_HOST=db
-          - DATABASE_PORT=5432
-
-      frontend:
-        build:
-          context: .
-          dockerfile: Dockerfile.frontend
-        container_name: hr_frontend
-        ports:
-          - "5173:5173"
-        depends_on:
-          - backend
-        environment:
-          # --- ADD THESE LINES ---
-          - VITE_API_BASE_URL=http://13.201.128.13:8000
-          # --- END ADDITION ---
-
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: hr_management_db
+      POSTGRES_USER: admin 
+      POSTGRES_PASSWORD: admin@vellore
     volumes:
-      postgres_data:
-    
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../Dockerfile.frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    command: npm start
+
+volumes:
+  postgres_data:
