@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable for baseURL
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://13.201.128.13:8000';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const axiosInstance = axios.create({
   baseURL,

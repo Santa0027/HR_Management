@@ -74,22 +74,22 @@ function Reg_ma_new_request() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-gray-200 font-inter">
+    <div className="min-h-screen bg-white text-[#1E2022] font-inter">
       <div className="flex flex-col p-8">
         {/* Header */}
         <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
-          <div className="text-sm text-gray-400">Organization / Registration Management</div>
+          <div className="text-sm text-[#52616B]">Organization / Registration Management</div>
           <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-gray-900 rounded-full text-sm hover:bg-gray-800 transition-colors">
+            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
               English <ChevronDown size={16} className="ml-1" />
             </button>
-            <CircleUserRound size={24} className="text-green-400" />
+            <CircleUserRound size={24} className="text-[#1E2022]" />
           </div>
         </header>
 
         {/* Page Title & Add Driver */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-semibold">Registration Management</h1>
+          <h1 className="text-3xl font-semibold text-[#187795]">Driver Registration Management</h1>
           <Link to="/adddriverform">
             <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
               Add Driver
@@ -100,42 +100,41 @@ function Reg_ma_new_request() {
         {/* Tabs */}
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
           <Link to="/registration-management">
-            <button className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400'}`}>
+            <button className={`bg-[#284B63] px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400'}`}>
               New Request
             </button>
           </Link>
           <Link to="/registration-management/aproval_status">
-            <button className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'Completed Requests' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400'}`}>
+            <button className={` px-4 py-2 rounded-t-lg font-medium transition-colors hover:bg-gray-800 hover:text-white text-gray-500S`}>
               Completed Requests
             </button>
           </Link>
         </div>
 
         {/* Filters */}
-        <div className="bg-gray-900 p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+        <div className="bg-[#C9D6DF] p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
           <div>
-            <label htmlFor="vehicleType" className="block text-gray-400 text-sm mb-2">Vehicle Type</label>
+            <label htmlFor="vehicleType" className="block text-[#353535] text-sm mb-2">Vehicle Type</label>
             <select
               id="vehicleType"
               value={filterVehicleType}
               onChange={e => setFilterVehicleType(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
+              className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             >
-              <option value="">All Vehicle Types</option> {/* Added default option */}
-              {getUniqueOptions("vehicle_type").map(type => ( // Changed key to "vehicle_type"
-                <option key={type} value={type}>
-                  {type}
+              {getUniqueOptions("vehicle").map(vehicle => (
+                <option className="bg-[#D9D9D9]" key={vehicle.id} value={vehicle.vehicle_type}>
+                  {vehicle.vehicle_type}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="requestStatus" className="block text-gray-400 text-sm mb-2">Request Status</label>
+            <label htmlFor="requestStatus" className="block text-[#353535] text-sm mb-2">Request Status</label>
             <select
               id="requestStatus"
               value={filterRequestStatus}
               onChange={e => setFilterRequestStatus(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
+              className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             >
               <option value="">Select Request Status</option>
               {getUniqueOptions("status").map(status => (
@@ -144,23 +143,23 @@ function Reg_ma_new_request() {
             </select>
           </div>
           <div>
-            <label htmlFor="requestId" className="block text-gray-400 text-sm mb-2">Request ID</label>
+            <label htmlFor="requestId" className="block text-[#353535] text-sm mb-2">Request ID</label>
             <input
               type="text"
               id="requestId"
               value={filterRequestId}
               onChange={e => setFilterRequestId(e.target.value)}
               placeholder="Enter Request ID"
-              className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
+              className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             />
           </div>
           <div>
-            <label htmlFor="city" className="block text-gray-400 text-sm mb-2">City</label>
+            <label htmlFor="city" className="block text-[#353535]text-sm mb-2">City</label>
             <select
               id="city"
               value={filterCity}
               onChange={e => setFilterCity(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
+              className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             >
               <option value="">Select City</option>
               {getUniqueOptions("city").map(city => (
@@ -169,12 +168,12 @@ function Reg_ma_new_request() {
             </select>
           </div>
           <div>
-            <label htmlFor="approval" className="block text-gray-400 text-sm mb-2">Approval</label>
+            <label htmlFor="approval" className="block text-[#353535]text-sm mb-2">Approval</label>
             <select
               id="approval"
               value={filterApproval}
               onChange={e => setFilterApproval(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
+              className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             >
               <option value="">Select Approval</option>
               {getUniqueOptions("approval").map(appr => (
@@ -197,7 +196,7 @@ function Reg_ma_new_request() {
         <div className="overflow-x-auto mb-4">
           <table className="min-w-full bg-gray-900 rounded-lg">
             <thead>
-              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
+              <tr className="bg-[#284B63] text-white uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left rounded-tl-lg">Request Number</th>
                 <th className="py-3 px-6 text-left">Driver ID</th>
                 <th className="py-3 px-6 text-left">Driver Name</th>
@@ -210,14 +209,14 @@ function Reg_ma_new_request() {
                 <th className="py-3 px-6 text-center rounded-tr-lg">Action</th>
               </tr>
             </thead>
-            <tbody className="text-gray-400 text-sm font-light">
+            <tbody className="text-gray-400 bg-[#C9D6DF] text-sm font-light">
               {loading ? (
                 <tr><td colSpan="11" className="py-6 text-center">Loading...</td></tr>
               ) : error ? (
                 <tr><td colSpan="11" className="py-6 text-center text-red-400">{error}</td></tr>
               ) : filteredDrivers.length > 0 ? (
                 filteredDrivers.map((driver, index) => (
-                  <tr key={index} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+                  <tr key={index} className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white transition-colors">
                     <td className="py-3 px-6">{driver.driver_}</td>
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>

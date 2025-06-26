@@ -91,12 +91,6 @@ function VehicleProfile() {
         <Detail label="Service Date" value={formatDate(vehicle.service_date)} />
         <Detail label="RC Book Number" value={vehicle.rc_book_number || '—'} />
         <Detail label="Is Leased" value={vehicle.is_leased ? 'Yes' : 'No'} />
-        {/*
-          IMPORTANT: This line might cause 'username' error if 'created_by' is null
-          or if 'created_by' (your CustomUser) doesn't have a 'username' field.
-          Replace '.username' with the correct field, e.g., '.email' or '.name'.
-        */}
-        <Detail label="Created By" value={vehicle.created_by?.email || vehicle.created_by?.name || '—'} />
         <Detail label="Created At" value={formatDate(vehicle.created_at)} />
       </div>
 

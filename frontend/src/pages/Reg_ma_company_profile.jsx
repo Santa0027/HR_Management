@@ -202,26 +202,22 @@ function CompanyProfile() {
   if (!companyData) return <div className="min-h-screen bg-black text-red-500 flex items-center justify-center p-8">Company not found or an error occurred.</div>;
 
   return (
-    <div className="min-h-screen font-inter p-8 bg-black text-gray-200">
+    <div className="min-h-screen font-inter p-8 bg-white text-[#1E2022]">
       <div className="flex flex-col">
-
-        {/* Topbar */}
-        <div className="flex justify-end items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm">
-              English <ChevronDown size={16} className="ml-1" />
-            </button>
-            <CircleUserRound size={24} className="text-green-400" />
-          </div>
-        </div>
-
-        <div className="text-sm mb-6 text-gray-400">
-          Organization / Platform Registration List / Company Profile
-        </div>
+       {/* Header */}
+               <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+                 <div className="text-sm text-[#52616B]">Organization / Platform Registration List / Company Profile</div>
+                 <div className="flex items-center space-x-4">
+                   <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                     English <ChevronDown size={16} className="ml-1" />
+                   </button>
+                   <CircleUserRound size={24} className="text-[#1E2022]" />
+                 </div>
+               </header>
 
         {/* Heading and Action Buttons */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-white text-3xl font-semibold">Company Profile</h1>
+          <h1 className="text-[#187795] text-3xl font-semibold">Company Profile</h1>
           <div className="flex gap-2">
             {!isEditing ? (
               <button
@@ -258,180 +254,112 @@ function CompanyProfile() {
           </div>
         </div>
 
-        {/* Company Details / Edit Form Section */}
-        <div className="bg-gray-900 p-6 rounded-lg mb-8 flex flex-col md:flex-row items-start md:items-center">
-          <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-6 w-full md:w-auto">
-            {/* Displaying company_logo */}
-            <img
-              src={newCompanyLogo ? URL.createObjectURL(newCompanyLogo) : (companyData.company_logo || 'https://placehold.co/80x80/535c9b/ffffff?text=Logo')}
-              alt="Company Logo"
-              className="w-20 h-20 rounded-full object-cover border border-gray-700 mx-auto md:mx-0"
-              onError={(e) => {
-                e.target.src = 'https://placehold.co/80x80/535c9b/ffffff?text=Logo'; // Fallback if image fails to load
-              }}
-            />
-            {isEditing && (
-              <div className="mt-4 w-full">
-                <FileUploadField
-                  label="Upload New Logo"
-                  name="company_logo" // This matches the backend field name
-                  file={newCompanyLogo}
-                  onChange={handleLogoChange}
-                  currentImageUrl={companyData.company_logo}
-                />
-              </div>
-            )}
-          </div>
+        {/* Company Details */}
+        <div className="bg-[#C9D6DF] p-6 rounded-lg mb-8 flex items-center">
+          <img
+            src={companyData.logo || 'https://placehold.co/80x80/535c9b/ffffff?text=Logo'}
+            alt="Company Logo"
+            className="w-20 h-20 rounded-full object-cover mr-6"
+            onError={(e) => {
+              e.target.src = 'https://placehold.co/80x80/535c9b/ffffff?text=Logo';
+            }}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
+  <div>
+    <span className="font-semibold text-[#353535]">Registration Number:</span>{' '}
+    {companyData.registration_number}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">GST Number:</span>{' '}
+    {companyData.gst_number || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Address:</span>{' '}
+    {companyData.address}, {companyData.city}, {companyData.country}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Contact Person:</span>{' '}
+    {companyData.contact_person}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Email:</span>{' '}
+    {companyData.contact_email}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Phone:</span>{' '}
+    {companyData.contact_phone}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Bank:</span>{' '}
+    {companyData.bank_name}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Account Number:</span>{' '}
+    {companyData.account_number}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">IFSC Code:</span>{' '}
+    {companyData.ifsc_code}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">SWIFT Code:</span>{' '}
+    {companyData.swift_code || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">IBAN Code:</span>{' '}
+    {companyData.iban_code || 'N/A'}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Commission Type:</span>{' '}
+    {companyData.commission_type}
+  </div>
 
-          {!isEditing ? (
-            // Display Mode
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400 flex-grow w-full">
-              <div>
-                <span className="font-semibold text-gray-300">Company Name:</span>{' '}
-                {companyData.company_name}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Registration Number:</span>{' '}
-                {companyData.registration_number}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Address:</span>{' '}
-                {companyData.address}, {companyData.city}, {companyData.country}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Contact Person:</span>{' '}
-                {companyData.contact_person}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Email:</span>{' '}
-                {companyData.contact_email}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Phone:</span>{' '}
-                {companyData.contact_phone}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Bank:</span>{' '}
-                {companyData.bank_name}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Account Number:</span>{' '}
-                {companyData.account_number}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">IFSC Code:</span>{' '}
-                {companyData.ifsc_code}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">SWIFT Code:</span>{' '}
-                {companyData.swift_code || 'N/A'}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">IBAN Code:</span>{' '}
-                {companyData.iban_code || 'N/A'}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Commission Type:</span>{' '}
-                {companyData.commission_type}
-              </div>
+  {/* Conditionally show commission values based on type */}
+  {companyData.commission_type === 'km' && (
+    <>
+      <div>
+        <span className="font-semibold text-[#353535]">Rate per KM:</span>{' '}
+        ₹{companyData.rate_per_km}
+      </div>
+      <div>
+        <span className="font-semibold text-[#353535]">Min KM:</span>{' '}
+        {companyData.min_km}
+      </div>
+    </>
+  )}
+  {companyData.commission_type === 'order' && (
+    <div>
+      <span className="font-semibold text-[#353535]">Rate per Order:</span>{' '}
+      ₹{companyData.rate_per_order}
+    </div>
+  )}
+  {companyData.commission_type === 'fixed' && (
+    <div>
+      <span className="font-semibold text-[#353535]">Fixed Commission:</span>{' '}
+      ₹{companyData.fixed_commission}
+    </div>
+  )}
 
-              {companyData.commission_type === 'km' && (
-                <>
-                  <div>
-                    <span className="font-semibold text-gray-300">Rate per KM:</span>{' '}
-                    ₹{companyData.rate_per_km}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-300">Min KM:</span>{' '}
-                    {companyData.min_km}
-                  </div>
-                </>
-              )}
-              {companyData.commission_type === 'order' && (
-                <div>
-                  <span className="font-semibold text-gray-300">Rate per Order:</span>{' '}
-                  ₹{companyData.rate_per_order}
-                </div>
-              )}
-              {companyData.commission_type === 'fixed' && (
-                <div>
-                  <span className="font-semibold text-gray-300">Fixed Commission:</span>{' '}
-                  ₹{companyData.fixed_commission}
-                </div>
-              )}
-
-              <div>
-                <span className="font-semibold text-gray-300">Total Drivers:</span>{' '}
-                {companyDrivers.length}
-              </div>
-              <div>
-                <span className="font-semibold text-gray-300">Created At:</span>{' '}
-                {new Date(companyData.created_at).toLocaleString()}
-              </div>
-            </div>
-          ) : (
-            // Edit Mode Form
-            <form onSubmit={handleUpdateSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm flex-grow w-full">
-              <Input label="Company Name" name="company_name" value={editFormData.company_name} onChange={handleChange} />
-              <Input label="Registration Number" name="registration_number" value={editFormData.registration_number} onChange={handleChange} />
-
-              {/* GST number field is removed */}
-
-              <Input label="Address" name="address" value={editFormData.address} onChange={handleChange} />
-              <Input label="City" name="city" value={editFormData.city} onChange={handleChange} />
-              <Input label="Country" name="country" value={editFormData.country} onChange={handleChange} />
-              <Input label="Contact Person" name="contact_person" value={editFormData.contact_person} onChange={handleChange} />
-              <Input label="Contact Email" name="contact_email" type="email" value={editFormData.contact_email} onChange={handleChange} />
-              <Input label="Contact Phone" name="contact_phone" type="tel" value={editFormData.contact_phone} onChange={handleChange} />
-
-              <h3 className="md:col-span-2 text-xl font-semibold mt-4 text-white">Accounting Details</h3>
-              <Input label="Bank Name" name="bank_name" value={editFormData.bank_name} onChange={handleChange} />
-              <Input label="Account Number" name="account_number" value={editFormData.account_number} onChange={handleChange} />
-              <Input label="IFSC Code" name="ifsc_code" value={editFormData.ifsc_code} onChange={handleChange} />
-              <Input label="SWIFT Code" name="swift_code" value={editFormData.swift_code} onChange={handleChange} />
-              <Input label="IBAN Code" name="iban_code" value={editFormData.iban_code} onChange={handleChange} />
-
-              <h3 className="md:col-span-2 text-xl font-semibold mt-4 text-white">Commission Details</h3>
-              <div>
-                <label htmlFor="commission_type" className="block text-sm mb-2 text-gray-300">Commission Type</label>
-                <select
-                  id="commission_type"
-                  name="commission_type"
-                  value={editFormData.commission_type || ''}
-                  onChange={handleChange}
-                  className="mt-1 p-2 w-full border rounded bg-gray-900 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select Type</option>
-                  <option value="km">KM Based</option>
-                  <option value="order">Order Based</option>
-                  <option value="fixed">Fixed Commission</option>
-                </select>
-              </div>
-
-              {editFormData.commission_type === 'km' && (
-                <>
-                  <Input label="Rate per KM" name="rate_per_km" type="number" value={editFormData.rate_per_km} onChange={handleChange} />
-                  <Input label="Minimum KM" name="min_km" type="number" value={editFormData.min_km} onChange={handleChange} />
-                </>
-              )}
-              {editFormData.commission_type === 'order' && (
-                <Input label="Rate per Order" name="rate_per_order" type="number" value={editFormData.rate_per_order} onChange={handleChange} />
-              )}
-              {editFormData.commission_type === 'fixed' && (
-                <Input label="Fixed Commission Amount" name="fixed_commission" type="number" value={editFormData.fixed_commission} onChange={handleChange} />
-              )}
-            </form>
-          )}
+  <div>
+    <span className="font-semibold text-[#353535]">Total Drivers:</span>{' '}
+    {companyDrivers.length}
+  </div>
+  <div>
+    <span className="font-semibold text-[#353535]">Created At:</span>{' '}
+    {new Date(companyData.created_at).toLocaleString()}
+  </div>
+</div>
+  
         </div>
 
         {/* Drivers List */}
-        <h2 className="text-2xl font-semibold text-white mb-4">
+        <h2 className="text-2xl font-semibold text-[#353535] mb-4">
           Drivers Allotted ({companyDrivers.length})
         </h2>
         <div className="overflow-x-auto mb-4 bg-gray-900 rounded-lg">
           <table className="min-w-full">
             <thead>
-              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
+              <tr className="bg-[#284B63] text-white uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Driver ID</th>
                 <th className="py-3 px-6 text-left">Driver Name</th>
                 <th className="py-3 px-6 text-left">Mobile Number</th>
@@ -440,12 +368,12 @@ function CompanyProfile() {
                 <th className="py-3 px-6 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="text-gray-400 text-sm font-light">
+            <tbody className="bg-[#C9D6DF] text-sm font-light">
               {companyDrivers.length > 0 ? (
                 companyDrivers.map((driver, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-800 hover:bg-gray-700"
+                    className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white0"
                   >
                     <td className="py-3 px-6">{driver.id}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>

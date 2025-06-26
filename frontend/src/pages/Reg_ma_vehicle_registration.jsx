@@ -174,8 +174,10 @@ const Reg_ma_vehicle_registration = () => {
                 <FileUploadField label="Insurance Document" name="insurance_document" file={formData.insurance_document} onChange={handleChange} />
                 <InputField label="Insurance Expiry Date" type="date" name="insurance_expiry_date" value={formData.insurance_expiry_date} onChange={handleChange} />
                 <InputField label="Service Date" type="date" name="service_date" value={formData.service_date} onChange={handleChange} />
-                <InputField label="RC Book Number" name="rc_book_number" value={formData.rc_book_number} onChange={handleChange} placeholder="Enter RC book number" />
+                <InputField label="RC Book Number" name="rc_book_number" value={formData.rc_book_number} onChange={handleChange} placeholder="Enter Chassis number" />
+                <InputField label="Chassis Number" name="chassis _number" value={formData.Chassis_Number} onChange={handleChange} placeholder="Enter RC book number" />
                 <FileUploadField label="RC Document" name="rc_document" file={formData.rc_document} onChange={handleChange} />
+
                 {/* Is Leased Checkbox */}
                 <div className="md:col-span-2 flex items-center mt-4 space-x-2">
                   <input

@@ -50,19 +50,19 @@ function Reg_ma_platform_list() {
       case 'km':
         return (
           <>
-            <span className="text-gray-400">KM Based: </span>
+            <span className="text-[#020202] ">KM Based: </span>
             <span className={commonClasses}>
               {company.rate_per_km ? `${parseFloat(company.rate_per_km).toFixed(2)}/km` : '-'}
             </span>
             {company.min_km && (
-              <span className="text-gray-400 ml-1"> (Min: <span className={commonClasses}>{parseFloat(company.min_km).toFixed(2)}km</span>)</span>
+              <span className="text-[#020202] ml-1"> (Min: <span className={commonClasses}>{parseFloat(company.min_km).toFixed(2)}km</span>)</span>
             )}
           </>
         );
       case 'order':
         return (
           <>
-            <span className="text-gray-400">Order Based: </span>
+            <span className="text-[#020202]">Order Based: </span>
             <span className={commonClasses}>
               {company.rate_per_order ? `${parseFloat(company.rate_per_order).toFixed(2)}/order` : '-'}
             </span>
@@ -71,33 +71,34 @@ function Reg_ma_platform_list() {
       case 'fixed':
         return (
           <>
-            <span className="text-gray-400">Fixed: </span>
+            <span className="text-[#020202]">Fixed: </span>
             <span className={commonClasses}>
               {company.fixed_commission ? `${parseFloat(company.fixed_commission).toFixed(2)}` : '-'}
             </span>
           </>
         );
       default:
-        return <span className="text-gray-500">N/A</span>; // Or a specific message for no commission type
+        return <span className="text-[#020202]">N/A</span>; // Or a specific message for no commission type
     }
   };
 
 
   return (
-    <div className="min-h-screen font-inter p-8 bg-black text-gray-200">
-      <div className="flex justify-end items-center mb-6">
-        <div className="flex items-center space-x-4">
-          <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm">
-            English <ChevronDown size={16} className="ml-1" />
-          </button>
-          <CircleUserRound size={24} className="text-green-400" />
-        </div>
-      </div>
-
-      <div className="text-sm mb-6 text-gray-400">Organization / Platform Registration List</div>
+    <div className="min-h-screen font-inter p-8 bg-white text-[#1E2022]">
+     {/* Header */}
+             <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+               <div className="text-sm text-[#52616B]">Organization / Platform Registration Management</div>
+               <div className="flex items-center space-x-4">
+                 <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                   English <ChevronDown size={16} className="ml-1" />
+                 </button>
+                 <CircleUserRound size={24} className="text-[#1E2022]" />
+               </div>
+             </header>
+     
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-white text-3xl font-semibold">Platform Registration List</h1>
+        <h1 className="text-[#52616B] text-3xl font-semibold">Platform Registration List</h1>
         <Link to="/company-registration">
           <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium">
             Add Platform
@@ -105,19 +106,29 @@ function Reg_ma_platform_list() {
         </Link>
       </div>
 
-      <div className="p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end bg-gray-900">
+      <div className="p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end bg-[#C9D6DF]">
         <div>
-          <label htmlFor="company_name" className="block text-sm mb-2 text-gray-400">Company Name</label>
+          <label htmlFor="company_name" className="block text-sm mb-2 text-[#353535">Company Name</label>
           <input
             type="text"
             id="company_name"
             value={filters.company_name}
             onChange={handleFilterChange}
             placeholder="Enter Company Name"
-            className="w-full border rounded-md py-2 px-3 bg-gray-800 border-gray-700 text-white"
+            className="w-full border rounded-md py-2 px-3 bg-[#D9D9D9] border-gray-700 text-[#353535"
           />
         </div>
-        {/* Removed GST Number filter input */}
+        {/* <div>
+          <label htmlFor="gst_number" className="block text-sm mb-2 ttext-[#353535">GST Number</label>
+          <input
+            type="text"
+            id="gst_number"
+            value={filters.gst_number}
+            onChange={handleFilterChange}
+            placeholder="Enter GST Number"
+            className="w-full border rounded-md py-2 px-3 bg-[#D9D9D9] border-gray-700 text-[#353535"
+          />
+        </div> */}
         <div className="flex space-x-2 col-span-full justify-end">
           <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md">Sorting</button>
           {/* Reset All now only affects company_name filter */}
@@ -125,13 +136,13 @@ function Reg_ma_platform_list() {
         </div>
       </div>
 
-      <div className="overflow-x-auto mb-4 bg-gray-900 rounded-lg">
+      <div className="overflow-x-auto mb-4 bg-[#C9D6DF] rounded-lg">
         {loading ? (
           <div className="text-center py-10">Loading...</div>
         ) : (
-          <table className="min-w-full">
+          <table className="min-w-full ">
             <thead>
-              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
+              <tr className="bg-[#284B63] text-white uppercase text-sm font-bold leading-normal">
                 <th className="py-3 px-6 text-left">Logo</th>
                 <th className="py-3 px-6 text-left">Company Name</th>
                 <th className="py-3 px-6 text-left">Registration Number</th>
@@ -140,9 +151,9 @@ function Reg_ma_platform_list() {
                 <th className="py-3 px-6 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="text-gray-400 text-sm font-light">
+            <tbody className="text-[#353535]  text-sm font-light">
               {currentRegistrations.map((reg, index) => (
-                <tr key={reg.id || index} className="border-b border-gray-800 hover:bg-gray-700"> {/* Use reg.id for key */}
+                <tr key={reg.id || index} className="border-b font-bold border-gray-800 hover:bg-white"> {/* Use reg.id for key */}
                   <td className="py-3 px-6">
                     {/* Assuming reg.logo will be a URL */}
                     <img src={reg.company_logo || 'https://placehold.co/40x40'} alt="Logo" className="w-10 h-10 rounded-full object-cover" />

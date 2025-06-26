@@ -259,51 +259,22 @@ function DriverProfileEditDelete() {
 
   // Function to handle downloading/viewing documents by opening URL
   const handleDownload = (docUrl) => {
-    if (docUrl) {
-      window.open(docUrl, '_blank');
-    } else {
-      alert('No document available.');
-    }
+    window.open(docUrl, '_blank');
   };
 
-  // Toggles to edit mode and prepares data
-  const handleEditClick = () => {
-    setIsEditing(true);
-    // When entering edit, clone the initial data to driverData
-    // This allows cancelling edits to revert to the original state
-    setDriverData({ ...initialDriverData });
+  const getFileName = (fileData) => {
+    if (!fileData) return 'No file';
+    if (fileData instanceof File) return fileData.name;
+    return fileData.split('/').pop();
   };
 
-  // Cancels edit mode and reverts data
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    // Revert driverData to the original fetched data
-    setDriverData({ ...initialDriverData });
-  };
-
-  // Helper to format date strings for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      // Assuming dateString might be like "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SSZ"
-      const date = new Date(dateString);
-      // Check for 'Invalid Date'
-      if (isNaN(date.getTime())) return dateString; // Return original if invalid
-      return date.toLocaleDateString(); // Formats to local date string (e.g., 6/26/2025)
-    } catch {
-      return dateString; // Fallback in case of parsing errors
-    }
-  };
-
-
-  // Loading and Error States
-  if (loading && !driverData) return <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">Loading driver profile...</div>;
-  if (error || !driverData) return <div className="min-h-screen bg-black text-red-400 p-8 flex items-center justify-center">{error || 'Driver not found.'}</div>;
+  if (loading) return <div className="min-h-screen bg-white text-[#284B63] p-8">Loading driver profile...</div>;
+  if (error || !driverData) return <div className="min-h-screen bg-black text-red-400 p-8">{error || 'Driver not found.'}</div>;
 
   return (
-    <div className="min-h-screen bg-black text-gray-200 font-inter p-8">
+    <div className="min-h-screen bg-white text-[#1E2022]font-inter p-8">
       <div className="flex justify-end mb-6">
-        <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm">
+        <button className="flex items-center px-3 py-1  bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm">
           English <ChevronDown size={16} className="ml-1" />
         </button>
         <CircleUserRound size={24} className="ml-4 text-green-400" />
