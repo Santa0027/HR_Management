@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+// import axios from 'axios'; // This import is no longer needed
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet'; // Import Leaflet for custom icon
+
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // ADJUST THIS PATH if your axiosConfig.js is elsewhere
 
 // --- SHADCN UI IMPORTS (UNCOMMENT IF YOU ARE USING SHADCN UI) ---
 // If you have Shadcn UI components properly set up and configured with your Vite project,
@@ -56,21 +59,7 @@ const SelectItem = ({ value, children, disabled = false }) => <option value={val
 // --- END PLACEHOLDER COMPONENTS ---
 
 
-// --- API Base URL ---
-const API_BASE_URL = 'http://localhost:8000/';
-
-// --- Axios Instance ---
-const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 5000, // Request timeout
-  headers: {
-    'Content-Type': 'application/json',
-    // You might add authorization headers here if needed, e.g.,
-    // 'Authorization': `Bearer ${localStorage.getItem('token')}`
-  }
-});
-
-// Custom marker icon (optional, but good for visibility)
+// --- Custom marker icon (optional, but good for visibility) ---
 const customIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -123,12 +112,9 @@ const LocationForm = ({
         longitude: initialLng.toString(),
         radius_meters: dataToLoad.radius_meters || '',
         alarm_radius_meters: dataToLoad.alarm_radius_meters || '',
-        // IMPORTANT: Prioritize dataToLoad.driver_id (flat field) then dataToLoad.driver?.id (nested object)
         driver_id: dataToLoad.driver_id || dataToLoad.driver?.id || '',
       });
       setErrors({});
-      // console.log("LocationForm opened. initialData:", initialData);
-      // console.log("Initial formData.driver_id:", dataToLoad.driver_id || dataToLoad.driver?.id);
     }
   }, [isOpen, initialData]);
 
@@ -146,7 +132,6 @@ const LocationForm = ({
   };
 
   const handleDriverChange = (value) => {
-    // console.log("Driver selected (value from Select):", value);
     setFormData((prev) => ({ ...prev, driver_id: value }));
   };
 
@@ -170,11 +155,9 @@ const LocationForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // console.log("Submitting form...");
-    // console.log("Current formData:", formData);
 
     if (!validateForm()) {
-      console.log("Form validation failed on frontend. Errors:", errors); // Log frontend errors
+      console.log("Form validation failed on frontend. Errors:", errors);
       return;
     }
 
@@ -190,7 +173,6 @@ const LocationForm = ({
       name: formData.name,
       latitude: parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
-      // IMPORTANT: Changed 'driver' to 'driver_id' based on backend error
       driver_id: parseInt(formData.driver_id),
     };
 
@@ -328,7 +310,6 @@ const CheckinLocationTable = () => {
     setLoadingDrivers(true);
     try {
       const res = await axiosInstance.get('Register/drivers/');
-      // console.log("Drivers fetched successfully from API:", res.data);
       setDrivers(res.data);
     } catch (err) {
       console.error('Error fetching drivers:', err);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
 
 function VehicleEdit() {
   const { id } = useParams();
@@ -16,20 +17,24 @@ function VehicleEdit() {
     service_date: '',
     rc_book_number: '',
     is_leased: false,
-    image: null,
-    insurance_document: null,
-    rc_document: null,
+    image: null, // Keep null for initial state to handle file inputs
+    insurance_document: null, // Keep null for initial state
+    rc_document: null, // Keep null for initial state
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`http://localhost:8000/vehicles/${id}/`)
+    // Use axiosInstance.get and provide only the endpoint path
+    axiosInstance.get(`vehicles/${id}/`)
       .then(res => {
         const data = res.data;
         setVehicle({
           ...data,
+          // Format dates for input[type="date"]
           insurance_expiry_date: data.insurance_expiry_date?.split('T')[0] || '',
           service_date: data.service_date?.split('T')[0] || '',
+          // Set file fields to null when fetching to avoid trying to pre-fill file input values
+          // If you need to display current file names, you'd store current URLs separately
           image: null,
           insurance_document: null,
           rc_document: null,
@@ -47,6 +52,7 @@ function VehicleEdit() {
     if (type === 'checkbox') {
       setVehicle(prev => ({ ...prev, [name]: checked }));
     } else if (type === 'file') {
+      // Store the File object when a file is selected
       setVehicle(prev => ({ ...prev, [name]: files[0] }));
     } else {
       setVehicle(prev => ({ ...prev, [name]: value }));
@@ -58,18 +64,29 @@ function VehicleEdit() {
 
     const formData = new FormData();
     for (let key in vehicle) {
-      if (vehicle[key] !== null) formData.append(key, vehicle[key]);
+      // Append only non-null values. For files, make sure to append the File object itself.
+      // If a file input was empty, its value in `vehicle` state might be `null`.
+      if (vehicle[key] !== null && vehicle[key] !== undefined) {
+          // If it's a file input, append the File object
+          if (vehicle[key] instanceof File) {
+              formData.append(key, vehicle[key], vehicle[key].name);
+          } else {
+              formData.append(key, vehicle[key]);
+          }
+      }
     }
 
     try {
-      await axios.put(`http://localhost:8000/vehicles/${id}/`, formData, {
+      // Use axiosInstance.put and provide only the endpoint path
+      await axiosInstance.put(`vehicles/${id}/`, formData, {
+        // multipart/form-data header is crucial for sending files
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       alert('Vehicle updated successfully!');
-      navigate(`/vehicles/${id}`);
+      navigate(`/vehicles/${id}`); // Navigate back to the profile view
     } catch (err) {
       console.error('Update failed:', err);
-      alert('Failed to update vehicles.');
+      alert('Failed to update vehicle.');
     }
   };
 
@@ -78,7 +95,7 @@ function VehicleEdit() {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="mb-6 flex justify-between items-center">
-        <Link to={`/vehicle-profile/${id}`} className="text-green-400 hover:text-green-300">
+        <Link to={`/vehicles/${id}`} className="text-green-400 hover:text-green-300">
           ← Back to Profile
         </Link>
         <h1 className="text-2xl font-bold">Edit Vehicle</h1>

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
 } from 'lucide-react';
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
 
 function Reg_ma_new_request() {
   const [activeTab, setActiveTab] = useState('New Request');
@@ -21,13 +23,20 @@ function Reg_ma_new_request() {
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        const response = await fetch('http://localhost:8000/Register/drivers/');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setDrivers(data);
+        // Use axiosInstance.get instead of fetch
+        // axiosInstance returns the response data directly in .data
+        const response = await axiosInstance.get('Register/drivers/'); // Removed 'http://localhost:8000/'
+        setDrivers(response.data); // Axios puts the response body directly in .data
       } catch (err) {
         console.error("Failed to fetch drivers:", err);
-        setError("Unable to load drivers.");
+        // Axios errors have a 'response' property for server errors
+        if (err.response) {
+            setError(`Error: ${err.response.status} - ${err.response.statusText}`);
+        } else if (err.request) {
+            setError("Network Error: No response received.");
+        } else {
+            setError("An unexpected error occurred.");
+        }
       } finally {
         setLoading(false);
       }
@@ -38,7 +47,7 @@ function Reg_ma_new_request() {
   // Filtered drivers based on selected filters
   const filteredDrivers = drivers.filter(driver => {
     return (
-      (filterVehicleType === '' || driver.vehicle_type === filterVehicleType) &&
+      (filterVehicleType === '' || (driver.vehicle && driver.vehicle.vehicle_type === filterVehicleType)) && // Check if driver.vehicle exists
       (filterRequestStatus === '' || driver.status === filterRequestStatus) &&
       (filterRequestId === '' || String(driver.id).includes(filterRequestId)) &&
       (filterCity === '' || driver.city === filterCity) &&
@@ -56,7 +65,13 @@ function Reg_ma_new_request() {
   };
 
   // Extract unique options for dropdowns
-  const getUniqueOptions = (key) => [...new Set(drivers.map(driver => driver[key]).filter(Boolean))];
+  // Adjusted to correctly get vehicle_type if `driver.vehicle` is an object
+  const getUniqueOptions = (key) => {
+    if (key === 'vehicle_type') { // Specific handling for vehicle type
+      return [...new Set(drivers.map(driver => driver.vehicle?.vehicle_type).filter(Boolean))];
+    }
+    return [...new Set(drivers.map(driver => driver[key]).filter(Boolean))];
+  };
 
   return (
     <div className="min-h-screen bg-black text-gray-200 font-inter">
@@ -106,9 +121,10 @@ function Reg_ma_new_request() {
               onChange={e => setFilterVehicleType(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
             >
-              {getUniqueOptions("vehicle").map(vehicle => (
-                <option key={vehicle.id} value={vehicle.vehicle_type}>
-                  {vehicle.vehicle_type}
+              <option value="">All Vehicle Types</option> {/* Added default option */}
+              {getUniqueOptions("vehicle_type").map(type => ( // Changed key to "vehicle_type"
+                <option key={type} value={type}>
+                  {type}
                 </option>
               ))}
             </select>
@@ -241,5 +257,3 @@ function Reg_ma_new_request() {
 }
 
 export default Reg_ma_new_request;
-
-

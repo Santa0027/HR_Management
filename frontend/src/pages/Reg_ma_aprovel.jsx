@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import {
   ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
 } from 'lucide-react';
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
 
 function Reg_ma_new_approval() {
-  const [activeTab, setActiveTab] = useState('New Request');
+  const [activeTab, setActiveTab] = useState('New Request'); // This seems to be the default for the component, adjust if needed
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,13 +22,20 @@ function Reg_ma_new_approval() {
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        const res = await fetch('http://localhost:8000/Register/drivers/');
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
-        setDrivers(data);
+        // Use axiosInstance.get instead of fetch
+        // axiosInstance returns the response data directly in .data
+        const response = await axiosInstance.get('Register/drivers/'); // Removed 'http://localhost:8000/'
+        setDrivers(response.data); // Axios puts the response body directly in .data
       } catch (err) {
         console.error("Failed to fetch drivers:", err);
-        setError("Unable to load drivers.");
+        // Axios errors have a 'response' property for server errors
+        if (err.response) {
+            setError(`Error: ${err.response.status} - ${err.response.statusText}`);
+        } else if (err.request) {
+            setError("Network Error: No response received.");
+        } else {
+            setError("An unexpected error occurred.");
+        }
       } finally {
         setLoading(false);
       }
@@ -57,10 +66,10 @@ function Reg_ma_new_approval() {
   const getUniqueOptions = (key) => {
     return [...new Set(drivers
       .map(driver => {
-        if (key === 'vehicle') return driver.vehicle?.vehicle_type;
+        if (key === 'vehicle') return driver.vehicle?.vehicle_type; // Correctly access nested vehicle_type
         return driver[key];
       })
-      .filter(Boolean)
+      .filter(Boolean) // Filter out null/undefined values
     )];
   };
 
@@ -113,7 +122,7 @@ function Reg_ma_new_approval() {
               onChange={e => setFilterVehicleType(e.target.value)}
               className="w-full bg-gray-800 border border-gray-700 rounded-md py-2 px-3 text-white"
             >
-              <option value="">Select Vehicle Type</option>
+              <option value="">Select Vehicle Type</option> {/* Added a default option */}
               {getUniqueOptions('vehicle').map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
@@ -221,6 +230,7 @@ function Reg_ma_new_approval() {
                     <td className="py-3 px-6">{driver.city}</td>
                     <td className="py-3 px-6">{driver.status}</td>
                     <td className="py-3 px-6 text-center">
+                      {/* Assuming this link leads to an approval/detail page for the driver */}
                       <Link to={`/registration-management/aproval_status/driver/${driver.id}`}>
                         <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">
                           Approve
@@ -248,3 +258,80 @@ function Reg_ma_new_approval() {
 }
 
 export default Reg_ma_new_approval;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // // src/pages/LoginPage.jsx
+  // import React, { useState } from 'react';
+  // import { useNavigate } from 'react-router-dom';
+  // import { loginUser } from '../services/authService'; // Not default import
+
+  // const LoginPage = () => {
+  //   const [credentials, setCredentials] = useState({ email: '', password: '' });
+  //   const [error, setError] = useState('');
+  //   const navigate = useNavigate();
+
+  //   const handleChange = (e) => {
+  //     setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  //   };
+
+  //   const handleSubmit = async (e) => {
+  //     e.preventDefault();
+  //     setError('');
+  //     try {
+  //       const res = await loginUser(credentials);
+
+  //       console.log('Login success:', res);
+
+  //       if (res?.access) {
+  //         localStorage.setItem('accessToken', res.access); // ✅ Correct key
+  //         localStorage.setItem('refreshToken', res.refresh);
+  //         console.log('Navigating to dashboard...');
+  //         navigate('/dashboard');
+  //       } else {
+  //         setError('Unexpected response from server.');
+  //       }
+  //     } catch (err) {
+  //       console.error('Login error:', err);
+  //       setError('Invalid credentials. Please try again.');
+  //     }
+  //   };
+
+  //   return (
+  //     <div style={{ padding: '2rem' }}>
+  //       <h2>Login</h2>
+  //       <form onSubmit={handleSubmit}>
+  //         <div>
+  //           <label>Email:</label><br />
+  //           <input type="email" name="email" value={credentials.email} onChange={handleChange} required />
+  //         </div>
+  //         <div style={{ marginTop: '1rem' }}>
+  //           <label>Password:</label><br />
+  //           <input type="password" name="password" value={credentials.password} onChange={handleChange} required />
+  //         </div>
+  //         {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+  //         <button type="submit" style={{ marginTop: '1rem' }}>Login</button>
+  //       </form>
+  //     </div>
+  //   );
+  // };
+
+  // export default LoginPage;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+// Import your configured axiosInstance
+import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
 import { ChevronLeft, Edit, Trash2 } from 'lucide-react';
 
 function VehicleProfile() {
@@ -10,7 +11,8 @@ function VehicleProfile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`http://localhost:8000/vehicles/${id}/`)
+    // Use axiosInstance.get and provide only the endpoint path
+    axiosInstance.get(`vehicles/${id}/`)
       .then(res => {
         setVehicle(res.data);
         setLoading(false);
@@ -26,7 +28,8 @@ function VehicleProfile() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:8000/vehicles/${id}/`);
+      // Use axiosInstance.delete and provide only the endpoint path
+      await axiosInstance.delete(`vehicles/${id}/`);
       alert('Vehicle deleted successfully!');
       navigate('/vehicle-list');
     } catch (error) {
@@ -88,7 +91,12 @@ function VehicleProfile() {
         <Detail label="Service Date" value={formatDate(vehicle.service_date)} />
         <Detail label="RC Book Number" value={vehicle.rc_book_number || '—'} />
         <Detail label="Is Leased" value={vehicle.is_leased ? 'Yes' : 'No'} />
-        <Detail label="Created By" value={vehicle.created_by?.username || '—'} />
+        {/*
+          IMPORTANT: This line might cause 'username' error if 'created_by' is null
+          or if 'created_by' (your CustomUser) doesn't have a 'username' field.
+          Replace '.username' with the correct field, e.g., '.email' or '.name'.
+        */}
+        <Detail label="Created By" value={vehicle.created_by?.email || vehicle.created_by?.name || '—'} />
         <Detail label="Created At" value={formatDate(vehicle.created_at)} />
       </div>
 
