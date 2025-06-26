@@ -88,7 +88,6 @@ function VehicleProfile() {
         <Detail label="Service Date" value={formatDate(vehicle.service_date)} />
         <Detail label="RC Book Number" value={vehicle.rc_book_number || '—'} />
         <Detail label="Is Leased" value={vehicle.is_leased ? 'Yes' : 'No'} />
-        <Detail label="Created By" value={vehicle.created_by?.username || '—'} />
         <Detail label="Created At" value={formatDate(vehicle.created_at)} />
       </div>
 

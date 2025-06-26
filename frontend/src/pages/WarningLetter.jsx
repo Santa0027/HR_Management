@@ -3,6 +3,9 @@ import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from '../components/Model';
+import {
+  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+} from 'lucide-react';
 
 export default function WarningLetters() {
   const [letters, setLetters] = useState([]);
@@ -145,11 +148,23 @@ export default function WarningLetters() {
   const totalPages = Math.ceil(filteredLetters.length / itemsPerPage);
 
   return (
-    <div className="p-6 bg-black text-white min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Warning Letters</h1>
+    <div className="p-6 bg-white text-[#1E2022] min-h-screen">
+      
+
+{/* Header */}
+        <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+          <div className="text-sm text-[#52616B]">Organization / Warning Letters</div>
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+              English <ChevronDown size={16} className="ml-1" />
+            </button>
+            <CircleUserRound size={24} className="text-[#1E2022]" />
+          </div>
+        </header>
+        <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl text-[#187795] font-bold">Warning Letters</h1>
         <button
-          className="bg-green-700 px-4 py-2 rounded"
+          className="bg-green-700 text-white px-4 py-2 rounded"
           onClick={() => {
             resetForm();
             setIsModalOpen(true);
@@ -161,7 +176,7 @@ export default function WarningLetters() {
 
       <input
         type="text"
-        className="w-full p-2 mb-4 bg-gray-800 border border-gray-600"
+        className="w-full p-2 mb-4 bg-[#D9D9D9] text-[#353535] border border-gray-600"
         placeholder="Search by driver name"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -169,7 +184,7 @@ export default function WarningLetters() {
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-900">
+          <thead className="bg-[#284B63] text-white">
             <tr>
               <th className="p-3">Driver</th>
               <th className="p-3">Date</th>
@@ -181,7 +196,7 @@ export default function WarningLetters() {
           </thead>
           <tbody>
             {paginated.map((letter) => (
-              <tr key={letter.id} className="border-t border-gray-700">
+              <tr key={letter.id} className="border-t bg-[#C9D6DF] text-[#353535] border-gray-700">
                 <td className="p-3">{letter.driver_name}</td>
                 <td className="p-3">{letter.issued_date}</td>
                 <td className="p-3">{letter.reason.replace(/_/g, ' ')}</td>

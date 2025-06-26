@@ -89,13 +89,13 @@ function DriverProfileEditDelete() {
     return fileData.split('/').pop();
   };
 
-  if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading driver profile...</div>;
+  if (loading) return <div className="min-h-screen bg-white text-[#284B63] p-8">Loading driver profile...</div>;
   if (error || !driverData) return <div className="min-h-screen bg-black text-red-400 p-8">{error || 'Driver not found.'}</div>;
 
   return (
-    <div className="min-h-screen bg-black text-gray-200 font-inter p-8">
+    <div className="min-h-screen bg-white text-[#1E2022]font-inter p-8">
       <div className="flex justify-end mb-6">
-        <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm">
+        <button className="flex items-center px-3 py-1  bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm">
           English <ChevronDown size={16} className="ml-1" />
         </button>
         <CircleUserRound size={24} className="ml-4 text-green-400" />

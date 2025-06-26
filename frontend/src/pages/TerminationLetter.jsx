@@ -4,6 +4,10 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from '../components/Model';
 import DownloadTerminationLetter from './DownloadTerminationLetter';
+import {
+  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+} from 'lucide-react';
+
 
 export default function Terminations() {
   const [terminations, setTerminations] = useState([]);
@@ -146,9 +150,20 @@ export default function Terminations() {
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-white text-[#1E2022] p-6">
+{/* Header */}
+    <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+          <div className="text-sm text-[#52616B]">Organization / Registration Management</div>
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+              English <ChevronDown size={16} className="ml-1" />
+            </button>
+            <CircleUserRound size={24} className="text-[#1E2022]" />
+          </div>
+      </header>
+      
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Termination Management</h1>
+        <h1 className="text-2xl text-[#187795] font-bold">Termination Management</h1>
         <button
           className="bg-red-700 px-4 py-2 rounded"
           onClick={() => { resetForm(); setIsModalOpen(true); }}
@@ -159,7 +174,7 @@ export default function Terminations() {
 
       <input
         type="text"
-        className="w-full p-2 mb-4 bg-gray-800 rounded border border-gray-600"
+        className="w-full p-2 mb-4 bg-[#D9D9D9] text-[#353535] rounded border border-gray-600"
         placeholder="Search by driver"
         value={search}
         onChange={e => setSearch(e.target.value)}
@@ -167,7 +182,7 @@ export default function Terminations() {
 
       <div className="overflow-x-auto rounded border border-gray-700">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-900 text-left text-gray-400">
+          <thead className="bg-[#284B63] text-white text-left">
             <tr>
               <th className="p-2">Driver</th>
               <th className="p-2">Date</th>
@@ -178,7 +193,7 @@ export default function Terminations() {
           </thead>
           <tbody className="text-gray-200">
             {paginated.length > 0 ? paginated.map(item => (
-              <tr key={item.id} className="border-t border-gray-700 hover:bg-gray-800">
+              <tr key={item.id} className="border-t border-gray-700 bg-[#C9D6DF] text-[#353535] hover:bg-white">
                 <td className="p-2">{item.driver_name}</td>
                 <td className="p-2">{item.termination_date}</td>
                 <td className="p-2">{item.reason.replace(/_/g, ' ')}</td>
@@ -188,8 +203,8 @@ export default function Terminations() {
 
                 </td>
                 <td className="p-2 space-x-2">
-                  <button onClick={() => handleEdit(item)} className="text-blue-400">Edit</button>
-                  <button onClick={() => handleDelete(item.id)} className="text-red-400">Delete</button>
+                  <button onClick={() => handleEdit(item)} className="text-blue-700">Edit</button>
+                  <button onClick={() => handleDelete(item.id)} className="text-red-700">Delete</button>
                 </td>
               </tr>
             )) : (

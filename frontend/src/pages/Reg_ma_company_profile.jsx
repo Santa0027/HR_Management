@@ -50,25 +50,22 @@ function CompanyProfile() {
   if (!companyData) return <div className="text-red-500 p-8">Company not found.</div>;
 
   return (
-    <div className="min-h-screen font-inter p-8 bg-black text-gray-200">
+    <div className="min-h-screen font-inter p-8 bg-white text-[#1E2022]">
       <div className="flex flex-col">
-        {/* Topbar */}
-        <div className="flex justify-end items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm">
-              English <ChevronDown size={16} className="ml-1" />
-            </button>
-            <CircleUserRound size={24} className="text-green-400" />
-          </div>
-        </div>
-
-        <div className="text-sm mb-6 text-gray-400">
-          Organization / Platform Registration List / Company Profile
-        </div>
+       {/* Header */}
+               <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+                 <div className="text-sm text-[#52616B]">Organization / Platform Registration List / Company Profile</div>
+                 <div className="flex items-center space-x-4">
+                   <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                     English <ChevronDown size={16} className="ml-1" />
+                   </button>
+                   <CircleUserRound size={24} className="text-[#1E2022]" />
+                 </div>
+               </header>
 
         {/* Heading and Buttons */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-white text-3xl font-semibold">Company Profile</h1>
+          <h1 className="text-[#187795] text-3xl font-semibold">Company Profile</h1>
           <div className="flex gap-2">
             <Link to={`/company/${companyData.id}/edit`} >
             <button
@@ -88,7 +85,7 @@ function CompanyProfile() {
         </div>
 
         {/* Company Details */}
-        <div className="bg-gray-900 p-6 rounded-lg mb-8 flex items-center">
+        <div className="bg-[#C9D6DF] p-6 rounded-lg mb-8 flex items-center">
           <img
             src={companyData.logo || 'https://placehold.co/80x80/535c9b/ffffff?text=Logo'}
             alt="Company Logo"
@@ -99,51 +96,51 @@ function CompanyProfile() {
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-400">
   <div>
-    <span className="font-semibold text-gray-300">Registration Number:</span>{' '}
+    <span className="font-semibold text-[#353535]">Registration Number:</span>{' '}
     {companyData.registration_number}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">GST Number:</span>{' '}
+    <span className="font-semibold text-[#353535]">GST Number:</span>{' '}
     {companyData.gst_number || 'N/A'}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Address:</span>{' '}
+    <span className="font-semibold text-[#353535]">Address:</span>{' '}
     {companyData.address}, {companyData.city}, {companyData.country}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Contact Person:</span>{' '}
+    <span className="font-semibold text-[#353535]">Contact Person:</span>{' '}
     {companyData.contact_person}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Email:</span>{' '}
+    <span className="font-semibold text-[#353535]">Email:</span>{' '}
     {companyData.contact_email}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Phone:</span>{' '}
+    <span className="font-semibold text-[#353535]">Phone:</span>{' '}
     {companyData.contact_phone}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Bank:</span>{' '}
+    <span className="font-semibold text-[#353535]">Bank:</span>{' '}
     {companyData.bank_name}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Account Number:</span>{' '}
+    <span className="font-semibold text-[#353535]">Account Number:</span>{' '}
     {companyData.account_number}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">IFSC Code:</span>{' '}
+    <span className="font-semibold text-[#353535]">IFSC Code:</span>{' '}
     {companyData.ifsc_code}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">SWIFT Code:</span>{' '}
+    <span className="font-semibold text-[#353535]">SWIFT Code:</span>{' '}
     {companyData.swift_code || 'N/A'}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">IBAN Code:</span>{' '}
+    <span className="font-semibold text-[#353535]">IBAN Code:</span>{' '}
     {companyData.iban_code || 'N/A'}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Commission Type:</span>{' '}
+    <span className="font-semibold text-[#353535]">Commission Type:</span>{' '}
     {companyData.commission_type}
   </div>
 
@@ -151,34 +148,34 @@ function CompanyProfile() {
   {companyData.commission_type === 'km' && (
     <>
       <div>
-        <span className="font-semibold text-gray-300">Rate per KM:</span>{' '}
+        <span className="font-semibold text-[#353535]">Rate per KM:</span>{' '}
         ₹{companyData.rate_per_km}
       </div>
       <div>
-        <span className="font-semibold text-gray-300">Min KM:</span>{' '}
+        <span className="font-semibold text-[#353535]">Min KM:</span>{' '}
         {companyData.min_km}
       </div>
     </>
   )}
   {companyData.commission_type === 'order' && (
     <div>
-      <span className="font-semibold text-gray-300">Rate per Order:</span>{' '}
+      <span className="font-semibold text-[#353535]">Rate per Order:</span>{' '}
       ₹{companyData.rate_per_order}
     </div>
   )}
   {companyData.commission_type === 'fixed' && (
     <div>
-      <span className="font-semibold text-gray-300">Fixed Commission:</span>{' '}
+      <span className="font-semibold text-[#353535]">Fixed Commission:</span>{' '}
       ₹{companyData.fixed_commission}
     </div>
   )}
 
   <div>
-    <span className="font-semibold text-gray-300">Total Drivers:</span>{' '}
+    <span className="font-semibold text-[#353535]">Total Drivers:</span>{' '}
     {companyDrivers.length}
   </div>
   <div>
-    <span className="font-semibold text-gray-300">Created At:</span>{' '}
+    <span className="font-semibold text-[#353535]">Created At:</span>{' '}
     {new Date(companyData.created_at).toLocaleString()}
   </div>
 </div>
@@ -186,13 +183,13 @@ function CompanyProfile() {
         </div>
 
         {/* Drivers List */}
-        <h2 className="text-2xl font-semibold text-white mb-4">
+        <h2 className="text-2xl font-semibold text-[#353535] mb-4">
           Drivers Allotted ({companyDrivers.length})
         </h2>
         <div className="overflow-x-auto mb-4 bg-gray-900 rounded-lg">
           <table className="min-w-full">
             <thead>
-              <tr className="bg-gray-800 text-gray-300 uppercase text-sm leading-normal">
+              <tr className="bg-[#284B63] text-white uppercase text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Driver ID</th>
                 <th className="py-3 px-6 text-left">Driver Name</th>
                 <th className="py-3 px-6 text-left">Mobile Number</th>
@@ -201,12 +198,12 @@ function CompanyProfile() {
                 <th className="py-3 px-6 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="text-gray-400 text-sm font-light">
+            <tbody className="bg-[#C9D6DF] text-sm font-light">
               {companyDrivers.length > 0 ? (
                 companyDrivers.map((driver, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-800 hover:bg-gray-700"
+                    className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white0"
                   >
                     <td className="py-3 px-6">{driver.id}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
