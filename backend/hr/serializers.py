@@ -13,6 +13,8 @@ from vehicle.models import VehicleRegistration
 User = get_user_model()
 
 
+
+
 # -----------------------------
 # Company Serializer (No changes needed)
 # -----------------------------
@@ -107,32 +109,32 @@ class ApartmentLocationSerializer(serializers.ModelSerializer):
         model = ApartmentLocation
         fields = "__all__" # <--- This is interacting with the above.
 
-    # def create(self, validated_data):
-    #     driver_id = validated_data.pop('driver_id') # Correctly pops the ID
-    #     try:
-    #         driver_instance = Driver.objects.get(id=driver_id) # Correctly gets the Driver instance
-    #     except Driver.DoesNotExist:
-    #         raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    def create(self, validated_data):
+        driver_id = validated_data.pop('driver_id') # Correctly pops the ID
+        try:
+            driver_instance = Driver.objects.get(id=driver_id) # Correctly gets the Driver instance
+        except Driver.DoesNotExist:
+            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
         
-    #     # This line remains correct as your model field is named 'driver'
-    #     apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
-    #     return apartment_location
+        # This line remains correct as your model field is named 'driver'
+        apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
+        return apartment_location
 
-    # def update(self, instance, validated_data):
-    #     driver_id = validated_data.pop('driver_id', None)
+    def update(self, instance, validated_data):
+        driver_id = validated_data.pop('driver_id', None)
         
-    #     if driver_id is not None:
-    #         try:
-    #             # This line remains correct as your model field is named 'driver'
-    #             instance.driver = Driver.objects.get(id=driver_id)
-    #         except Driver.DoesNotExist:
-    #             raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+        if driver_id is not None:
+            try:
+                # This line remains correct as your model field is named 'driver'
+                instance.driver = Driver.objects.get(id=driver_id)
+            except Driver.DoesNotExist:
+                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
 
-    #     for attr, value in validated_data.items():
-    #         setattr(instance, attr, value)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         
-    #     instance.save()
-    #     return instance
+        instance.save()
+        return instance
 
 
 # -----------------------------
@@ -172,6 +174,19 @@ class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+from rest_framework import serializers
+from .models import WarningLetter, Termination # Assuming these are in the same models.py
+from drivers.models import Driver # Make sure Driver is imported if not using string literal
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+# Assuming DriverSerializer is defined or imported here
+# from .your_app_name.serializers import DriverSerializer # If in a different file
+class DriverSerializer(serializers.ModelSerializer): # Placeholder if not defined elsewhere
+    class Meta:
+        model = Driver
+        fields = ['id', 'driver_name']
+
 class WarningLetterSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -187,17 +202,20 @@ class WarningLetterSerializer(serializers.ModelSerializer):
         allow_null=True
     )
     driver_name = serializers.SerializerMethodField()
+    generated_letter = serializers.FileField(read_only=True) # <<< ADD THIS LINE FOR CLARITY
 
     class Meta:
         model = WarningLetter
-        fields = '__all__'
+        fields = '__all__' # This will now include 'generated_letter' and it's explicitly defined above
 
     def get_issued_by(self, obj):
         try:
             from usermanagement.serializers import CustomUserSerializer
             return CustomUserSerializer(obj.issued_by).data if obj.issued_by else None
         except ImportError:
-            return None
+            # Fallback if CustomUserSerializer cannot be imported (e.g., during testing or if app not installed)
+            return {'id': obj.issued_by.id, 'user': obj.issued_by.user} if obj.issued_by else None
+
 
     def get_driver_name(self, obj):
         return obj.driver.driver_name if obj.driver else ''
@@ -228,4 +246,5 @@ class TerminationSerializer(serializers.ModelSerializer):
             from usermanagement.serializers import CustomUserSerializer
             return CustomUserSerializer(obj.processed_by).data if obj.processed_by else None
         except ImportError:
-            return None
+            # Fallback if CustomUserSerializer cannot be imported
+            return {'id': obj.processed_by.id, 'username': obj.processed_by.username} if obj.processed_by else None

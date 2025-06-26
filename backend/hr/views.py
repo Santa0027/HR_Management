@@ -239,11 +239,76 @@ class MonthlyAttendanceSummaryViewSet(viewsets.ModelViewSet): # Changed to Model
 
 
 
+
 class WarningLetterViewSet(viewsets.ModelViewSet):
     queryset = WarningLetter.objects.all()
     serializer_class = WarningLetterSerializer
-    permission_classes = [AllowAny]  
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] # Adjust permissions as needed
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self.generate_letter(instance)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        self.generate_letter(instance)
+
+    def generate_letter(self, instance):
+        # Ensure driver is loaded for the template
+        if not hasattr(instance, 'driver') or not instance.driver_id:
+            instance.driver = Driver.objects.get(id=instance.driver_id)
+
+        formatted_reason = instance.reason.replace('_', ' ').title()
+
+        issued_by_username = (
+            instance.issued_by.get_full_name()
+            if hasattr(instance.issued_by, 'get_full_name') and instance.issued_by.get_full_name()
+            else getattr(instance.issued_by, 'email', 'HR Department')
+        )
+
+        html_string = render_to_string('warning_letter_template.html', {
+            'letter': instance,
+            'driver_name': instance.driver.driver_name,
+            'issued_by_username': issued_by_username,
+            'company_name': 'Your Company Name',
+            'current_date': timezone.now().strftime("%Y-%m-%d"),
+            'formatted_reason': formatted_reason,
+        })
+
+        pdf_file = HTML(string=html_string, base_url=settings.BASE_DIR).write_pdf()
+
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'warning_letters_generated')
+        os.makedirs(upload_dir, exist_ok=True)
+
+        file_name = f"warning_letter_{instance.driver.driver_name.replace(' ', '_')}_{instance.id}.pdf"
+        instance.generated_letter.save(file_name, ContentFile(pdf_file), save=True)
+    @action(detail=True, methods=['get'], url_path='generate_pdf')
+    def generate_pdf_action(self, request, pk=None):
+        """
+        Generates and returns the warning letter PDF for a specific WarningLetter instance.
+        If the letter is already generated and saved, it returns the existing file.
+        Otherwise, it generates it and then returns it.
+        """
+        try:
+            warning_letter = self.get_object()
+        except Http404:
+            return Response({"detail": "Warning letter record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the generated_letter already exists and the file is on disk
+        if warning_letter.generated_letter and os.path.exists(warning_letter.generated_letter.path):
+            file_path = warning_letter.generated_letter.path
+        else:
+            # If not generated or file is missing, generate it now
+            self.generate_letter(warning_letter) # This will save it to the instance
+            warning_letter.refresh_from_db() # Refresh instance to get the new generated_letter path
+            file_path = warning_letter.generated_letter.path # Get the path after saving
+
+        if not os.path.exists(file_path):
+            return Response({"detail": "Generated letter file not found on server after generation attempt."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        response = FileResponse(open(file_path, 'rb'), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+        return response
 
 
 

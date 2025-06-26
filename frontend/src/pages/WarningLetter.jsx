@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axiosInstance from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance'; // Adjust path if necessary
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Modal from '../components/Model';
+import Modal from '../components/Model'; // Adjust path if necessary
+import DownloadWarningLetter from './DownloadWarningLetter'; // <<< IMPORT NEW COMPONENT
 
 export default function WarningLetters() {
   const [letters, setLetters] = useState([]);
@@ -15,7 +16,7 @@ export default function WarningLetters() {
     reason: '',
     description: '',
     status: 'active',
-    document: null,
+    document: null, // For manual upload, distinct from generated_letter
   });
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,8 +40,19 @@ export default function WarningLetters() {
   const fetchLetters = async () => {
     try {
       const res = await axiosInstance.get('/warningletter/');
-      setLetters(Array.isArray(res.data) ? res.data : []);
+      // Assuming API might return an object with a 'results' array or just an array
+      const data = Array.isArray(res.data.results) ? res.data.results : res.data;
+      // Map data to include driver_name and issued_by_id for consistent display/editing
+      const formattedData = data.map(item => ({
+        ...item,
+        driver_name: item.driver?.driver_name || 'N/A', // Assuming driver is an object
+        driver_id: item.driver?.id || null, // Capture driver ID for editing form
+        issued_by_name: item.issued_by?.username || 'N/A', // Assuming issued_by is an object
+        issued_by_id: item.issued_by?.id || null, // Capture issued_by ID for editing form
+      }));
+      setLetters(formattedData);
     } catch (error) {
+      console.error('Failed to fetch warning letters:', error);
       toast.error('Failed to fetch warning letters');
     }
   };
@@ -48,8 +60,9 @@ export default function WarningLetters() {
   const fetchDrivers = async () => {
     try {
       const res = await axiosInstance.get('/Register/drivers/');
-      setDrivers(Array.isArray(res.data) ? res.data : []);
+      setDrivers(Array.isArray(res.data) ? res.data : res.data.results || []);
     } catch (error) {
+      console.error('Failed to fetch drivers:', error);
       toast.error('Failed to fetch drivers');
     }
   };
@@ -58,8 +71,9 @@ export default function WarningLetters() {
     const { name, value, files } = e.target;
     if (name === 'document') {
       const file = files[0];
-      if (file && file.type !== 'application/pdf') {
+      if (file && file.type !== 'application/pdf' && file.type !== '') { // Allow empty string for no selection
         toast.error('Only PDF files are allowed');
+        setForm({ ...form, document: null }); // Clear selection if invalid
         return;
       }
       setForm({ ...form, document: file });
@@ -75,13 +89,21 @@ export default function WarningLetters() {
     }
 
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== null) formData.append(key, value);
-    });
+    // Use driver_id and issued_by_id as required by backend
+    formData.append('driver_id', form.driver_id);
+    formData.append('issued_date', form.issued_date);
+    formData.append('reason', form.reason);
+    formData.append('description', form.description || '');
+    formData.append('status', form.status);
+    formData.append('issued_by_id', form.issued_by_id); // Ensure this is appended correctly
+
+    if (form.document) {
+      formData.append('document', form.document);
+    }
 
     try {
       if (editingId) {
-        await axiosInstance.put(`/warningletter/${editingId}/`, formData);
+        await axiosInstance.patch(`/warningletter/${editingId}/`, formData); // Use patch for partial updates
         toast.success('Warning letter updated');
       } else {
         await axiosInstance.post('/warningletter/', formData);
@@ -91,7 +113,16 @@ export default function WarningLetters() {
       fetchLetters();
       setIsModalOpen(false);
     } catch (error) {
-      toast.error('Submission failed');
+      console.error('Submission failed:', error.response?.data || error.message);
+      let errorMessage = 'Submission failed.';
+      if (error.response && error.response.data) {
+          try {
+              errorMessage += ' Details: ' + JSON.stringify(error.response.data);
+          } catch (e) {
+              errorMessage += ' Details: ' + (error.response.data.detail || error.response.data.message || 'Unknown error from server.');
+          }
+      }
+      toast.error(errorMessage);
     }
   };
 
@@ -110,13 +141,13 @@ export default function WarningLetters() {
 
   const handleEdit = (letter) => {
     setForm({
-      driver_id: letter.driver, // assuming `letter.driver` contains ID
-      issued_by_id: 1,
+      driver_id: letter.driver_id, // Use driver_id from formatted data
+      issued_by_id: letter.issued_by_id || 1, // Use issued_by_id from formatted data, fallback to 1
       issued_date: letter.issued_date,
       reason: letter.reason,
-      description: letter.description,
+      description: letter.description || '',
       status: letter.status,
-      document: null,
+      document: null, // Documents are usually not pre-filled for security/size reasons
     });
     setEditingId(letter.id);
     setIsModalOpen(true);
@@ -129,12 +160,14 @@ export default function WarningLetters() {
       toast.success('Deleted successfully');
       fetchLetters();
     } catch (error) {
+      console.error('Delete failed:', error);
       toast.error('Delete failed');
     }
   };
 
   const filteredLetters = letters.filter((l) =>
-    l.driver_name?.toLowerCase().includes(search.toLowerCase())
+    l.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
+    l.reason?.toLowerCase().includes(search.toLowerCase())
   );
 
   const paginated = filteredLetters.slice(
@@ -149,7 +182,7 @@ export default function WarningLetters() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Warning Letters</h1>
         <button
-          className="bg-green-700 px-4 py-2 rounded"
+          className="bg-green-700 px-4 py-2 rounded hover:bg-green-600 transition-colors duration-200"
           onClick={() => {
             resetForm();
             setIsModalOpen(true);
@@ -161,40 +194,44 @@ export default function WarningLetters() {
 
       <input
         type="text"
-        className="w-full p-2 mb-4 bg-gray-800 border border-gray-600"
-        placeholder="Search by driver name"
+        className="w-full p-2 mb-4 bg-gray-800 border border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        placeholder="Search by driver name or reason"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-900">
+      <div className="overflow-x-auto rounded border border-gray-700">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-900 text-gray-400">
             <tr>
               <th className="p-3">Driver</th>
               <th className="p-3">Date</th>
               <th className="p-3">Reason</th>
               <th className="p-3">Status</th>
-              {/* <th className="p-3">Document</th> */}
+              <th className="p-3">Generated Letter</th> {/* New column for PDF */}
+              {/* <th className="p-3">Uploaded Document</th> */} {/* Optional: if you want to show manual upload */}
               <th className="p-3">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {paginated.map((letter) => (
-              <tr key={letter.id} className="border-t border-gray-700">
+          <tbody className="text-gray-200 divide-y divide-gray-800">
+            {paginated.length > 0 ? paginated.map((letter) => (
+              <tr key={letter.id} className="hover:bg-gray-800 transition-colors duration-150">
                 <td className="p-3">{letter.driver_name}</td>
                 <td className="p-3">{letter.issued_date}</td>
                 <td className="p-3">{letter.reason.replace(/_/g, ' ')}</td>
                 <td className="p-3">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs ${
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       letter.status === 'active'
-                        ? 'bg-green-600'
-                        : 'bg-red-600'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-red-600 text-white'
                     }`}
                   >
                     {letter.status}
                   </span>
+                </td>
+                <td className="p-3">
+                  {letter.id && <DownloadWarningLetter letterId={letter.id} />} {/* <<< INTEGRATE NEW COMPONENT */}
                 </td>
                 {/* <td className="p-3">
                   {letter.document && (
@@ -202,28 +239,30 @@ export default function WarningLetters() {
                       href={letter.document}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 underline"
+                      className="text-blue-400 hover:underline"
                     >
-                      View
+                      View Uploaded
                     </a>
                   )}
                 </td> */}
                 <td className="p-3 space-x-2">
                   <button
                     onClick={() => handleEdit(letter)}
-                    className="text-blue-400"
+                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(letter.id)}
-                    className="text-red-400"
+                    className="text-red-400 hover:text-red-300 transition-colors duration-200"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan="6" className="p-4 text-center text-gray-500">No warning letters found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -234,7 +273,7 @@ export default function WarningLetters() {
           <button
             key={num}
             className={`px-3 py-1 rounded ${
-              currentPage === num + 1 ? 'bg-blue-600' : 'bg-gray-700'
+              currentPage === num + 1 ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             }`}
             onClick={() => setCurrentPage(num + 1)}
           >
@@ -249,67 +288,92 @@ export default function WarningLetters() {
           title={editingId ? 'Edit Warning Letter' : 'Issue Warning Letter'}
           onClose={() => setIsModalOpen(false)}
         >
-          <div className="grid gap-3">
-            <select
-              name="driver_id"
-              value={form.driver_id}
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-            >
-              <option value="">Select Driver</option>
-              {drivers.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.driver_name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              name="issued_date"
-              value={form.issued_date}
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-            />
-            <select
-              name="reason"
-              value={form.reason}
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-            >
-              <option value="">Select Reason</option>
-              {REASONS.map((r) => (
-                <option key={r} value={r}>
-                  {r.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-              placeholder="Description"
-            />
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <input
-              type="file"
-              name="document"
-              onChange={handleChange}
-              className="p-2 bg-gray-800"
-            />
+          <div className="grid gap-4">
+            <div>
+                <label htmlFor="driver-select" className="block text-sm font-medium text-gray-300 mb-1">Driver:</label>
+                <select
+                  id="driver-select"
+                  name="driver_id"
+                  value={form.driver_id}
+                  onChange={handleChange}
+                  className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Driver</option>
+                  {drivers.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.driver_name}
+                    </option>
+                  ))}
+                </select>
+            </div>
+            <div>
+                <label htmlFor="issued-date" className="block text-sm font-medium text-gray-300 mb-1">Issued Date:</label>
+                <input
+                  id="issued-date"
+                  type="date"
+                  name="issued_date"
+                  value={form.issued_date}
+                  onChange={handleChange}
+                  className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+            <div>
+                <label htmlFor="reason-select" className="block text-sm font-medium text-gray-300 mb-1">Reason:</label>
+                <select
+                  id="reason-select"
+                  name="reason"
+                  value={form.reason}
+                  onChange={handleChange}
+                  className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Reason</option>
+                  {REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r.replace(/_/g, ' ')}
+                    </option>
+                  ))}
+                </select>
+            </div>
+            <div>
+                <label htmlFor="description-textarea" className="block text-sm font-medium text-gray-300 mb-1">Description (Optional):</label>
+                <textarea
+                  id="description-textarea"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                  placeholder="Detailed description of the warning..."
+                  rows="3"
+                />
+            </div>
+            <div>
+                <label htmlFor="status-select" className="block text-sm font-medium text-gray-300 mb-1">Status:</label>
+                <select
+                  id="status-select"
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                  className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div>
+                <label htmlFor="document-upload" className="block text-sm font-medium text-gray-300 mb-1">Upload Supporting Document (PDF Only, Optional):</label>
+                <input
+                  id="document-upload"
+                  type="file"
+                  name="document"
+                  onChange={handleChange}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 cursor-pointer"
+                />
+            </div>
             <button
               onClick={handleSubmit}
-              className="bg-blue-700 px-4 py-2 rounded mt-2"
+              className="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded mt-2 w-full font-semibold transition-colors duration-200"
             >
-              {editingId ? 'Update' : 'Submit'}
+              {editingId ? 'Update Warning' : 'Issue Warning'}
             </button>
           </div>
         </Modal>
