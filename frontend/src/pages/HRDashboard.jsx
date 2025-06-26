@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 // import axios from 'axios'; // This import is no longer needed
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet'; // Import Leaflet for custom icon
+import { ChevronDown, CircleUserRound } from 'lucide-react';
 
 // Import your configured axiosInstance
 import axiosInstance from '../api/axiosInstance'; // ADJUST THIS PATH if your axiosConfig.js is elsewhere
@@ -21,14 +22,14 @@ import axiosInstance from '../api/axiosInstance'; // ADJUST THIS PATH if your ax
 // These are basic functional components that mimic the structure and props
 // of common UI elements. They are used if Shadcn UI imports are commented out.
 // You'll need to style them with Tailwind CSS classes to match your design.
-const Table = ({ children, ...props }) => <table className="w-full table-auto text-sm" {...props}>{children}</table>;
-const TableBody = ({ children }) => <tbody className="text-white">{children}</tbody>;
+const Table = ({ children, ...props }) => <table className="w-full table-auto text-sm rounded-2xl" {...props}>{children}</table>;
+const TableBody = ({ children }) => <tbody className="bg-[#C9D6DF] text-[#353535]">{children}</tbody>;
 const TableCell = ({ children, ...props }) => <td className="py-2 px-2" {...props}>{children}</td>;
 const TableHead = ({ children, ...props }) => <th className="py-2 px-2" {...props}>{children}</th>; // Added props for flexibility
-const TableHeader = ({ children }) => <thead className="text-left text-gray-400 border-b border-gray-700">{children}</thead>;
-const TableRow = ({ children }) => <tr className="border-b border-gray-800">{children}</tr>;
+const TableHeader = ({ children }) => <thead className="text-left bg-[#284B63] text-white border-b border-gray-700">{children}</thead>;
+const TableRow = ({ children }) => <tr className="border-b  border-gray-800">{children}</tr>;
 const Button = ({ children, onClick, className = '', type = 'button' }) => <button type={type} onClick={onClick} className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm ${className}`}>{children}</button>;
-const Input = ({ type = 'text', placeholder, value, onChange, className = '', id, name, step, readOnly = false }) => <input id={id} name={name} type={type} placeholder={placeholder} value={value} onChange={onChange} step={step} readOnly={readOnly} className={`w-full px-4 py-2 bg-gray-800 text-white rounded-md border border-gray-700 ${className}`} />;
+const Input = ({ type = 'text', placeholder, value, onChange, className = '', id, name, step, readOnly = false }) => <input id={id} name={name} type={type} placeholder={placeholder} value={value} onChange={onChange} step={step} readOnly={readOnly} className={`w-full px-4 py-2 bg-[#D9D9D9] border-gray-700 text-[#353535] rounded-md border  ${className}`} />;
 const Label = ({ children, htmlFor }) => <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-300 mb-1 mt-3">{children}</label>;
 
 const Dialog = ({ open, onOpenChange, children }) => {
@@ -622,14 +623,24 @@ const HRDashboard = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white">
+    <div className="p-6 bg-white text-[#1E2022]min-h-screen">
+      {/* Header */}
+                   <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+                     <div className="text-sm text-[#52616B]">Organization / Platform Registration Management</div>
+                     <div className="flex items-center space-x-4">
+                       <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                         English <ChevronDown size={16} className="ml-1" />
+                       </button>
+                       <CircleUserRound size={24} className="text-[#1E2022]" />
+                     </div>
+                   </header>
       <h1 className="text-3xl font-bold mb-6">HR Management Dashboard</h1>
 
       <div className="flex space-x-4 mb-6">
         <button
           onClick={() => setActiveTab('checkin')}
           className={`px-4 py-2 rounded-md ${
-            activeTab === 'checkin' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'
+            activeTab === 'checkin' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700 text-white'
           }`}
         >
           Check-in Locations
@@ -637,7 +648,7 @@ const HRDashboard = () => {
         <button
           onClick={() => setActiveTab('apartment')}
           className={`px-4 py-2 rounded-md ${
-            activeTab === 'apartment' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'
+            activeTab === 'apartment' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700 text-white'
           }`}
         >
           Apartment Locations
@@ -645,7 +656,7 @@ const HRDashboard = () => {
         <button
           onClick={() => setActiveTab('notifications')}
           className={`px-4 py-2 rounded-md ${
-            activeTab === 'notifications' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'
+            activeTab === 'notifications' ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700 text-white'
           }`}
         >
           Notifications

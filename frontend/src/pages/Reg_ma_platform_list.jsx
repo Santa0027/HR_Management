@@ -115,7 +115,7 @@ function Reg_ma_platform_list() {
             value={filters.company_name}
             onChange={handleFilterChange}
             placeholder="Enter Company Name"
-            className="w-full border rounded-md py-2 px-3 bg-[#D9D9D9] border-gray-700 text-[#353535"
+            className="w-full border rounded-md py-2 px-3 bg-[#D9D9D9] border-gray-700 text-[#353535]"
           />
         </div>
         {/* <div>
