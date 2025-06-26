@@ -7,8 +7,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.env
-.env.*
 *.db
 db.sqlite3
 instance/
@@ -19,10 +17,10 @@ secrets.json
 
 # Virtual environments
 venv/
-env/
-ENV/
+
+
 .venv/
-.ENV/
+
 *.egg-info/
 .eggs/
 pip-wheel-metadata/
@@ -43,7 +41,7 @@ dist/
 
 # misc
 .DS_Store
-.env.local
+
 .env.development.local
 .env.test.local
 .env.production.local
