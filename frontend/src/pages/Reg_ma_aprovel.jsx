@@ -226,7 +226,7 @@ function Reg_ma_new_approval() {
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
                     <td className="py-3 px-6">{driver.mobile}</td>
-                    <td className="py-3 px-6">{driver.company}</td>
+                    <td className="py-3 px-6">{driver.company.company_name}</td>
                     <td className="py-3 px-6">{driver.approval}</td>
                     <td className="py-3 px-6">{driver.vehicle?.vehicle_type || '—'}</td>
                     <td className="py-3 px-6">{driver.city}</td>
@@ -337,3 +337,4 @@ export default Reg_ma_new_approval;
   // };
 
   // export default LoginPage;
+

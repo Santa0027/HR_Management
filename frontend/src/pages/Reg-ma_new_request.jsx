@@ -221,7 +221,7 @@ function Reg_ma_new_request() {
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
                     <td className="py-3 px-6">{driver.mobile}</td>
-                    <td className="py-3 px-6">{driver.company}</td>
+                    <td className="py-3 px-6">{driver.company.company_name}</td>
                     <td className="py-3 px-6">{driver.approval}</td>
                     <td className="py-3 px-6">
                       {driver.vehicle ? driver.vehicle.vehicle_type : 'No Vehicle Assigned'}

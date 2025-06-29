@@ -29,8 +29,12 @@ class DriverViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        print("PATCH data received:", request.data)
+        try:
+            print("PATCH data received:", request.data)
+        except Exception as e:
+            print("Error accessing request.data:", str(e))
         return super().partial_update(request, *args, **kwargs)
+
 
     @action(detail=False, methods=['get'], url_path='new-requests')
     def new_requests(self, request):
@@ -56,9 +60,23 @@ class DriverLogViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
+@api_view(['GET']) # Decorator to make this a DRF API view
+@permission_classes([AllowAny]) # You can change permission as needed
 def get_drivers_by_company(request, company_id):
     """
     Returns drivers filtered by company ID
     """
-    drivers = Driver.objects.filter(company_id=company_id).values()
-    return JsonResponse(list(drivers), safe=False)
+    try:
+        # 1. Get the queryset of Driver objects without .values()
+        drivers = Driver.objects.filter(company_id=company_id)
+
+        # 2. Pass the queryset to your DriverSerializer
+        #    'many=True' is crucial because you're serializing a list of drivers
+        serializer = DriverSerializer(drivers, many=True) # <--- USE YOUR DRIVERSERIALIZER HERE!
+
+        # 3. Return the serialized data using DRF's Response
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    except Exception as e: # Catch any potential errors, e.g., company_id not found or database issues
+        return Response({"detail": f"Error fetching drivers: {str(e)}"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,12 +1,18 @@
 from rest_framework import serializers
 from .models import Driver, DriverLog
 from vehicle.models import VehicleRegistration
-
+from company.models import Company
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleRegistration
         fields = ['id', 'vehicle_name', 'vehicle_number', 'vehicle_type']
+
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields=['id','company_name']
 
 
 class DriverSerializer(serializers.ModelSerializer):
@@ -15,6 +21,14 @@ class DriverSerializer(serializers.ModelSerializer):
     vehicle_id = serializers.PrimaryKeyRelatedField(
         queryset=VehicleRegistration.objects.all(),
         source='vehicle',
+        write_only=True
+    )
+
+    company = CompanySerializer(read_only=True)
+
+    Company_id= serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        source='company',
         write_only=True
     )
 

@@ -37,11 +37,11 @@ function Driver_mange_DrProfile() {
         // Fetch assigned vehicle data if vehicle ID exists in driverData
         // IMPORTANT: Ensure driverData.vehicle contains the actual ID of the vehicle,
         // and that your backend endpoint for vehicles is correctly structured.
-        if (driverData.vehicleType) { // Assuming 'vehicle' key holds the vehicle ID (e.g., 1, 2, 3...)
+        if (driverData.vehicle) { // Assuming 'vehicle' key holds the vehicle ID (e.g., 1, 2, 3...)
           setLoadingVehicleData(true);
           try {
             // Ensure this URL is correct for fetching a single vehicle by ID
-            const vehicleResponse = await axiosInstance.get(`/vehicles/${driverData.vehicleType}/`);
+            const vehicleResponse = await axiosInstance.get(`/vehicles/${driverData.vehicle.id}/`);
             setAssignedVehicle(vehicleResponse.data);
           } catch (vehicleError) {
             console.error('Failed to fetch assigned vehicle data:', vehicleError);

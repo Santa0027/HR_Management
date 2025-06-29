@@ -74,7 +74,7 @@ export default function DriverManagement() {
 
       // Vehicle Type Filter (assuming vehicleType is an object with vehicle_make/model)
       if (vehicleTypeFilter) {
-        const vehicleInfo = `${driver.vehicle.vehicle_type || ''} ${driver.vehicle_type || ''}`.toLowerCase();
+        const vehicleInfo = `${driver.vehicle.id || ''} ${driver.id || ''}`.toLowerCase();
         if (!vehicleInfo.includes(vehicleTypeFilter.toLowerCase())) {
           return false;
         }
@@ -213,7 +213,7 @@ export default function DriverManagement() {
                 <tr key={d.id} className="border-t text-[#353535] border-gray-700 hover:bg-white transition-colors">
                   <td className="px-4 py-2">{d.id}</td>
                   <td className="px-4 py-2">{d.driver_name}</td>
-                  <td className="px-4 py-2">{d.company?.company_name || 'N/A'}</td>
+                  <td className="px-4 py-2">{d.company.company_name || 'N/A'}</td>
                   <td className="px-4 py-2">{d.mobile}</td>
                   <td className="px-4 py-2">{d.gender || 'N/A'}</td>
                   <td className="px-4 py-2">

@@ -19,11 +19,17 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 
 # CORS configuration
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all frontend origins (React etc.)
+# CORS settings
+CORS_ALLOW_CREDENTIALS = True
+
+# Also ensure you have your allowed origins configured, e.g.:
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
-    "https://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://13.204.66.176:5173", # Your public frontend IP
+    "http://172.31.8.148:5173", # Your private frontend IP
+    # Add any other origins your frontend might be served from
 ]
-
 
 INSTALLED_APPS = [
     'rest_framework_simplejwt',
@@ -166,9 +172,8 @@ import os
 
 # ... other settings
 
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+MEDIA_URL = '/media/'
 
 # your_project/settings.py
 

@@ -1,23 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, CircleUserRound } from 'lucide-react';
+import { ChevronDown, CircleUserRound, Upload } from 'lucide-react'; // Import Upload icon
 import axiosInstance from '../api/axiosInstance';
 import { useParams, useNavigate } from 'react-router-dom'; // Import for routing
 
+// Reusable Input field (provided in original code)
+const Input = ({ label, name, type = "text", value, onChange }) => (
+  <div>
+    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
+    <input
+      type={type}
+      id={name}
+      name={name}
+      value={value}
+      onChange={onChange}
+      className="mt-1 p-2 w-full border rounded focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-900 border-gray-700 text-white"
+    />
+  </div>
+);
+
+// Reusable FileUploadField component (adapted from CompanyRegistrationForm)
+const FileUploadField = ({ label, name, file, onChange, existingImageUrl }) => (
+  <div>
+    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
+    <div className="flex items-center space-x-2">
+      <input
+        type="text"
+        readOnly
+        // Display file name if a new file is selected, otherwise display existing image URL or "No file chosen"
+        value={file ? file.name : (existingImageUrl ? existingImageUrl.split('/').pop() : 'No file chosen')}
+        className="flex-1 p-2 border rounded bg-gray-900 border-gray-700 text-white truncate"
+      />
+      <label htmlFor={name} className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+        <Upload size={18} className="mr-2" /> Upload
+      </label>
+      <input
+        type="file"
+        id={name}
+        name={name}
+        onChange={onChange}
+        className="hidden"
+        accept="image/*" // Restrict to image files
+      />
+    </div>
+    {existingImageUrl && !file && (
+      <div className="mt-2 text-sm text-gray-400">
+        Current logo: <a href={existingImageUrl} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">{existingImageUrl.split('/').pop()}</a>
+      </div>
+    )}
+  </div>
+);
+
+
 function EditCompanyForm() {
-  const { id } = useParams(); // Get company ID from URL
-  const navigate = useNavigate(); // For redirection after submission
+  const { id } = useParams();
+  const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     company_name: '',
     registration_number: '',
-    gst_number: '', // Assuming GST number should be here as well for edit
+
     address: '',
     city: '',
     country: '',
     contact_person: '',
     contact_email: '',
     contact_phone: '',
+    company_logo: null, // Add company_logo to the state
     bank_name: '',
     account_number: '',
     ifsc_code: '',
@@ -29,8 +78,10 @@ function EditCompanyForm() {
     rate_per_order: '',
     fixed_commission: '',
   });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [existingLogoUrl, setExistingLogoUrl] = useState(null); // State to store the existing logo URL
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -38,18 +89,19 @@ function EditCompanyForm() {
         const response = await axiosInstance.get(`/company/${id}/`);
         const data = response.data;
 
-        // Populate formData with existing data
         setFormData(prev => ({
           ...prev,
           company_name: data.company_name || '',
           registration_number: data.registration_number || '',
-          gst_number: data.gst_number || '', // Ensure GST number is fetched if it exists in your API
+       
           address: data.address || '',
           city: data.city || '',
           country: data.country || '',
           contact_person: data.contact_person || '',
           contact_email: data.contact_email || '',
           contact_phone: data.contact_phone || '',
+          // Do NOT directly set company_logo to data.company_logo here if it's a URL.
+          // We handle it separately to display the existing logo.
           bank_name: data.bank_name || '',
           account_number: data.account_number || '',
           ifsc_code: data.ifsc_code || '',
@@ -61,6 +113,12 @@ function EditCompanyForm() {
           rate_per_order: data.rate_per_order || '',
           fixed_commission: data.fixed_commission || '',
         }));
+
+        // Store the existing logo URL
+        if (data.company_logo) {
+          setExistingLogoUrl(data.company_logo);
+        }
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching company data:", err.response?.data || err.message);
@@ -73,8 +131,11 @@ function EditCompanyForm() {
   }, [id]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, files } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'file' ? files[0] : value // Handle file input correctly
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -82,20 +143,35 @@ function EditCompanyForm() {
     const form = new FormData();
 
     for (const key in formData) {
-      // Only append fields that have values to avoid sending empty strings for optional fields if not changed
-      if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
+      if (key === 'company_logo' && formData[key] === null) {
+        // If company_logo is null, it means no new file was selected.
+        // We do NOT append the old URL. The backend should retain the existing one
+        // if no new file is provided for this field. If you want to explicitly
+        // clear the logo, you'd need a separate mechanism (e.g., a "clear logo" button)
+        // and send a specific instruction to the backend.
+        continue;
+      }
+
+      if (formData[key] !== '' && formData[key] !== undefined) {
         form.append(key, formData[key]);
       }
     }
 
     try {
-      const response = await axiosInstance.put(`/company/${id}/`, form); // Use PUT for full update
+      // Use PATCH if your API supports partial updates, otherwise PUT.
+      // PATCH is generally better for forms where not all fields are necessarily changed.
+      const response = await axiosInstance.patch(`/company/${id}/`, form, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Essential for sending files
+        },
+      });
       console.log("Success:", response.data);
       alert("Company updated successfully!");
-      navigate('/platform-list'); // Redirect to a company list or dashboard page
+      navigate('/platform-list');
     } catch (error) {
       console.error("Error:", error.response?.data || error.message);
-      alert("Failed to update. Please check the form fields.");
+      const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      alert(`Failed to update. Error: ${errorMsg}`);
     }
   };
 
@@ -146,7 +222,15 @@ function EditCompanyForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Company Name" name="company_name" value={formData.company_name} onChange={handleChange} />
                   <Input label="Registration Number" name="registration_number" value={formData.registration_number} onChange={handleChange} />
-                  <Input label="GST Number" name="gst_number" value={formData.gst_number} onChange={handleChange} /> {/* Added GST Number */}
+                  {/* Add the company_logo upload field here */}
+                  <FileUploadField
+                    label="Company Logo"
+                    name="company_logo"
+                    file={formData.company_logo}
+                    onChange={handleChange}
+                    existingImageUrl={existingLogoUrl} // Pass the existing logo URL
+                  />
+                  
                   <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
                   <Input label="City" name="city" value={formData.city} onChange={handleChange} />
                   <Input label="Country" name="country" value={formData.country} onChange={handleChange} />
@@ -208,20 +292,19 @@ function EditCompanyForm() {
               </div>
             )}
 
-
             <div className="flex justify-between mt-6">
               {step > 1 && (
-                <button onClick={() => setStep(step - 1)} className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors">
+                <button type="button" onClick={() => setStep(step - 1)} className="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition-colors">
                   Back
                 </button>
               )}
               {step < totalSteps && (
-                <button onClick={() => setStep(step + 1)} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
+                <button type="button" onClick={() => setStep(step + 1)} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
                   Next
                 </button>
               )}
               {step === totalSteps && (
-                <button onClick={handleSubmit} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
+                <button type="submit" onClick={handleSubmit} className="bg-green-600 px-4 py-2 rounded hover:bg-green-500 text-white transition-colors ml-auto">
                   Update Company
                 </button>
               )}
@@ -232,19 +315,5 @@ function EditCompanyForm() {
     </div>
   );
 }
-
-const Input = ({ label, name, type = "text", value, onChange }) => (
-  <div>
-    <label htmlFor={name} className="block text-sm mb-2 text-gray-300">{label}</label>
-    <input
-      type={type}
-      id={name}
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="mt-1 p-2 w-full border rounded focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-900 border-gray-700 text-white"
-    />
-  </div>
-);
 
 export default EditCompanyForm;

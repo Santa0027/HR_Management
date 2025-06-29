@@ -102,13 +102,18 @@ function CompanyProfile() {
     setNewCompanyLogo(e.target.files[0]);
   };
 
-  // Enters edit mode
-  const handleEditClick = () => {
-    setIsEditing(true);
-    // When entering edit mode, ensure editFormData is a copy of companyData
-    // This prevents direct mutation and allows cancel to revert
-    setEditFormData({ ...companyData });
-    setNewCompanyLogo(null); // Clear any previously selected new logo
+  // // Enters edit mode
+  // const handleEditClick = () => {
+  //   setIsEditing(true);
+  //   // When entering edit mode, ensure editFormData is a copy of companyData
+  //   // This prevents direct mutation and allows cancel to revert
+  //   setEditFormData({ ...companyData });
+  //   setNewCompanyLogo(null); // Clear any previously selected new logo
+  // };
+
+
+    const handleEditClick = () => {
+    navigate(`/company/${id}/edit/`); // Navigate to the edit form route
   };
 
   // Cancels edit mode

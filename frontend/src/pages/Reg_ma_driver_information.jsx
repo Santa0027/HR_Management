@@ -163,6 +163,13 @@ function DriverProfileEditDelete() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Helper function to format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   // Fetch driver data on component mount or driverId change
   useEffect(() => {
     async function fetchDriver() {
@@ -194,6 +201,18 @@ function DriverProfileEditDelete() {
     if (files && files[0]) {
       setDriverData(prev => ({ ...prev, [name]: files[0] }));
     }
+  };
+
+  // NEW: Function to handle clicking the "Edit" button
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  // NEW: Function to handle clicking the "Cancel" button during edit
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setDriverData(initialDriverData); // Revert to original fetched data
+    // Optionally, clear any newly selected files here if desired
   };
 
   // Handles saving driver data (PATCH request)
@@ -268,11 +287,11 @@ function DriverProfileEditDelete() {
     return fileData.split('/').pop();
   };
 
-  if (loading) return <div className="min-h-screen bg-white text-[#284B63] p-8">Loading driver profile...</div>;
+  if (loading) return <div className="min-h-screen bg-black text-white p-8">Loading driver profile...</div>;
   if (error || !driverData) return <div className="min-h-screen bg-black text-red-400 p-8">{error || 'Driver not found.'}</div>;
 
   return (
-    <div className="min-h-screen bg-white text-[#1E2022]font-inter p-8">
+    <div className="min-h-screen bg-black text-white font-inter p-8">
       <div className="flex justify-end mb-6">
         <button className="flex items-center px-3 py-1  bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm">
           English <ChevronDown size={16} className="ml-1" />
@@ -281,13 +300,13 @@ function DriverProfileEditDelete() {
       </div>
 
       <div className="flex justify-between items-center mb-6">
-        <Link to="/driver-management" className="text-gray-400 hover:text-white transition-colors duration-200">
+        <Link to="/registration-management" className="text-gray-400 hover:text-white transition-colors duration-200">
           ← Back to Driver List
         </Link>
         <div className="space-x-4">
           {!isEditing ? (
             <button
-              onClick={handleEditClick}
+              onClick={handleEditClick} // Corrected: Now refers to the defined function
               className="bg-blue-700 hover:bg-blue-600 px-5 py-2 rounded-lg flex items-center transition-colors duration-200"
               disabled={loading}
             >
@@ -296,7 +315,7 @@ function DriverProfileEditDelete() {
           ) : (
             <>
               <button
-                onClick={handleCancelEdit}
+                onClick={handleCancelEdit} // Corrected: Now refers to the defined function
                 className="bg-gray-600 hover:bg-gray-500 px-5 py-2 rounded-lg text-white transition-colors duration-200"
                 disabled={loading}
               >
@@ -423,3 +442,4 @@ function DriverProfileEditDelete() {
 }
 
 export default DriverProfileEditDelete;
+
