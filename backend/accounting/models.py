@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from company.models import Company
 from drivers.models import Driver
+import uuid
 
 
 class AccountingCategory(models.Model):
@@ -506,3 +507,138 @@ class RecurringTransaction(models.Model):
 
     def __str__(self):
         return f"Recurring: {self.name} ({self.get_frequency_display()})"
+
+
+class Trip(models.Model):
+    """Trip model for driver trip management"""
+    TRIP_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    TRIP_TYPE_CHOICES = [
+        ('regular', 'Regular'),
+        ('airport', 'Airport'),
+        ('intercity', 'Intercity'),
+        ('hourly', 'Hourly'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+
+    # Basic trip information
+    trip_id = models.CharField(max_length=50, unique=True, editable=False)
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='trips')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='trips', null=True, blank=True)
+
+    # Customer information
+    customer_name = models.CharField(max_length=100)
+    customer_phone = models.CharField(max_length=20, blank=True, null=True)
+
+    # Trip details
+    trip_type = models.CharField(max_length=20, choices=TRIP_TYPE_CHOICES, default='regular')
+    pickup_location = models.CharField(max_length=255)
+    pickup_latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
+    pickup_longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
+    pickup_time = models.DateTimeField(null=True, blank=True)
+
+    dropoff_location = models.CharField(max_length=255)
+    dropoff_latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
+    dropoff_longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
+    dropoff_time = models.DateTimeField(null=True, blank=True)
+
+    # Trip metrics
+    distance_km = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
+    duration_minutes = models.IntegerField(default=0)
+    waiting_time_minutes = models.IntegerField(default=0)
+
+    # Financial information
+    base_fare = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    distance_fare = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    time_fare = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    waiting_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    surge_multiplier = models.DecimalField(max_digits=4, decimal_places=2, default=1.00)
+    total_fare = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tip_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    toll_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    parking_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    additional_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    # Commission and earnings
+    platform_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    platform_commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    driver_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    # Payment information
+    payment_method = models.CharField(max_length=50, default='cash')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_reference = models.CharField(max_length=100, blank=True, null=True)
+
+    # Status and tracking
+    status = models.CharField(max_length=20, choices=TRIP_STATUS_CHOICES, default='pending')
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
+
+    # Additional information
+    notes = models.TextField(blank=True, null=True)
+    driver_rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    customer_feedback = models.TextField(blank=True, null=True)
+
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['driver', 'status']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['payment_status']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.trip_id:
+            self.trip_id = f"TRIP-{timezone.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+
+        # Ensure all financial fields are Decimal and not None
+        from decimal import Decimal
+
+        self.base_fare = Decimal(str(self.base_fare or 0))
+        self.distance_fare = Decimal(str(self.distance_fare or 0))
+        self.time_fare = Decimal(str(self.time_fare or 0))
+        self.waiting_charges = Decimal(str(self.waiting_charges or 0))
+        self.tip_amount = Decimal(str(self.tip_amount or 0))
+        self.toll_charges = Decimal(str(self.toll_charges or 0))
+        self.parking_charges = Decimal(str(self.parking_charges or 0))
+        self.additional_charges = Decimal(str(self.additional_charges or 0))
+        self.surge_multiplier = Decimal(str(self.surge_multiplier or 1))
+        self.platform_commission_rate = Decimal(str(self.platform_commission_rate or 0))
+
+        # Calculate total earnings
+        self.total_earnings = (
+            self.base_fare + self.distance_fare + self.time_fare +
+            self.waiting_charges + self.tip_amount + self.toll_charges +
+            self.parking_charges + self.additional_charges
+        ) * self.surge_multiplier
+
+        # Calculate platform commission
+        self.platform_commission_amount = self.total_earnings * (self.platform_commission_rate / Decimal('100'))
+
+        # Calculate driver earnings
+        self.driver_earnings = self.total_earnings - self.platform_commission_amount
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.trip_id} - {self.driver.driver_name} - {self.pickup_location} to {self.dropoff_location}"

@@ -160,7 +160,7 @@ function EditCompanyForm() {
     try {
       // Use PATCH if your API supports partial updates, otherwise PUT.
       // PATCH is generally better for forms where not all fields are necessarily changed.
-      const response = await axiosInstance.patch(`/company/${id}/`, form, {
+      const response = await axiosInstance.patch(`/companies/${id}/`, form, {
         headers: {
           'Content-Type': 'multipart/form-data', // Essential for sending files
         },

@@ -290,11 +290,29 @@
 
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
+import {
+  User,
+  FileText,
+  Car,
+  Building,
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  AlertTriangle,
+  CheckCircle,
+  Upload
+} from 'lucide-react';
 
 const AddDriverForm = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [vehicles, setVehicles] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     driver_name: '',
@@ -304,8 +322,9 @@ const AddDriverForm = () => {
     city: '',
     nationality: '',
     dob: '',
-    vehicleType: '',
+    vehicle: '',
     company: '',
+    status: 'pending',
     documents: {
       iqama_document: null,
       iqama_expiry: '',
@@ -321,31 +340,73 @@ const AddDriverForm = () => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:8000/vehicles/')
-      .then(res => res.json())
-      .then(data => setVehicles(data))
-      .catch(err => console.error('Error fetching vehicles:', err));
-
-    fetch('http://localhost:8000/company/')
-      .then(res => res.json())
-      .then(data => setCompanies(data))
-      .catch(err => console.error('Error fetching companies:', err));
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      const [vehiclesRes, companiesRes] = await Promise.all([
+        axiosInstance.get('/vehicles/'),
+        axiosInstance.get('/companies/')
+      ]);
+
+      setVehicles(vehiclesRes.data.results || vehiclesRes.data || []);
+      setCompanies(companiesRes.data.results || companiesRes.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load form data');
+    }
+  };
+
+  const validateStep = (stepNumber) => {
+    const newErrors = {};
+
+    switch (stepNumber) {
+      case 0:
+        if (!formData.driver_name.trim()) newErrors.driver_name = 'Driver name is required';
+        if (!formData.gender) newErrors.gender = 'Gender is required';
+        if (!formData.iqama.trim()) newErrors.iqama = 'Iqama number is required';
+        if (formData.iqama.length !== 10) newErrors.iqama = 'Iqama must be 10 digits';
+        if (!formData.mobile.trim()) newErrors.mobile = 'Mobile number is required';
+        if (!formData.city.trim()) newErrors.city = 'City is required';
+        if (!formData.nationality.trim()) newErrors.nationality = 'Nationality is required';
+        if (!formData.dob) newErrors.dob = 'Date of birth is required';
+        break;
+      case 2:
+        if (!formData.company) newErrors.company = 'Company selection is required';
+        break;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleFileChange = (e) => {
     const { name, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      documents: {
-        ...prev.documents,
-        [name]: files[0]
+    if (files[0]) {
+      // Validate file size (max 5MB)
+      if (files[0].size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return;
       }
-    }));
+
+      setFormData(prev => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [name]: files[0]
+        }
+      }));
+    }
   };
 
   const handleDateChange = (e) => {
@@ -360,102 +421,426 @@ const AddDriverForm = () => {
   };
 
   const handleNext = () => {
-    if (step < 2) setStep(step + 1);
+    if (validateStep(step)) {
+      setStep(step + 1);
+    }
   };
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-     console.log('Submitting...'); // ← Debug line
-    const data = new FormData();
-    data.append('driver_name', formData.driver_name);
-    data.append('gender', formData.gender);
-    data.append('iqama', formData.iqama);
-    data.append('mobile', formData.mobile);
-    data.append('city', formData.city);
-    data.append('nationality', formData.nationality);
-    data.append('dob', formData.dob);
-    data.append('vehicleType', formData.vehicleType);
-    data.append('company', formData.company);
 
-    Object.entries(formData.documents).forEach(([key, value]) => {
-      if (value) {
-        data.append(key, value);
-      }
-    });
+    if (!validateStep(step)) {
+      return;
+    }
 
-    fetch('http://localhost:8000/Register/drivers/', {
-      method: 'POST',
-      body: data
-    })
-      .then(res => res.json())
-      .then(data => {
-        alert('Driver added successfully!');
-        console.log(data);
-      })
-      .catch(err => {
-        console.error('Error submitting form:', err);
+    setLoading(true);
+
+    try {
+      const data = new FormData();
+
+      // Append basic driver information
+      data.append('driver_name', formData.driver_name);
+      data.append('gender', formData.gender);
+      data.append('iqama', formData.iqama);
+      data.append('mobile', formData.mobile);
+      data.append('city', formData.city);
+      data.append('nationality', formData.nationality);
+      data.append('dob', formData.dob);
+      data.append('status', formData.status);
+
+      // Append company and vehicle if selected
+      if (formData.company) data.append('company', formData.company);
+      if (formData.vehicle) data.append('vehicle', formData.vehicle);
+
+      // Append documents
+      Object.entries(formData.documents).forEach(([key, value]) => {
+        if (value && typeof value === 'object') {
+          data.append(key, value);
+        } else if (value && typeof value === 'string' && value.trim()) {
+          data.append(key, value);
+        }
       });
+
+      const response = await axiosInstance.post('/Register/drivers/', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success('Driver registered successfully!');
+      console.log('Driver created:', response.data);
+
+      // Navigate to driver list or profile
+      navigate('/registration-management');
+
+    } catch (error) {
+      console.error('Error submitting form:', error);
+
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (typeof errorData === 'object') {
+          // Handle field-specific errors
+          const fieldErrors = {};
+          Object.keys(errorData).forEach(key => {
+            if (Array.isArray(errorData[key])) {
+              fieldErrors[key] = errorData[key][0];
+            } else {
+              fieldErrors[key] = errorData[key];
+            }
+          });
+          setErrors(fieldErrors);
+          toast.error('Please check the form for errors');
+        } else {
+          toast.error('Failed to register driver');
+        }
+      } else {
+        toast.error('Network error. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderStep = () => {
     switch (step) {
       case 0:
         return (
-          <div className="grid gap-4">
-            <input type="text" name="driver_name" value={formData.driver_name} onChange={handleChange} placeholder="Name" className="p-2 border rounded bg-gray-800 text-white" />
-            <select name="gender" value={formData.gender} onChange={handleChange} className="p-2 border rounded bg-gray-800 text-white">
-              <option value="">Select Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            <input type="text" name="iqama" value={formData.iqama} onChange={handleChange} placeholder="Iqama Number" className="p-2 border rounded bg-gray-800 text-white" />
-            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="Mobile Number" className="p-2 border rounded bg-gray-800 text-white" />
-            <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" className="p-2 border rounded bg-gray-800 text-white" />
-            <input type="text" name="nationality" value={formData.nationality} onChange={handleChange} placeholder="Nationality" className="p-2 border rounded bg-gray-800 text-white" />
-            <input type="date" name="dob" value={formData.dob} onChange={handleChange} className="p-2 border rounded bg-gray-800 text-white" />
+          <div className="space-y-6">
+            <div className="flex items-center mb-6">
+              <User className="h-6 w-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-semibold text-gray-800">Personal Information</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Driver Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="driver_name"
+                  value={formData.driver_name}
+                  onChange={handleChange}
+                  placeholder="Enter full name"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.driver_name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.driver_name && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.driver_name}
+                  </p>
+                )}
+              </div>
+
+              {/* Gender */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Gender <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.gender ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                {errors.gender && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.gender}
+                  </p>
+                )}
+              </div>
+
+              {/* Iqama Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Iqama Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="iqama"
+                  value={formData.iqama}
+                  onChange={handleChange}
+                  placeholder="Enter 10-digit Iqama number"
+                  maxLength="10"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.iqama ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.iqama && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.iqama}
+                  </p>
+                )}
+              </div>
+
+              {/* Mobile Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="+966 50 123 4567"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.mobile ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.mobile && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.mobile}
+                  </p>
+                )}
+              </div>
+
+              {/* City */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="Enter city"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.city ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.city && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.city}
+                  </p>
+                )}
+              </div>
+
+              {/* Nationality */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nationality <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="nationality"
+                  value={formData.nationality}
+                  onChange={handleChange}
+                  placeholder="Enter nationality"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.nationality ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.nationality && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.nationality}
+                  </p>
+                )}
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date of Birth <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.dob ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.dob && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.dob}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         );
 
       case 1:
         return (
-          <div className="grid gap-4">
-            {[
-              { label: 'Iqama', name: 'iqama_document', expiry: 'iqama_expiry' },
-              { label: 'Passport', name: 'passport_document', expiry: 'passport_expiry' },
-              { label: 'License', name: 'license_document', expiry: 'license_expiry' },
-              { label: 'Visa', name: 'visa_document', expiry: 'visa_expiry' },
-              { label: 'Medical', name: 'medical_document', expiry: 'medical_expiry' },
-            ].map(({ label, name, expiry }) => (
-              <div key={name} className="space-y-2">
-                <label className="block text-sm">{label} Document:</label>
-                <input type="file" name={name} onChange={handleFileChange} className="p-2 border rounded bg-gray-800 text-white" />
-                <label className="block text-sm">{label} Expiry:</label>
-                <input type="date" name={expiry} value={formData.documents[expiry] || ''} onChange={handleDateChange} className="p-2 border rounded bg-gray-800 text-white" />
-              </div>
-            ))}
+          <div className="space-y-6">
+            <div className="flex items-center mb-6">
+              <FileText className="h-6 w-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-semibold text-gray-800">Document Upload</h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[
+                { label: 'Iqama', name: 'iqama_document', expiry: 'iqama_expiry', required: true },
+                { label: 'Passport', name: 'passport_document', expiry: 'passport_expiry', required: false },
+                { label: 'Driving License', name: 'license_document', expiry: 'license_expiry', required: true },
+                { label: 'Visa', name: 'visa_document', expiry: 'visa_expiry', required: false },
+                { label: 'Medical Certificate', name: 'medical_document', expiry: 'medical_expiry', required: false },
+              ].map(({ label, name, expiry, required }) => (
+                <div key={name} className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <h4 className="font-medium text-gray-800 mb-4 flex items-center">
+                    <Upload className="h-4 w-4 mr-2" />
+                    {label} {required && <span className="text-red-500 ml-1">*</span>}
+                  </h4>
+
+                  <div className="space-y-4">
+                    {/* File Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload Document
+                      </label>
+                      <input
+                        type="file"
+                        name={name}
+                        onChange={handleFileChange}
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Accepted formats: PDF, JPG, PNG (Max 5MB)
+                      </p>
+                      {formData.documents[name] && (
+                        <p className="text-green-600 text-sm mt-1 flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          File selected: {formData.documents[name].name}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Expiry Date */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        name={expiry}
+                        value={formData.documents[expiry] || ''}
+                        onChange={handleDateChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 text-sm">
+                <strong>Note:</strong> Please ensure all documents are clear and readable.
+                Required documents must be uploaded to proceed.
+              </p>
+            </div>
           </div>
         );
 
       case 2:
         return (
-          <div className="grid gap-4">
-            <select name="vehicleType" value={formData.vehicleType} onChange={handleChange} className="p-2 border rounded bg-gray-800 text-white">
-              <option value="">Select Vehicle</option>
-              {vehicles.map(vehicle => (
-                <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicle_name}</option>
-              ))}
-            </select>
-            <select name="company" value={formData.company} onChange={handleChange} className="p-2 border rounded bg-gray-800 text-white">
-              <option value="">Select Company</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>{company.company_name}</option>
-              ))}
-            </select>
+          <div className="space-y-6">
+            <div className="flex items-center mb-6">
+              <Building className="h-6 w-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-semibold text-gray-800">Company & Vehicle Assignment</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assign to Company <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="company"
+                  value={formData.company}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    errors.company ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select Company</option>
+                  {companies.map(company => (
+                    <option key={company.id} value={company.id}>
+                      {company.company_name}
+                    </option>
+                  ))}
+                </select>
+                {errors.company && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    {errors.company}
+                  </p>
+                )}
+              </div>
+
+              {/* Vehicle Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assign Vehicle <span className="text-gray-400">(Optional)</span>
+                </label>
+                <select
+                  name="vehicle"
+                  value={formData.vehicle}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Select Vehicle (Optional)</option>
+                  {vehicles.map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.vehicle_name || vehicle.vehicle_type} - {vehicle.plate_number || vehicle.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Summary Card */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <h4 className="font-medium text-gray-800 mb-4">Registration Summary</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600">Driver Name:</span>
+                  <span className="ml-2 font-medium">{formData.driver_name || 'Not provided'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Iqama:</span>
+                  <span className="ml-2 font-medium">{formData.iqama || 'Not provided'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Mobile:</span>
+                  <span className="ml-2 font-medium">{formData.mobile || 'Not provided'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Company:</span>
+                  <span className="ml-2 font-medium">
+                    {formData.company ?
+                      companies.find(c => c.id == formData.company)?.company_name || 'Selected'
+                      : 'Not selected'
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         );
 
@@ -464,40 +849,121 @@ const AddDriverForm = () => {
     }
   };
 
-  return (
-    <div className="max-w-2xl mx-auto p-8 bg-black text-white rounded-lg">
-      <h2 className="text-2xl font-bold mb-6">Add New Driver</h2>
-      <form onSubmit={handleSubmit}>
-        {renderStep()}
+  const stepTitles = [
+    'Personal Information',
+    'Document Upload',
+    'Company Assignment'
+  ];
 
-        <div className="flex justify-between mt-6">
-          {step > 0 && (
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Add New Driver</h1>
+              <p className="text-gray-600 mt-2">Complete the registration process in 3 simple steps</p>
+            </div>
             <button
-              type="button"
-              onClick={handleBack}
-              className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+              onClick={() => navigate('/registration-management')}
+              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
-              Back
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Drivers
             </button>
-          )}
-          {step < 2 ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-4 py-2 bg-green-600 rounded hover:bg-green-700"
-            >
-              Next
-            </button>
-          ) : (
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-            >
-              Submit
-            </button>
-          )}
+          </div>
         </div>
-      </form>
+
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {stepTitles.map((title, index) => (
+              <div key={index} className="flex items-center">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+                  index <= step
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'border-gray-300 text-gray-400'
+                }`}>
+                  {index < step ? (
+                    <CheckCircle className="h-5 w-5" />
+                  ) : (
+                    <span className="text-sm font-medium">{index + 1}</span>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <p className={`text-sm font-medium ${
+                    index <= step ? 'text-blue-600' : 'text-gray-400'
+                  }`}>
+                    Step {index + 1}
+                  </p>
+                  <p className={`text-xs ${
+                    index <= step ? 'text-gray-700' : 'text-gray-400'
+                  }`}>
+                    {title}
+                  </p>
+                </div>
+                {index < stepTitles.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-4 ${
+                    index < step ? 'bg-blue-600' : 'bg-gray-300'
+                  }`} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form Container */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+          <div className="p-8">
+            <form onSubmit={handleSubmit}>
+              {renderStep()}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={step === 0}
+                  className="flex items-center px-6 py-3 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </button>
+
+                {step < 2 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Registering...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Register Driver
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -102,6 +102,30 @@ class CheckinLocationViewSet(viewsets.ModelViewSet):
     serializer_class = CheckinLocationSerializer
     permission_classes = [AllowAny]
 
+    def get_driver_locations(self, request, driver_id=None):
+        """
+        Get authorized check-in locations for a specific driver
+        """
+        if driver_id is None:
+            return Response({"detail": "Driver ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            driver = Driver.objects.get(id=driver_id)
+        except Driver.DoesNotExist:
+            return Response({"detail": "Driver not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get locations associated with this driver
+        locations = CheckinLocation.objects.filter(driver=driver)
+        serializer = self.get_serializer(locations, many=True)
+
+        # Format response to match mobile app expectations
+        return Response({
+            'driver_id': str(driver_id),  # Mobile app expects string
+            'driver_name': driver.driver_name,
+            'total_locations': locations.count(),  # Mobile app expects this field
+            'locations': serializer.data
+        }, status=status.HTTP_200_OK)
+
 class ApartmentLocationViewSet(viewsets.ModelViewSet):
     queryset = ApartmentLocation.objects.all()
     serializer_class = ApartmentLocationSerializer
@@ -115,22 +139,59 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     # Custom action to retrieve the current day's attendance for a driver
     # Accessible via GET /api/attendance/current-day/<driver_id>/
-    @action(detail=False, methods=['get'], url_path='current-day/(?P<driver_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'current-day/(?P<driver_id>\d+)')
     def retrieve_current_day_attendance(self, request, driver_id=None):
         """
         API view to get the current day's attendance record for a specific driver.
+        Returns DriverStatus format expected by mobile app.
         """
         if driver_id is None:
             return Response({"detail": "Driver ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Get driver information
+            driver = Driver.objects.get(id=driver_id)
             today = timezone.localdate()
-            attendance = Attendance.objects.get(driver_id=driver_id, date=today)
-            serializer = self.get_serializer(attendance)
-            return Response(serializer.data)
-        except Attendance.DoesNotExist:
+
+            try:
+                attendance = Attendance.objects.get(driver_id=driver_id, date=today)
+
+                # Format response as DriverStatus for mobile app
+                driver_status = {
+                    'driver_id': str(driver_id),
+                    'driver_name': driver.driver_name,
+                    'date': today.isoformat(),
+                    'status': 'checked_in' if attendance.login_time and not attendance.logout_time else 'checked_out' if attendance.logout_time else 'not_checked_in',
+                    'message': 'Attendance record found',
+                    'attendance_id': attendance.id,
+                    'login_time': attendance.login_time,
+                    'logout_time': attendance.logout_time,
+                    'checked_in_location': attendance.checked_in_location.name if attendance.checked_in_location else None,
+                    'can_check_in': not attendance.login_time or attendance.logout_time,
+                    'can_check_out': attendance.login_time and not attendance.logout_time
+                }
+                return Response(driver_status, status=status.HTTP_200_OK)
+
+            except Attendance.DoesNotExist:
+                # No attendance record for today - driver can check in
+                driver_status = {
+                    'driver_id': str(driver_id),
+                    'driver_name': driver.driver_name,
+                    'date': today.isoformat(),
+                    'status': 'not_checked_in',
+                    'message': 'No attendance record found for today for this driver.',
+                    'attendance_id': None,
+                    'login_time': None,
+                    'logout_time': None,
+                    'checked_in_location': None,
+                    'can_check_in': True,
+                    'can_check_out': False
+                }
+                return Response(driver_status, status=status.HTTP_200_OK)
+
+        except Driver.DoesNotExist:
             return Response(
-                {'detail': 'No attendance record found for today for this driver.'},
+                {'detail': 'Driver not found.'},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
@@ -795,7 +856,7 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
             'leave_types_count': leave_types.count()
         })
 
-    @action(detail=False, methods=['get'], url_path='driver/(?P<driver_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'driver/(?P<driver_id>\d+)')
     def driver_balances(self, request, driver_id=None):
         """Get all leave balances for a specific driver"""
         try:

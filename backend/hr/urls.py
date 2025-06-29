@@ -45,6 +45,8 @@ urlpatterns = [
     # which includes /attendance/current-day/<driver_id>/
     path('', include(router.urls)),
     path('attendance/current-day/<int:driver_id>/', AttendanceViewSet.as_view({'get': 'retrieve_current_day_attendance'}), name='current_day_attendance'),
+    path('attendance/driver-status/<int:driver_id>/', AttendanceViewSet.as_view({'get': 'retrieve_current_day_attendance'}), name='driver_status'),
+    path('attendance/locations/<int:driver_id>/', CheckinLocationViewSet.as_view({'get': 'get_driver_locations'}), name='driver_locations'),
 
     # REMOVED the redundant line:
     # path('attendance/current-day/<int:driver_id>/', AttendanceViewSet.as_view({'get': 'retrieve_current_day_attendance'}), name='current_day_attendance'),

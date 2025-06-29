@@ -5,10 +5,10 @@ from rest_framework.routers import DefaultRouter
 from .views import CompanyViewSet
 
 router = DefaultRouter()
-router.register(r'company', CompanyViewSet,basename='company')
+router.register(r'companies', CompanyViewSet,basename='companies')
 
 urlpatterns = [
-    path('comapany', include(router.urls)),
+    path('companies', include(router.urls)),
     
 ]
 urlpatterns += router.urls

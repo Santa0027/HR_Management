@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MdDashboard, MdManageAccounts } from "react-icons/md";
 import { AiOutlineFileSearch } from "react-icons/ai";
-import { FaDollarSign } from "react-icons/fa"; // Add accounting icon
+import { FaDollarSign, FaUsers } from "react-icons/fa"; // Add accounting and users icons
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Import Chevron icons
 import { useAuth } from '../context/AuthContext';
@@ -119,6 +119,15 @@ const Sidebar = () => {
           />
         </RoleBasedComponent>
 
+        <RoleBasedComponent requiredPermissions={['can_view_drivers']}>
+          <SidebarItem
+            icon={<FaUsers />}
+            label="Driver Dashboard"
+            to="/driver-management-dashboard"
+            active={location.pathname === "/driver-management-dashboard"}
+          />
+        </RoleBasedComponent>
+
         {/* Registration Management Dropdown Item */}
         <RoleBasedComponent requiredRoles={['admin', 'hr']}>
           <SidebarItem
@@ -174,6 +183,27 @@ const Sidebar = () => {
           </SidebarItem>
         </RoleBasedComponent>
 
+        {/* Admin Management Dropdown Item */}
+        <RoleBasedComponent requiredRoles={['admin']}>
+          <SidebarItem
+            icon={<MdManageAccounts />}
+            label="Admin Management"
+            to="/admin"
+            active={location.pathname.startsWith("/admin")}
+          >
+            <SidebarItem
+              label="User Management"
+              to="/admin/users"
+              active={location.pathname === "/admin/users"}
+            />
+            <SidebarItem
+              label="Driver Authentication"
+              to="/admin/driver-auth"
+              active={location.pathname === "/admin/driver-auth"}
+            />
+          </SidebarItem>
+        </RoleBasedComponent>
+
         {/* Accounting Management Dropdown Item */}
         <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
           <SidebarItem
@@ -204,6 +234,21 @@ const Sidebar = () => {
                 label="Expenses"
                 to="/accounting/expenses"
                 active={location.pathname === "/accounting/expenses"}
+              />
+              <SidebarItem
+                label="Budgets"
+                to="/accounting/budgets"
+                active={location.pathname === "/accounting/budgets"}
+              />
+              <SidebarItem
+                label="Payroll"
+                to="/accounting/payroll"
+                active={location.pathname === "/accounting/payroll"}
+              />
+              <SidebarItem
+                label="Bank Accounts"
+                to="/accounting/bank-accounts"
+                active={location.pathname === "/accounting/bank-accounts"}
               />
             </RoleBasedComponent>
           </SidebarItem>

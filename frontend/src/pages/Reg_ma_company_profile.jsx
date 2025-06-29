@@ -72,7 +72,7 @@ function CompanyProfile() {
     const fetchData = async () => {
       setLoading(true); // Set loading true at the start of fetch
       try {
-        const companyRes = await axiosInstance.get(`/company/${id}/`);
+        const companyRes = await axiosInstance.get(`/companies/${id}/`);
         const driversRes = await axiosInstance.get(`/by-company/${id}/`);
 
         setCompanyData(companyRes.data);
@@ -162,7 +162,7 @@ function CompanyProfile() {
     // then `formDataToSubmit.append('company_logo', '');` or similar based on API.
 
     try {
-      const response = await axiosInstance.patch(`/company/${id}/`, formDataToSubmit, {
+      const response = await axiosInstance.patch(`/companies/${id}/`, formDataToSubmit, {
         headers: {
           'Content-Type': 'multipart/form-data', // Essential for file uploads
         },
@@ -187,7 +187,7 @@ function CompanyProfile() {
     if (confirmed) {
       setLoading(true);
       try {
-        await axiosInstance.delete(`/company/${id}/`);
+        await axiosInstance.delete(`/companies/${id}/`);
         alert('Company deleted successfully!');
         navigate('/platform-list'); // Redirect to company list after deletion
       } catch (error) {

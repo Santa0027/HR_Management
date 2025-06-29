@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     AccountingCategory, PaymentMethod, BankAccount, Transaction,
-    Income, Expense, DriverPayroll, Budget, FinancialReport, RecurringTransaction
+    Income, Expense, DriverPayroll, Budget, FinancialReport, RecurringTransaction, Trip
 )
 from django.contrib.auth import get_user_model
 from decimal import Decimal # Explicitly import Decimal
@@ -494,3 +494,50 @@ class DriverPayrollSummarySerializer(serializers.Serializer):
     total_deductions = serializers.DecimalField(max_digits=15, decimal_places=2) # Increased max_digits
     total_net_salary = serializers.DecimalField(max_digits=15, decimal_places=2) # Increased max_digits
     payroll_count = serializers.IntegerField()
+
+
+class TripSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Trip model.
+    Handles trip creation and management for mobile app.
+    """
+    # Read-only fields for display
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+    company_name = serializers.CharField(source='company.company_name', read_only=True, allow_null=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Trip
+        fields = '__all__'
+        read_only_fields = [
+            'id', 'trip_id', 'total_earnings', 'platform_commission_amount',
+            'driver_earnings', 'created_at', 'updated_at', 'created_by',
+            'driver_name', 'company_name', 'created_by_username'
+        ]
+
+    def create(self, validated_data):
+        """Create a new trip instance"""
+        # Set created_by from request user if authenticated
+        if self.context['request'].user.is_authenticated:
+            validated_data['created_by'] = self.context['request'].user
+
+        return super().create(validated_data)
+
+
+class TripStatsSerializer(serializers.Serializer):
+    """
+    Serializer for trip statistics.
+    """
+    total_trips = serializers.IntegerField()
+    completed_trips = serializers.IntegerField()
+    cancelled_trips = serializers.IntegerField()
+    total_earnings = serializers.DecimalField(max_digits=15, decimal_places=2)
+    total_tips = serializers.DecimalField(max_digits=15, decimal_places=2)
+    total_distance = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_duration = serializers.IntegerField()
+    average_trip_earnings = serializers.DecimalField(max_digits=10, decimal_places=2)
+    average_trip_distance = serializers.DecimalField(max_digits=8, decimal_places=2)
+    cash_trips = serializers.IntegerField()
+    digital_trips = serializers.IntegerField()
+    cash_earnings = serializers.DecimalField(max_digits=15, decimal_places=2)
+    digital_earnings = serializers.DecimalField(max_digits=15, decimal_places=2)

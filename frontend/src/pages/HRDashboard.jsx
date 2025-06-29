@@ -282,7 +282,7 @@ const HRDashboard = () => {
 
       {/* Main Content */}
       <div className="p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-8xl mx-auto">
           {renderTabContent()}
         </div>
       </div>

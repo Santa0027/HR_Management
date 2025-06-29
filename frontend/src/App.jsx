@@ -30,6 +30,7 @@ import { AuthProvider } from './context/AuthContext';
 
 // Dashboard
 import DriverManagement from './pages/Drivermanagement';
+import DriverManagementDashboard from './pages/DriverManagement';
 
 // Registration Management
 import Reg_ma_new_request from './pages/Reg-ma_new_request';
@@ -44,7 +45,7 @@ import CompanyProfile from './pages/Reg_ma_company_profile';
 import EditCompany from './pages/EditCompany';
 
 // Driver Management
-import AddDriverForm from './pages/AddDriverForm';
+import AddDriverForm from './pages/Driver_manage_attachment'; // AddDriverForm is exported from Driver_manage_attachment
 import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
@@ -66,6 +67,15 @@ import AccountingDashboard from './pages/AccountingDashboard';
 import TransactionManagement from './pages/TransactionManagement';
 import IncomeManagement from './pages/IncomeManagement';
 import ExpenseManagement from './pages/ExpenseManagement';
+import BudgetManagement from './pages/BudgetManagement';
+import PayrollManagement from './pages/PayrollManagement';
+import BankAccountManagement from './pages/BankAccountManagement';
+import AccountingSystemTest from './pages/AccountingSystemTest';
+import AccountingCRUDTest from './pages/AccountingCRUDTest';
+
+// Admin Management
+import AdminUserManagement from './pages/AdminUserManagement';
+import DriverAuthManagement from './pages/DriverAuthManagement';
 
 function App() {
   return (
@@ -92,6 +102,8 @@ function App() {
         <Route path="/register-management-dashboard" element={<RegisterManagementDashboard />} />
         <Route path="/register-management-test" element={<RegisterManagementTest />} />
         <Route path="/driver-profile-test" element={<DriverProfileTest />} />
+        <Route path="/accounting-system-test" element={<AccountingSystemTest />} />
+        <Route path="/accounting-crud-test" element={<AccountingCRUDTest />} />
 
         {/* Protected Routes */}
         <Route
@@ -103,6 +115,7 @@ function App() {
         >
           {/* Dashboard */}
           <Route path="/dashboard" element={<DriverManagement />} />
+          <Route path="/driver-management-dashboard" element={<DriverManagementDashboard />} />
 
           {/* Registration Management */}
           <Route path="/registration-management" element={<Reg_ma_new_request />} />
@@ -197,6 +210,48 @@ function App() {
             element={
               <ProtectedRoute>
                 <ExpenseManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/budgets"
+            element={
+              <ProtectedRoute>
+                <BudgetManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/payroll"
+            element={
+              <ProtectedRoute>
+                <PayrollManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/bank-accounts"
+            element={
+              <ProtectedRoute>
+                <BankAccountManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Management - Admin only */}
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute requiredRoles={['admin']}>
+                <AdminUserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/driver-auth"
+            element={
+              <ProtectedRoute requiredRoles={['admin']}>
+                <DriverAuthManagement />
               </ProtectedRoute>
             }
           />

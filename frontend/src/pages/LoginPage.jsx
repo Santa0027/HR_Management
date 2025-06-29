@@ -6,7 +6,7 @@ import { loginUser } from '../services/authService';
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
-    email: 'admin@example.com',  // Pre-filled for testing
+    email: 'admin@hrmanagement.com',  // Pre-filled for testing
     password: 'admin123'         // Pre-filled for testing
   });
   const [error, setError] = useState('');

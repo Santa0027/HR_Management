@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AccountingCategoryViewSet, PaymentMethodViewSet, BankAccountViewSet,
     TransactionViewSet, IncomeViewSet, ExpenseViewSet, DriverPayrollViewSet,
-    BudgetViewSet, FinancialReportViewSet, RecurringTransactionViewSet
+    BudgetViewSet, FinancialReportViewSet, RecurringTransactionViewSet,
+    TripStatsView, TripViewSet
 )
 
 router = DefaultRouter()
@@ -17,7 +18,10 @@ router.register(r'payroll', DriverPayrollViewSet, basename='driver-payroll')
 router.register(r'budgets', BudgetViewSet, basename='budget')
 router.register(r'reports', FinancialReportViewSet, basename='financial-report')
 router.register(r'recurring', RecurringTransactionViewSet, basename='recurring-transaction')
+router.register(r'trips', TripViewSet, basename='trip')
 
 urlpatterns = [
     path('', include(router.urls)),
+    # Note: TripViewSet custom actions (driver_stats, recent_trips, driver_trips)
+    # are automatically registered by the router, so no need for manual URL patterns
 ]

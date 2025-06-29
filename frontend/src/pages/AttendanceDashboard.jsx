@@ -499,7 +499,7 @@ const AttendanceReport = () => {
       </header>
 
       <div className="p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+        <div className="max-w-8xl mx-auto space-y-8">
           {/* Enhanced Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
             <MetricCard

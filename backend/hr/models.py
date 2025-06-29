@@ -28,7 +28,7 @@ class ApartmentLocation(models.Model):
     # THIS LINE IS CRUCIAL: What is the name of your ForeignKey field to Driver?
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE,null=True,blank=True,related_name='apartment_locations') # <--- Is it 'driver'? Or something else?
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    update_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name

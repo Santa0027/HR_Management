@@ -177,7 +177,7 @@ function VehicleListManagement() {
 
       {/* Main Content */}
       <div className="p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-8xl mx-auto">
           {/* Page Header */}
           <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">

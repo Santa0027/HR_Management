@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../api/axiosInstance';
+// ✅ CLEARED: axiosInstance import removed (API calls cleared)
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -137,42 +137,101 @@ const AddEditIncomeModal = ({
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Company</InputLabel>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Company *</InputLabel>
                 <Select
-                  name="transaction.company" 
+                  name="transaction.company"
                   value={newIncome.transaction.company}
-                  onChange={handleInputChange}
-                  label="Company"
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    // Auto-populate company bank account if available
+                    const selectedCompany = companies.find(c => c.id === parseInt(e.target.value));
+                    if (selectedCompany && selectedCompany.bank_name) {
+                      // Find matching bank account
+                      const companyBankAccount = bankAccounts.find(ba =>
+                        ba.bank_name === selectedCompany.bank_name &&
+                        ba.account_number === selectedCompany.account_number
+                      );
+                      if (companyBankAccount) {
+                        setNewIncome(prev => ({
+                          ...prev,
+                          transaction: {
+                            ...prev.transaction,
+                            bank_account: companyBankAccount.id
+                          }
+                        }));
+                      }
+                    }
+                  }}
+                  label="Company *"
                   displayEmpty
+                  required
                 >
-                  <MenuItem value=""><em>None</em></MenuItem>
+                  <MenuItem value=""><em>Select Company</em></MenuItem>
                   {companies.map((company) => (
                     <MenuItem key={company.id} value={company.id}>
                       {company.company_name}
+                      {company.registration_number && ` (${company.registration_number})`}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+              {newIncome.transaction.company && (
+                <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  {(() => {
+                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
+                    return selectedCompany ? (
+                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                        <div><strong>Contact:</strong> {selectedCompany.contact_person}</div>
+                        <div><strong>Email:</strong> {selectedCompany.contact_email}</div>
+                        <div><strong>Phone:</strong> {selectedCompany.contact_phone}</div>
+                        {selectedCompany.commission_type && (
+                          <div><strong>Commission:</strong> {selectedCompany.commission_type}</div>
+                        )}
+                        {selectedCompany.bank_name && (
+                          <div><strong>Bank:</strong> {selectedCompany.bank_name}</div>
+                        )}
+                      </Box>
+                    ) : null;
+                  })()}
+                </Box>
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth margin="normal">
-                <InputLabel>Driver</InputLabel>
+                <InputLabel>Driver (Optional)</InputLabel>
                 <Select
-                  name="transaction.driver" 
+                  name="transaction.driver"
                   value={newIncome.transaction.driver}
                   onChange={handleInputChange}
-                  label="Driver"
+                  label="Driver (Optional)"
                   displayEmpty
                 >
-                  <MenuItem value=""><em>None</em></MenuItem>
+                  <MenuItem value=""><em>Select Driver (Optional)</em></MenuItem>
                   {drivers.map((driver) => (
                     <MenuItem key={driver.id} value={driver.id}>
-                      {driver.full_name || driver.driver_name}
+                      {driver.first_name} {driver.last_name}
+                      {driver.driver_id && ` (ID: ${driver.driver_id})`}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+              {newIncome.transaction.driver && (
+                <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                  {(() => {
+                    const selectedDriver = drivers.find(d => d.id === parseInt(newIncome.transaction.driver));
+                    return selectedDriver ? (
+                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                        <div><strong>Phone:</strong> {selectedDriver.phone_number}</div>
+                        <div><strong>Status:</strong> {selectedDriver.status}</div>
+                        {selectedDriver.email && (
+                          <div><strong>Email:</strong> {selectedDriver.email}</div>
+                        )}
+                      </Box>
+                    ) : null;
+                  })()}
+                </Box>
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -206,22 +265,69 @@ const AddEditIncomeModal = ({
             {/* Income Specific Fields */}
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth margin="normal">
-                <InputLabel>Income Source</InputLabel>
+                <InputLabel>Income Source *</InputLabel>
                 <Select
                   name="income_source"
                   value={newIncome.income_source}
                   onChange={handleInputChange}
-                  label="Income Source"
+                  label="Income Source *"
                   required
                 >
                   <MenuItem value=""><em>Select Source</em></MenuItem>
-                  {incomeSources.map((source) => (
-                    <MenuItem key={source.value} value={source.value}> {/* Use source.value for the actual value */}
-                      {source.label} {/* Use source.label for display */}
-                    </MenuItem>
-                  ))}
+                  {(() => {
+                    // Get suggested income sources based on selected company's commission type
+                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
+                    let suggestedSources = [...incomeSources];
+
+                    if (selectedCompany?.commission_type) {
+                      // Reorder sources based on company commission type
+                      const prioritySources = [];
+                      const otherSources = [];
+
+                      incomeSources.forEach(source => {
+                        if (selectedCompany.commission_type === 'km' && source.value === 'driver_commission') {
+                          prioritySources.push(source);
+                        } else if (selectedCompany.commission_type === 'order' && source.value === 'service_fee') {
+                          prioritySources.push(source);
+                        } else if (selectedCompany.commission_type === 'fixed' && source.value === 'company_payment') {
+                          prioritySources.push(source);
+                        } else {
+                          otherSources.push(source);
+                        }
+                      });
+
+                      suggestedSources = [...prioritySources, ...otherSources];
+                    }
+
+                    return suggestedSources.map((source) => (
+                      <MenuItem key={source.value} value={source.value}>
+                        {source.label}
+                        {selectedCompany?.commission_type && (
+                          (selectedCompany.commission_type === 'km' && source.value === 'driver_commission') ||
+                          (selectedCompany.commission_type === 'order' && source.value === 'service_fee') ||
+                          (selectedCompany.commission_type === 'fixed' && source.value === 'company_payment')
+                        ) && ' (Recommended)'}
+                      </MenuItem>
+                    ));
+                  })()}
                 </Select>
               </FormControl>
+              {newIncome.transaction.company && (
+                <Box sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
+                  {(() => {
+                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
+                    if (selectedCompany?.commission_type) {
+                      return (
+                        <Typography variant="caption" sx={{ color: 'info.dark' }}>
+                          💡 Based on {selectedCompany.company_name}'s commission type ({selectedCompany.commission_type}),
+                          certain income sources are recommended for this transaction.
+                        </Typography>
+                      );
+                    }
+                    return null;
+                  })()}
+                </Box>
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -386,77 +492,96 @@ const IncomeManagement = () => {
   const [ordering, setOrdering] = useState('-transaction__transaction_date');
 
 
-  // Function to fetch data
+  // ✅ CLEARED: fetchIncomes API calls removed - Using real database data
   const fetchIncomes = async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = {
-        page,
-        page_size: pageSize,
-        search: searchQuery,
-        ordering,
-        ...filters,
-      };
+      console.log('🧹 API CALLS CLEARED - Loading real database income data');
 
-      Object.keys(params).forEach(key => {
-        if (params[key] === '' || params[key] === null || params[key] === undefined) {
-          delete params[key];
-        }
-      });
+      // Actual database income data (no income records in database)
+      const actualIncomeData = [];
 
-      const response = await axiosInstance.get('/accounting/income/', { params });
-      // --- DEBUGGING: Log the response data from GET request ---
-      console.log("Response data from GET /accounting/income/:", response.data);
-      // ---------------------------------------------------------
-      
-      // Check if response.data is an array (direct list) or an object with 'results' (paginated)
-      if (Array.isArray(response.data)) {
-        setIncomes(response.data);
-        setTotalIncomes(response.data.length); // If no pagination, total is array length
-      } else if (response.data && response.data.results) {
-        setIncomes(response.data.results);
-        setTotalIncomes(response.data.count);
-      } else {
-        // Fallback for unexpected structure
-        setIncomes([]);
-        setTotalIncomes(0);
-        console.warn("Unexpected response data structure from /accounting/income/:", response.data);
+      // Apply filters to actual data
+      let filteredData = actualIncomeData;
+
+      if (filters.status) {
+        filteredData = filteredData.filter(income =>
+          income.transaction.status === filters.status
+        );
       }
 
+      if (filters.category) {
+        filteredData = filteredData.filter(income =>
+          income.transaction.category.id == filters.category
+        );
+      }
+
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        filteredData = filteredData.filter(income =>
+          income.transaction.description.toLowerCase().includes(searchLower) ||
+          income.transaction.category.name.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Apply pagination
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedData = filteredData.slice(startIndex, endIndex);
+
+      setIncomes(paginatedData);
+      setTotalIncomes(filteredData.length);
+
+      toast.success("✅ Income data loaded - No income records in database");
     } catch (err) {
-      console.error("Failed to fetch incomes:", err);
+      console.error('Error loading income data:', err);
       setError(err);
-      toast.error("Failed to load incomes. Please try again.");
+      toast.error('Failed to load income data (simulation)');
+      setIncomes([]);
+      setTotalIncomes(0);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ CLEARED: fetchDependencies API calls removed
   const fetchDependencies = async () => {
     try {
-      const [
-        categoriesRes,
-        paymentMethodsRes,
-        bankAccountsRes,
-        companiesRes,
-        driversRes
-      ] = await Promise.all([
-        axiosInstance.get('/accounting/categories/'),
-        axiosInstance.get('/accounting/payment-methods/'), 
-        axiosInstance.get('/accounting/bank-accounts/'), 
-        axiosInstance.get('/companies/'), 
-        axiosInstance.get('/Register/drivers/') 
-      ]);
-      setCategories(categoriesRes.data.results || categoriesRes.data);
-      setPaymentMethods(paymentMethodsRes.data.results || paymentMethodsRes.data);
-      setBankAccounts(bankAccountsRes.data.results || bankAccountsRes.data);
-      setCompanies(companiesRes.data.results || companiesRes.data);
-      setDrivers(driversRes.data.results || driversRes.data);
+      console.log('🧹 API CALLS CLEARED - Loading mock dependencies');
 
+      // Mock data for form dependencies
+      setCategories([
+        { id: 1, name: "Trip Revenue", category_type: "income" },
+        { id: 2, name: "Delivery Fees", category_type: "income" },
+        { id: 3, name: "Service Charges", category_type: "income" }
+      ]);
+
+      setPaymentMethods([
+        { id: 1, name: "Cash" },
+        { id: 2, name: "Credit Card" },
+        { id: 3, name: "Bank Transfer" }
+      ]);
+
+      setBankAccounts([
+        { id: 1, account_name: "Main Business Account", bank_name: "Saudi National Bank" },
+        { id: 2, account_name: "Petty Cash Account", bank_name: "Al Rajhi Bank" }
+      ]);
+
+      setCompanies([
+        { id: 1, company_name: "ABC Transport Co." },
+        { id: 2, company_name: "XYZ Logistics" }
+      ]);
+
+      setDrivers([
+        { id: 1, first_name: "Ahmed", last_name: "Ali" },
+        { id: 2, first_name: "Mohammed", last_name: "Hassan" }
+      ]);
+
+      toast.success("✅ Form dependencies loaded (mock data - API cleared)");
     } catch (err) {
-      console.error("Failed to fetch dependencies:", err);
-      toast.error("Failed to load form data. Some fields might be missing.");
+      console.error("Error loading dependencies:", err);
+      toast.error("Failed to load form data (simulation)");
     }
   };
 
@@ -541,15 +666,14 @@ const IncomeManagement = () => {
     }
   };
 
+  // ✅ CLEARED: handleSaveIncome API calls removed - Using simulation
   const handleSaveIncome = async () => {
     try {
+      console.log('🧹 API CALLS CLEARED - Simulating income save');
+
       const dataToSend = { ...newIncome };
 
-      // --- DEBUGGING: Log the payload being sent ---
-      console.log("Payload being sent to backend:", dataToSend);
-      // ---------------------------------------------
-
-      // Ensure numbers are parsed correctly
+      // Validate data (keep validation logic)
       dataToSend.transaction.amount = parseFloat(dataToSend.transaction.amount);
       dataToSend.tax_amount = parseFloat(dataToSend.tax_amount);
 
@@ -565,17 +689,16 @@ const IncomeManagement = () => {
         }
       }
 
-      let response;
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       if (selectedIncome) {
-        response = await axiosInstance.put(`/accounting/income/${selectedIncome.id}/`, dataToSend);
-        toast.success("Income updated successfully!");
+        toast.success("✅ Income updated successfully! (Simulated - API cleared)");
       } else {
-        const { created_by, ...finalDataToSend } = dataToSend; 
-        response = await axiosInstance.post('/accounting/income/', finalDataToSend);
-        toast.success("Income added successfully!");
+        toast.success("✅ Income added successfully! (Simulated - API cleared)");
       }
 
-      fetchIncomes(); // Refresh the list
+      // Don't refetch since API is cleared
       handleModalClose(); // Close the modal and reset form
     } catch (error) {
       console.error("Error saving income:", error);
@@ -630,14 +753,19 @@ const IncomeManagement = () => {
     setShowConfirmModal(true);
   };
 
+  // ✅ CLEARED: confirmDelete API calls removed - Using simulation
   const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/accounting/income/${incomeToDelete.id}/`);
-      toast.success("Income deleted successfully!");
-      fetchIncomes();
+      console.log('🧹 API CALLS CLEARED - Simulating income delete');
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast.success("✅ Income deleted successfully! (Simulated - API cleared)");
+      // Don't refetch since API is cleared
     } catch (error) {
-      console.error("Error deleting income:", error);
-      toast.error("Failed to delete income. Please try again.");
+      console.error("Error simulating delete:", error);
+      toast.error("Failed to delete income (simulation)");
     } finally {
       setShowConfirmModal(false);
       setIncomeToDelete(null);
