@@ -1,41 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-// import axios from 'axios'; // Removed if not directly used
-// import axiosInstance from '../api/axiosInstance'; // Commented out, assume it's correctly configured in your actual environment
+import axios from 'axios';
 import { Upload, CircleUserRound } from 'lucide-react';
-
-// --- Mock axiosInstance for demonstration purposes ---
-// In your actual project, ensure your axiosInstance points to your Django backend.
-const axiosInstance = {
-    get: async (url) => {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        if (url === 'vehicles/') {
-            return {
-                data: [
-                    { id: 1, vehicle_name: 'Truck A', vehicle_number: 'XYZ-123' },
-                    { id: 2, vehicle_name: 'Van B', vehicle_number: 'ABC-456' },
-                ]
-            };
-        }
-        if (url === 'company/') {
-            return {
-                data: [
-                    { id: 101, company_name: 'Logistics Co. A' },
-                    { id: 102, company_name: 'Transport Co. B' },
-                ]
-            };
-        }
-        return { data: [] };
-    },
-    post: async (url, data, config) => {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log("Mock API POST to:", url);
-        console.log("Mock API Data:", Object.fromEntries(data.entries())); // Log FormData content
-        // Simulate a successful response
-        return { status: 201, data: { message: "Driver created successfully!" } };
-    }
-};
+import axiosInstance from '../api/axiosInstance';
+// --- Axios Instance ---
+// This instance will be used for all API calls within this component.
+// Adjust the baseURL to your actual Django backend URL.
 
 
 // --- Reusable Components ---
@@ -241,9 +210,8 @@ const DriverInfoForm = ({ formData, isEditing, handleChange, handleFileChange, v
                         {vehicles.map(v => <option key={v.id} value={v.id}>{`${v.vehicle_name} (${v.vehicle_number})`}</option>)}
                     </select>
                 </EditableField>
-                {/* Changed name from "company" to "company_id" */}
-                <EditableField label="Assign Company" name="company_id" value={formData.company_id} onChange={handleChange} isEditing={isEditing}>
-                    <select name="company_id" value={formData.company_id} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
+                <EditableField label="Assign Company" name="company" value={formData.company} onChange={handleChange} isEditing={isEditing}>
+                    <select name="company" value={formData.company} onChange={handleChange} className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white">
                         <option value="">{loadingInitialData ? 'Loading...' : 'Select Company'}</option>
                         {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
                     </select>
@@ -320,7 +288,7 @@ const AddDriverForm = () => {
         driver_name: '', gender: '', iqama: '', mobile: '', city: '',
         nationality: '', dob: '',
         vehicle_id: '', // Using vehicle_id to match backend expectation
-        company_id: '', // Changed from 'company' to 'company_id'
+        company: '',
         documents: {
             driver_profile_img: null, // Holds File object or URL
             iqama_document: null, iqama_expiry: '', passport_document: null, passport_expiry: '',
@@ -409,8 +377,8 @@ const AddDriverForm = () => {
 
         const data = new FormData(); // Create FormData object to send form data, including files
 
-        // Append basic driver information fields, including vehicle_id and company_id
-        const infoKeys = ['driver_name', 'gender', 'iqama', 'mobile', 'city', 'nationality', 'dob', 'vehicle_id', 'company_id']; // Added company_id
+        // Append basic driver information fields, including vehicle_id and company
+        const infoKeys = ['driver_name', 'gender', 'iqama', 'mobile', 'city', 'nationality', 'dob', 'vehicle_id', 'company'];
         infoKeys.forEach(key => {
             if (formData[key]) data.append(key, formData[key]);
         });
@@ -435,17 +403,12 @@ const AddDriverForm = () => {
         try {
             const response = await submitDriver(data); // Call the submission helper function
             if (response.status === 201 || response.status === 200) {
-                // IMPORTANT: Do NOT use alert() or window.alert() in Canvas. Use a custom modal or message display.
-                // For demonstration, replacing alert with console log.
-                console.log(`Driver submitted in ${mode} mode successfully!`);
-                alert(`Driver submitted in ${mode} mode successfully!`); // Kept for current behavior
+                alert(`Driver submitted in ${mode} mode successfully!`);
                 setFormData(initialFormData); // Reset form to initial state on successful submission
                 setIsEditing(true); // Keep editing mode active (or set to false if preferred)
                 setActiveTab('info'); // Return to the info tab
             } else {
-                // IMPORTANT: Do NOT use alert() or window.alert() in Canvas.
-                console.error('Submission failed with an unexpected status.');
-                alert('Submission failed with an unexpected status.'); // Kept for current behavior
+                 alert('Submission failed with an unexpected status.');
             }
         } catch (err) {
             console.error("Submission failed:", err);
@@ -454,8 +417,7 @@ const AddDriverForm = () => {
                 // If the API provides specific error details, include them in the alert
                 errorMessage = `Submission failed: ${JSON.stringify(err.response.data)}`;
             }
-            // IMPORTANT: Do NOT use alert() or window.alert() in Canvas.
-            alert(errorMessage); // Kept for current behavior
+            alert(errorMessage);
         }
     };
 
@@ -538,4 +500,3 @@ const AddDriverForm = () => {
 };
 
 export default AddDriverForm;
-

@@ -109,32 +109,32 @@ class ApartmentLocationSerializer(serializers.ModelSerializer):
         model = ApartmentLocation
         fields = "__all__" # <--- This is interacting with the above.
 
-    def create(self, validated_data):
-        driver_id = validated_data.pop('driver_id') # Correctly pops the ID
-        try:
-            driver_instance = Driver.objects.get(id=driver_id) # Correctly gets the Driver instance
-        except Driver.DoesNotExist:
-            raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    # def create(self, validated_data):
+    #     driver_id = validated_data.get('driver_id') # Correctly pops the ID
+    #     try:
+    #         driver_instance = Driver.objects.get(id=driver_id) # Correctly gets the Driver instance
+    #     except Driver.DoesNotExist:
+    #         raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
         
-        # This line remains correct as your model field is named 'driver'
-        apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
-        return apartment_location
+    #     # This line remains correct as your model field is named 'driver'
+    #     apartment_location = ApartmentLocation.objects.create(driver=driver_instance, **validated_data)
+    #     return apartment_location
 
-    def update(self, instance, validated_data):
-        driver_id = validated_data.pop('driver_id', None)
+    # def update(self, instance, validated_data):
+    #     driver_id = validated_data.pop('driver_id', None)
         
-        if driver_id is not None:
-            try:
-                # This line remains correct as your model field is named 'driver'
-                instance.driver = Driver.objects.get(id=driver_id)
-            except Driver.DoesNotExist:
-                raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
+    #     if driver_id is not None:
+    #         try:
+    #             # This line remains correct as your model field is named 'driver'
+    #             instance.driver = Driver.objects.get(id=driver_id)
+    #         except Driver.DoesNotExist:
+    #             raise serializers.ValidationError({"driver_id": "Driver with this ID does not exist."})
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+    #     for attr, value in validated_data.items():
+    #         setattr(instance, attr, value)
         
-        instance.save()
-        return instance
+    #     instance.save()
+    #     return instance
 
 
 # -----------------------------

@@ -1,7 +1,7 @@
 // src/services/authService.js
 import axios from 'axios';
 
-const API_URL = 'http://13.204.66.176:8000/api/token/';
+const API_URL = 'http://localhost:8000/api/token/';
 
 export const loginUser = async (credentials) => {
   try {

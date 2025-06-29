@@ -461,15 +461,10 @@ class CheckinLocationSerializer(serializers.ModelSerializer):
 
 class ApartmentLocationSerializer(serializers.ModelSerializer):
     """Serializer for ApartmentLocation model."""
-    # This correctly handles the ForeignKey:
-    # For POST/PUT (input), it expects an integer ID for the 'driver' field.
-    # For GET (output), it will display the driver's ID by default.
-    driver = serializers.PrimaryKeyRelatedField(queryset=Driver.objects.all())
 
-    # Add a read-only field to display the driver's name when retrieving data (GET requests).
+    driver = serializers.PrimaryKeyRelatedField(queryset=Driver.objects.all())
     driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
 
     class Meta:
         model = ApartmentLocation
-        # Include both 'driver' (for input/output as ID) and 'driver_name' (for display only)
-        fields = "_all__"
+        fields = "__all__"  # ✅ Corrected from "_all__"
