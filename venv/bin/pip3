@@ -1,6 +1,4 @@
-#!/bin/sh
-'''exec' "/home/sandesh-nirmal/Documents/freelancing projetcs/Business_management/HR_Management/venv/bin/python3" "$0" "$@"
-' '''
+#!/home/santhakumar/Documents/project/HR_Management/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
