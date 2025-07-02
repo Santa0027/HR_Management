@@ -7,7 +7,7 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
-  
+
 
     # Other app routes
     path('', include('drivers.urls')),  # if you have app-specific URLs
@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include('company.urls')),
     path('', include('usermanagement.urls')),
     path('', include('hr.urls')),
+    path('accounting/', include('accounting.urls')),  # Add accounting URLs
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

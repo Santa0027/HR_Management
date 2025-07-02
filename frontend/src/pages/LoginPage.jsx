@@ -1,14 +1,26 @@
 // src/pages/LoginPage.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Ensure this path is correct for your project
+import { useAuth } from '../context/AuthContext';
 import { loginUser } from '../services/authService';
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // State for loading indicator
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Add error boundary for useAuth
+  let login;
+  try {
+    const auth = useAuth();
+    login = auth.login;
+    console.log('Auth context loaded successfully:', auth.user ? 'User logged in' : 'No user');
+  } catch (error) {
+    console.error('Error loading auth context:', error);
+    setError('Authentication system error. Please refresh the page.');
+    login = () => {};
+  }
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
@@ -17,16 +29,15 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
 
     try {
       const res = await loginUser(credentials);
-
       console.log('Login success:', res);
 
-      if (res?.access) {
-        localStorage.setItem('accessToken', res.access);
-        localStorage.setItem('refreshToken', res.refresh);
+      if (res?.access || res?.token) {
+        // Use the AuthContext login method
+        login(res);
         console.log('Navigating to dashboard...');
         navigate('/dashboard');
       } else {
@@ -34,13 +45,14 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      // More specific error message from backend if available
-      const errorMessage = err.response?.data?.detail || 'Invalid credentials. Please try again.';
+      const errorMessage = err.response?.data?.error || err.response?.data?.detail || 'Invalid credentials. Please try again.';
       setError(errorMessage);
     } finally {
-      setIsLoading(false); // Stop loading
+      setIsLoading(false);
     }
   };
+
+  console.log('LoginPage rendering...');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center p-4 font-sans">

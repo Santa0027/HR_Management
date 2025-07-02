@@ -24,6 +24,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         ('hr', 'HR'),
         ('driver', 'Driver'),
         ('staff', 'Staff'),
+        ('accountant', 'Accountant'),
+        ('management', 'Management'),
     )
 
     email = models.EmailField(unique=True)
@@ -41,6 +43,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
+
+    def get_full_name(self):
+        """Return the full name of the user"""
+        return f"{self.first_name} {self.last_name}".strip()
+
+    def get_short_name(self):
+        """Return the short name of the user"""
+        return self.first_name
 
     def __str__(self):
         return f"{self.email} ({self.role})"

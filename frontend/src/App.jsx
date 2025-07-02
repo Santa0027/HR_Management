@@ -5,10 +5,12 @@ import './App.css';
 
 // Public pages
 import LoginPage from './pages/LoginPage';
+import TestLogin from './pages/TestLogin';
 
 // Layout and protection
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 // Dashboard
 import DriverManagement from './pages/Drivermanagement';
@@ -43,15 +45,23 @@ import HRDashboard from './pages/HRDashboard';
 import WarningLetters from './pages/WarningLetter';
 import TerminationManagement from './pages/TerminationLetter';
 
+// Accounting
+import AccountingDashboard from './pages/AccountingDashboard';
+import TransactionManagement from './pages/TransactionManagement';
+import IncomeManagement from './pages/IncomeManagement';
+import ExpenseManagement from './pages/ExpenseManagement';
+
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/login" />} />
 
         {/* Public route */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/test-login" element={<TestLogin />} />
 
         {/* Protected Routes */}
         <Route
@@ -88,15 +98,78 @@ function App() {
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
           <Route path="/vehicleapprovel" element={<PendingApprovalTabContent />} />
 
-          {/* HR & Attendance */}
-          <Route path="/AttendanceDashboard" element={<AttendanceDashboard />} />
-          <Route path="/HRDashboard" element={<HRDashboard />} />
-          <Route path="/warningletter" element={<WarningLetters />} />
-          <Route path="/terminationletter" element={<TerminationManagement />} />
-          
+          {/* HR & Attendance - HR and Admin only */}
+          <Route
+            path="/AttendanceDashboard"
+            element={
+              <ProtectedRoute requiredPermissions={['can_view_attendance']}>
+                <AttendanceDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/HRDashboard"
+            element={
+              <ProtectedRoute requiredPermissions={['can_view_hr']}>
+                <HRDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warningletter"
+            element={
+              <ProtectedRoute requiredPermissions={['can_manage_hr']}>
+                <WarningLetters />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/terminationletter"
+            element={
+              <ProtectedRoute requiredPermissions={['can_manage_hr']}>
+                <TerminationManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Accounting - Accountant and Admin only */}
+          <Route
+            path="/accounting"
+            element={
+              <ProtectedRoute requiredPermissions={['can_view_accounting']}>
+                <AccountingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/transactions"
+            element={
+              <ProtectedRoute requiredPermissions={['can_view_accounting']}>
+                <TransactionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/income"
+            element={
+              <ProtectedRoute requiredPermissions={['can_manage_accounting']}>
+                <IncomeManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/expenses"
+            element={
+              <ProtectedRoute requiredPermissions={['can_manage_accounting']}>
+                <ExpenseManagement />
+              </ProtectedRoute>
+            }
+          />
+
         </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

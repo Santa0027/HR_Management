@@ -3,10 +3,13 @@ from django.contrib.auth import get_user_model
 
 # Assuming these imports are correct based on your setup
 from .models import (
-    Driver, Company, 
+    Driver, Company,
     CheckinLocation, ApartmentLocation,
     Attendance, MonthlyAttendanceSummary,
-    WarningLetter, Termination
+    WarningLetter, Termination,
+    Employee, LeaveType, LeaveBalance, LeaveRequest, PerformanceReview,
+    Goal, EmployeeDocument, Payroll, Training, TrainingEnrollment,
+    HRPolicy, PolicyAcknowledgment
 )
 from vehicle.models import VehicleRegistration
 
@@ -140,6 +143,7 @@ class ApartmentLocationSerializer(serializers.ModelSerializer):
 # -----------------------------
 # Other Serializers (No changes needed)
 # -----------------------------
+# -----------------------------
 class AttendanceSerializer(serializers.ModelSerializer):
     driver = DriverSerializer(read_only=True)
     driver_id = serializers.PrimaryKeyRelatedField(
@@ -154,11 +158,25 @@ class AttendanceSerializer(serializers.ModelSerializer):
         write_only=True,
         allow_null=True
     )
+    active_time_hours = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Attendance
         fields = '__all__'
-        read_only_fields = ['driver_name']
+        read_only_fields = ['status', 'created_at', 'updated_at', 'active_time_hours']
+        # Explicitly mark photo fields as not required by the serializer if they are nullable in the model
+        extra_kwargs = {
+            'login_photo': {'required': False, 'allow_null': True},
+            'logout_photo': {'required': False, 'allow_null': True},
+            'reason_for_deduction': {'required': False, 'allow_null': True},
+            'deduct_amount': {'required': False, 'allow_null': True},
+            'platform': {'required': False, 'allow_null': True},
+            'assigned_time': {'required': False, 'allow_null': True},
+            'login_latitude': {'required': False, 'allow_null': True},
+            'login_longitude': {'required': False, 'allow_null': True},
+            'logout_latitude': {'required': False, 'allow_null': True},
+            'logout_longitude': {'required': False, 'allow_null': True},
+        }
 
 
 class MonthlyAttendanceSummarySerializer(serializers.ModelSerializer):
@@ -248,3 +266,200 @@ class TerminationSerializer(serializers.ModelSerializer):
         except ImportError:
             # Fallback if CustomUserSerializer cannot be imported
             return {'id': obj.processed_by.id, 'username': obj.processed_by.username} if obj.processed_by else None
+
+
+# Enhanced HR Serializers
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    full_name = serializers.ReadOnlyField()
+    years_of_service = serializers.ReadOnlyField()
+    manager_name = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employee
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'created_at': {'read_only': True},
+            'updated_at': {'read_only': True},
+        }
+
+    def get_manager_name(self, obj):
+        return obj.manager.full_name if obj.manager else None
+
+    def get_company_name(self, obj):
+        return obj.company.company_name if obj.company else None
+
+
+class LeaveTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LeaveType
+        fields = '__all__'
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    remaining_days = serializers.ReadOnlyField()
+    employee_name = serializers.SerializerMethodField()
+    leave_type_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LeaveBalance
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_leave_type_name(self, obj):
+        return obj.leave_type.name
+
+
+class LeaveRequestSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    leave_type_name = serializers.SerializerMethodField()
+    approved_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LeaveRequest
+        fields = '__all__'
+        extra_kwargs = {
+            'days_requested': {'read_only': True},
+            'created_at': {'read_only': True},
+            'updated_at': {'read_only': True},
+        }
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_leave_type_name(self, obj):
+        return obj.leave_type.name
+
+    def get_approved_by_name(self, obj):
+        return obj.approved_by.full_name if obj.approved_by else None
+
+
+class PerformanceReviewSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    reviewer_name = serializers.SerializerMethodField()
+    approved_by_name = serializers.SerializerMethodField()
+    average_rating = serializers.ReadOnlyField()
+
+    class Meta:
+        model = PerformanceReview
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_reviewer_name(self, obj):
+        return obj.reviewer.full_name
+
+    def get_approved_by_name(self, obj):
+        return obj.approved_by.full_name if obj.approved_by else None
+
+
+class GoalSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    is_overdue = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Goal
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.full_name
+
+
+class EmployeeDocumentSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+    is_expired = serializers.ReadOnlyField()
+
+    class Meta:
+        model = EmployeeDocument
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_uploaded_by_name(self, obj):
+        return obj.uploaded_by.full_name
+
+
+class PayrollSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    processed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payroll
+        fields = '__all__'
+        extra_kwargs = {
+            'gross_salary': {'read_only': True},
+            'total_deductions': {'read_only': True},
+            'net_salary': {'read_only': True},
+            'overtime_pay': {'read_only': True},
+        }
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_processed_by_name(self, obj):
+        return obj.processed_by.full_name if obj.processed_by else None
+
+
+class TrainingSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+    enrolled_count = serializers.ReadOnlyField()
+    available_slots = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Training
+        fields = '__all__'
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.full_name
+
+
+class TrainingEnrollmentSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    training_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TrainingEnrollment
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_training_title(self, obj):
+        return obj.training.title
+
+
+class HRPolicySerializer(serializers.ModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HRPolicy
+        fields = '__all__'
+
+    def get_created_by_name(self, obj):
+        return obj.created_by.full_name
+
+
+class PolicyAcknowledgmentSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    policy_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PolicyAcknowledgment
+        fields = '__all__'
+
+    def get_employee_name(self, obj):
+        return obj.employee.full_name
+
+    def get_policy_title(self, obj):
+        return obj.policy.title
