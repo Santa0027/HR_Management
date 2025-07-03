@@ -172,7 +172,6 @@ function Reg_ma_new_request() {
             </button>
           </div>
         </div>
-
         <div className="overflow-x-auto mb-4">
           <table className="min-w-full bg-gray-900 rounded-lg">
             <thead>
@@ -182,7 +181,7 @@ function Reg_ma_new_request() {
                 <th className="py-3 px-6 text-left">Driver Name</th>
                 <th className="py-3 px-6 text-left">Phone Number</th>
                 <th className="py-3 px-6 text-left">Delivery Provider</th>
-                <th className="py-3 px-6 text-left">Tawseel Approval</th>
+                {/* <th className="py-3 px-6 text-left">Tawseel Approval</th> */}
                 <th className="py-3 px-6 text-left">Vehicle Type</th>
                 <th className="py-3 px-6 text-left">City</th>
                 <th className="py-3 px-6 text-left">Request Status</th>
@@ -195,15 +194,15 @@ function Reg_ma_new_request() {
               ) : error ? (
                 <tr><td colSpan="10" className="py-6 text-center text-red-400">{error}</td></tr>
               ) : filteredDrivers.length > 0 ? (
-                filteredDrivers.map((driver, index) => (
-                  <tr key={index} className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white">
-                    <td className="py-3 px-6">{driver.driver_}</td>
+                filteredDrivers.map((driver) => ( // Removed 'index' as key, using driver.id is better
+                  <tr key={driver.id} className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white">
+                    <td className="py-3 px-6">{driver.id}</td> {/* Changed from driver.driver_ to driver.id */}
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
                     <td className="py-3 px-6">{driver.mobile}</td>
                     <td className="py-3 px-6">{driver.company?.company_name}</td>
-                    <td className="py-3 px-6">{driver.approval}</td>
-                    <td className="py-3 px-6">{driver.vehicle?.vehicle_type || 'No Vehicle Assigned'}</td>
+                    {/* <td className="py-3 px-6">{driver.approval}</td> */}
+                    <td className="py-3 px-6">{driver.vehicle?.vehicle_type || 'N/A'}</td>
                     <td className="py-3 px-6">{driver.city}</td>
                     <td className="py-3 px-6">{driver.status}</td>
                     <td className="py-3 px-6 text-center">
@@ -222,6 +221,6 @@ function Reg_ma_new_request() {
       </div>
     </div>
   );
-}
+}   
 
 export default Reg_ma_new_request;

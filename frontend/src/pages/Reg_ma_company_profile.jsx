@@ -262,7 +262,7 @@ function CompanyProfile() {
         {/* Company Details */}
         <div className="bg-[#C9D6DF] p-6 rounded-lg mb-8 flex items-center">
           <img
-            src={companyData.logo || 'https://placehold.co/80x80/535c9b/ffffff?text=Logo'}
+            src={companyData.company_logo || 'https://placehold.co/80x80/535c9b/ffffff?text=Logo'}
             alt="Company Logo"
             className="w-20 h-20 rounded-full object-cover mr-6"
             onError={(e) => {

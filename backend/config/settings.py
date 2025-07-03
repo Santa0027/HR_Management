@@ -31,6 +31,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://3.109.121.22:5174",
     "http://172.31.12.113:5174",
+    "http://43.204.238.225:5174",
+    "http://43.204.238.225:5173",
 ]
 
 # Allow all headers that might be needed for authentication and API calls
@@ -81,8 +83,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://13.204.66.176:5174",
-    "http://172.31.8.148:5174",
+    "http://43.204.238.225:5174",
+    "http://43.204.238.225:5173",
 ]
 
 INSTALLED_APPS = [

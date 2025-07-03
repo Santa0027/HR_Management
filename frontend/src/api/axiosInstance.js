@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable for baseURL
-const baseURL ='http://13.200.243.54:8000';
+const baseURL ='http://43.204.238.225:8000';
 
 const axiosInstance = axios.create({
   baseURL,

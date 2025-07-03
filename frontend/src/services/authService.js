@@ -1,7 +1,7 @@
 // src/services/authService.js
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://13.200.243.54:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://43.204.238.225:8000";
 
 export const loginUser = async (credentials) => {
   try {

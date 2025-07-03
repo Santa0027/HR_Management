@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios'; // Ensure axios is imported if axiosInstance relies on it
+import axios from 'axios';
 import { Upload, CircleUserRound } from 'lucide-react';
 import axiosInstance from '../api/axiosInstance';
+
 // --- Axios Instance ---
 // This instance will be used for all API calls within this component.
 // Adjust the baseURL to your actual Django backend URL.
@@ -199,6 +200,7 @@ const DriverInfoForm = ({ formData, isEditing, handleChange, handleFileChange, v
         </EditableField>
         <EditableField label="Nationality" name="nationality" value={formData.nationality} onChange={handleChange} isEditing={isEditing} placeholder="Enter nationality" />
         <EditableField label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} isEditing={isEditing} />
+        <EditableField label="Request Number" name="id" value={formData.id} onChange={handleChange} isEditing={isEditing} placeholder="Enter Request Number" required />
 
         {/* Vehicle & Company Assignment section - now part of DriverInfoForm */}
         <div className="lg:col-span-3"> {/* Use full width for this section on larger screens */}
@@ -316,8 +318,8 @@ const AddDriverForm = () => {
 
                 // Filter vehicles to include only approved ones
                 // IMPORTANT: Ensure your Django Vehicle model/serializer sends an 'is_approved' field
-                const approvedVehicles = vehiclesRes.data.filter(vehicle => vehicle.is_approved);
-                setVehicles(approvedVehicles); // Set only approved vehicles
+                // Removed the filter: All vehicles will be shown now
+                setVehicles(vehiclesRes.data);
 
                 setCompanies(companiesRes.data);
             } catch (err) {
