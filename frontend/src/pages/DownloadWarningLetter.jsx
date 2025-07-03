@@ -17,7 +17,7 @@ function DownloadWarningLetter({ letterId }) {
     try {
       // API endpoint for warning letter PDF generation
       const response = await axiosInstance.get(
-        `/warningletter/${letterId}/generate_pdf/`, // <<< Specific endpoint for Warning Letters
+        `/warning-letters/${letterId}/generate_pdf/`, // <<< Specific endpoint for Warning Letters
         {
           responseType: 'blob', // Important for file downloads
         }

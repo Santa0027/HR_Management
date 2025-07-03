@@ -17,7 +17,7 @@ function DownloadTerminationLetter({ terminationId }) {
     try {
       // Make a GET request to your backend PDF generation endpoint
       const response = await axiosInstance.get(
-        `/terminationletter/${terminationId}/generate_pdf/`, // Adjust this URL to your actual backend endpoint
+        `/terminations/${terminationId}/generate_pdf/`, // Adjust this URL to your actual backend endpoint
         {
           responseType: 'blob', // Important: responseType must be 'blob' for file downloads
         }

@@ -202,12 +202,12 @@ function Driver_mange_DrProfile() {
       {/* Profile Header Section */}
       <div className="bg-[#D9D9D9] p-6 rounded-lg flex items-center mb-8">
         <img
-          src={driverProfilePicture}
+          src={driverData.driver_profile_img}
           alt="Driver Avatar"
           className="w-24 h-24 rounded-full object-cover mr-6"
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = 'https://placehold.co/100x100/535c9b/ffffff?text=Avatar';
+            e.target.src = 'https://.co/100x100/535c9b/ffffff?text=Avatar';
           }}
         />
         <div>

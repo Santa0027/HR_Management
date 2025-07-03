@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react"; // Added useMemo
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 import {
@@ -6,16 +6,15 @@ import {
 } from 'lucide-react';
 
 const Badge = ({ status }) => {
-  // Normalize status for consistent display from Django model choices
   let displayStatus = status;
-  let color = "bg-gray-500"; // Default for unknown/N/A
+  let color = "bg-gray-500";
 
   if (status === "approved") {
     displayStatus = "Approved";
     color = "bg-green-600";
   } else if (status === "pending") {
     displayStatus = "Pending";
-    color = "bg-yellow-600"; // Added yellow for pending
+    color = "bg-yellow-600";
   } else if (status === "rejected") {
     displayStatus = "Rejected";
     color = "bg-red-600";
@@ -37,9 +36,11 @@ export default function DriverManagement() {
   const [searchId, setSearchId] = useState('');
   const [driverNameSearch, setDriverNameSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('');
-  const [vehicleTypeFilter, setVehicleTypeFilter] = useState(''); // Assuming vehicleType.vehicle_make or .model
-  const [accountStatusFilter, setAccountStatusFilter] = useState(''); // Maps to Django 'status' field
-  const [driverStatusFilter, setDriverStatusFilter] = useState(''); // Placeholder, potentially maps to 'status' or a new field
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState('');
+  const [accountStatusFilter, setAccountStatusFilter] = useState('');
+  // Set default to 'Active' to only list active drivers initially
+  const [driverStatusFilter, setDriverStatusFilter] = useState('Active');
+
 
   useEffect(() => {
     axiosInstance.get("/Register/onboarded/")
@@ -72,14 +73,15 @@ export default function DriverManagement() {
         return false;
       }
 
-      // Vehicle Type Filter (assuming vehicleType is an object with vehicle_make/model)
+      // Vehicle Type Filter (assuming driver.vehicle is an object with vehicle_make/model)
       if (vehicleTypeFilter) {
-        const vehicleInfo = `${driver.vehicle.id || ''} ${driver.id || ''}`.toLowerCase();
+        // Ensure driver.vehicle exists before accessing its properties
+        const vehicleInfo = driver.vehicle ? `${driver.vehicle.vehicle_make || ''} ${driver.vehicle.vehicle_model || ''}`.toLowerCase() : '';
         if (!vehicleInfo.includes(vehicleTypeFilter.toLowerCase())) {
           return false;
         }
       }
-      
+
       // Account Status Filter (maps to Django 'status' field: 'approved', 'pending', 'rejected')
       if (accountStatusFilter && String(driver.status).toLowerCase() !== accountStatusFilter.toLowerCase()) {
         return false;
@@ -88,10 +90,11 @@ export default function DriverManagement() {
       // Driver Status Filter (mapping 'Active' to 'approved', 'Inactive' to 'pending' or 'rejected')
       if (driverStatusFilter) {
         const driverModelStatus = String(driver.status).toLowerCase();
-        if (driverStatusFilter === 'Active' && driverModelStatus !== 'approved') {
+        if (driverStatusFilter === 'True' && driverModelStatus !== 'approved') {
           return false;
         }
-        if (driverStatusFilter === 'Inactive' && (driverModelStatus === 'approved' || driverModelStatus === 'N/A')) {
+        // If 'Inactive' is selected, filter for 'pending' OR 'rejected' statuses
+        if (driverStatusFilter === 'False' && (driverModelStatus !== 'pending' && driverModelStatus !== 'rejected')) {
           return false;
         }
       }
@@ -107,7 +110,8 @@ export default function DriverManagement() {
     setCityFilter('');
     setVehicleTypeFilter('');
     setAccountStatusFilter('');
-    setDriverStatusFilter('');
+    // Keep 'Active' as default for driverStatusFilter on reset
+    setDriverStatusFilter('Active');
   };
 
   return (
@@ -213,7 +217,7 @@ export default function DriverManagement() {
                 <tr key={d.id} className="border-t text-[#353535] border-gray-700 hover:bg-white transition-colors">
                   <td className="px-4 py-2">{d.id}</td>
                   <td className="px-4 py-2">{d.driver_name}</td>
-                  <td className="px-4 py-2">{d.company.company_name || 'N/A'}</td>
+                  <td className="px-4 py-2">{d.company?.company_name || 'N/A'}</td> {/* Use optional chaining */}
                   <td className="px-4 py-2">{d.mobile}</td>
                   <td className="px-4 py-2">{d.gender || 'N/A'}</td>
                   <td className="px-4 py-2">
@@ -236,7 +240,7 @@ export default function DriverManagement() {
         <div className="flex space-x-2">
           {/* These buttons are non-functional without pagination logic */}
           <button className="px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-50" disabled>
-            <ChevronLeft size={16} /> 
+            <ChevronLeft size={16} />
           </button>
           <button className="px-3 py-1 rounded bg-[#00A63E] text-white">1</button>
           <button className="px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 disabled:opacity-50" disabled>

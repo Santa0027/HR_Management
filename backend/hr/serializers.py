@@ -239,36 +239,114 @@ class WarningLetterSerializer(serializers.ModelSerializer):
         return obj.driver.driver_name if obj.driver else ''
 
 
+# your_app_name/serializers.py (e.g., terminations/serializers.py)
+
+from rest_framework import serializers
+from .models import Termination  # Assuming your Termination model is here
+# from driver.models import Driver # Import your Driver model
+# from accounts.models import User # If processed_by is a User model
+
+
+# /home/ubuntu/app/HR_Management/backend/hr/serializers.py
+
+from rest_framework import serializers
+from .models import Termination # Make sure you import your Termination model
+from driver.models import Driver # Assuming Driver model is in driver.models
+from django.contrib.auth import get_user_model
+
+User = get_user_model() # Get the User model for processed_by
+
 class TerminationSerializer(serializers.ModelSerializer):
-    driver = DriverSerializer(read_only=True)
-    driver_id = serializers.PrimaryKeyRelatedField(
+    # These fields are for input (write_only) and expect primary keys (IDs)
+    driver = serializers.PrimaryKeyRelatedField(
         queryset=Driver.objects.all(),
-        source='driver',
         write_only=True
     )
-    generated_letter = serializers.FileField(read_only=True)
-    processed_by = serializers.SerializerMethodField(read_only=True)
-    # processed_by_id = serializers.PrimaryKeyRelatedField(
-    #     queryset=User.objects.all(),
-    #     source='processed_by',
-    #     write_only=True,
-    #     allow_null=True
-    # )
+    processed_by = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        write_only=True,
+        required=False # `processed_by` can be optional
+    )
+
+    # These fields are for output (read_only) and display related object details
+    # You'll need to confirm these fields exist on your Driver and User models
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+    processed_by_name = serializers.CharField(source='processed_by.username', read_only=True)
+
 
     class Meta:
         model = Termination
-        fields = '__all__'
+        fields = [
+            'id',
+            'driver',
+            'driver_name', # For display in API responses
+            'termination_date',
+            'reason',
+            'details',
+            'document',
+            'processed_by',
+            'processed_by_name', # For display in API responses
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
 
-    def get_processed_by(self, obj):
-        try:
-            from usermanagement.serializers import CustomUserSerializer
-            return CustomUserSerializer(obj.processed_by).data if obj.processed_by else None
-        except ImportError:
-            # Fallback if CustomUserSerializer cannot be imported
-            return {'id': obj.processed_by.id, 'username': obj.processed_by.username} if obj.processed_by else None
+
+    def create(self, validated_data):
+        driver = validated_data.pop('driver')
+        processed_by = validated_data.pop('processed_by', None)
+
+        termination = Termination.objects.create(
+            driver=driver,
+            processed_by=processed_by,
+            **validated_data
+        )
+
+        # Mark the driver as inactive upon successful termination
+        if driver:
+            driver.is_active = False # Assuming 'is_active' field exists on your Driver model
+            driver.save()
+        return termination
+
+    def update(self, instance, validated_data):
+        # Retrieve the old driver and the new driver (if changed)
+        current_driver = instance.driver
+        new_driver = validated_data.get('driver', current_driver)
+
+        # Retrieve the new processed_by user (if changed)
+        new_processed_by = validated_data.get('processed_by', instance.processed_by)
+
+        # Update standard fields
+        instance.termination_date = validated_data.get('termination_date', instance.termination_date)
+        instance.reason = validated_data.get('reason', instance.reason)
+        instance.details = validated_data.get('details', instance.details)
+        instance.document = validated_data.get('document', instance.document) # Handle file updates
 
 
-# Enhanced HR Serializers
+        # Logic for managing driver status when updating a termination record
+        if new_driver != current_driver:
+            # If the driver is changed in the termination record:
+            # 1. Reactivate the *old* driver (if it exists)
+            if current_driver:
+                current_driver.is_active = True
+                current_driver.save()
+            # 2. Deactivate the *new* driver selected for this termination
+            if new_driver:
+                new_driver.is_active = False
+                new_driver.save()
+            instance.driver = new_driver # Assign the new driver to the instance
+        elif new_driver and new_driver.is_active:
+            # If the driver remains the same but was somehow still active, ensure deactivation.
+            # This handles edge cases where the driver might have been manually reactivated elsewhere.
+            new_driver.is_active = False
+            new_driver.save()
+
+        # Update the processed_by user
+        instance.processed_by = new_processed_by
+
+        # Save all changes to the Termination instance
+        instance.save()
+        return instance
 
 class EmployeeSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()

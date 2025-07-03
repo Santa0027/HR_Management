@@ -1,3 +1,4 @@
+# In your serializers.py
 from rest_framework import serializers
 from .models import Driver, DriverLog
 from vehicle.models import VehicleRegistration
@@ -26,14 +27,26 @@ class DriverSerializer(serializers.ModelSerializer):
 
     company = CompanySerializer(read_only=True)
 
-    Company_id= serializers.PrimaryKeyRelatedField(
+    company_id = serializers.PrimaryKeyRelatedField(
         queryset=Company.objects.all(),
         source='company',
         write_only=True
     )
 
+    # *** THIS IS THE KEY CHANGE ***
+    company_id = serializers.PrimaryKeyRelatedField( # Changed from Company_id to company_id
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True,
+        required=True # Explicitly set to True if it's a mandatory field
+    )
+
     class Meta:
         model = Driver
+        # If you are using fields = '__all__', make sure your Driver model actually
+        # has a ForeignKey field named 'company'. DRF will automatically
+        # create 'company_id' for the serializer if 'company' is present in the model.
+        # If your model's ForeignKey is named 'company_id', then '__all__' will work fine.
         fields = '__all__'
 
     def validate(self, data):
@@ -45,13 +58,19 @@ class DriverSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        vehicle = validated_data.pop('vehicle', None)
+        # When using PrimaryKeyRelatedField with source='company',
+        # the 'company' instance will be popped, not 'company_id'.
+        # Ensure your model has a ForeignKey field named 'company'.
+        company_instance = validated_data.pop('company', None) # This correctly pops the Company object
+        vehicle_instance = validated_data.pop('vehicle', None) # Rename 'vehicle' if it's causing issues
         submitted_by = validated_data.pop('submitted_by', None)
 
         driver = Driver.objects.create(**validated_data)
 
-        if vehicle:
-            driver.vehicle = vehicle
+        if vehicle_instance: # Use vehicle_instance
+            driver.vehicle = vehicle_instance
+        if company_instance: # Assign the popped Company instance
+            driver.company = company_instance
         if submitted_by:
             driver.submitted_by = submitted_by
 

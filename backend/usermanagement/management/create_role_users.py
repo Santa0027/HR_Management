@@ -35,15 +35,15 @@ class Command(BaseCommand):
                 'is_staff': True,
                 'is_superuser': False
             },
-            # {
-            #     'email': 'driver@hrmanagement.com',
-            #     'password': 'driver123',
-            #     'first_name': 'John',
-            #     'last_name': 'Driver',
-            #     'role': 'driver',
-            #     'is_staff': False,
-            #     'is_superuser': False
-            # },
+            {
+                'email': 'driver@hrmanagement.com',
+                'password': 'driver123',
+                'first_name': 'John',
+                'last_name': 'Driver',
+                'role': 'driver',
+                'is_staff': False,
+                'is_superuser': False
+            },
             {
                 'email': 'management@hrmanagement.com',
                 'password': 'management123',

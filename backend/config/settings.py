@@ -29,8 +29,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5173",  # Common Vite port
     "http://127.0.0.1:5173",
-    "http://13.204.66.176:5174",
-    "http://172.31.8.148:5174",
+    "http://3.109.121.22:5174",
+    "http://172.31.12.113:5174",
 ]
 
 # Allow all headers that might be needed for authentication and API calls
@@ -234,3 +234,24 @@ MEDIA_URL = '/media/'
 # your_project/settings.py
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # 1 minute token lifetime
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Optional, adjust if you use refresh tokens
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}

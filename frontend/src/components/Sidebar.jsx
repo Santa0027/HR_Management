@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MdDashboard, MdManageAccounts } from "react-icons/md";
-import { AiOutlineFileSearch } from "react-icons/ai";
-import { FaDollarSign } from "react-icons/fa"; // Add accounting icon
+import { AiOutlineFileSearch } from "react-icons/ai"; // Still imported but not used for delivery insights
+import { FaDollarSign } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, ChevronUp } from 'lucide-react'; // Import Chevron icons
+import { ChevronDown, ChevronUp, User, LogOut } from 'lucide-react'; // Import User and LogOut icons
 import { useAuth } from '../context/AuthContext';
 import RoleBasedComponent from './RoleBasedComponent';
 
@@ -100,6 +100,39 @@ const SidebarItem = ({ icon, label, to, active = false, children }) => {
 // Full Sidebar Component
 const Sidebar = () => {
   const location = useLocation(); // Hook to get current URL location
+  const { logout } = useAuth(); // Get logout function from AuthContext
+  const [showProfilePopup, setShowProfilePopup] = useState(false); // State to control profile popup visibility
+  const profileRef = useRef(null); // Ref for the profile icon to position popup
+  const popupRef = useRef(null); // Ref for the popup itself
+
+  // Function to handle logout
+  const handleLogout = () => {
+    logout(); // Call the logout function from AuthContext
+    setShowProfilePopup(false); // Close the popup after logout
+    // Optionally redirect to login page if not handled by AuthContext
+  };
+
+  // Effect to handle clicks outside the profile popup
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileRef.current && !profileRef.current.contains(event.target) &&
+        popupRef.current && !popupRef.current.contains(event.target)
+      ) {
+        setShowProfilePopup(false);
+      }
+    };
+
+    if (showProfilePopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfilePopup]);
 
   return (
     <div className="w-64 bg-[#0F172A] text-white min-h-screen flex flex-col p-4">
@@ -210,23 +243,34 @@ const Sidebar = () => {
         </RoleBasedComponent>
       </nav>
 
-      {/* Accounts Management (Add if needed, currently not in the provided Sidebar code) */}
-      {/* <nav className="space-y-2 text-sm font-medium mt-4">
-        <SidebarItem
-          icon={<MdManageAccounts />} // Using a placeholder icon
-          label="Accounts Management"
-          to="/accounts-management"
-          active={location.pathname === "/accounts-management"}
-        />
-      </nav> */}
+      {/* Profile Section at the Bottom */}
+      <div className="mt-auto pt-4 border-t border-gray-700 relative"> {/* Add relative for popup positioning */}
+        <button
+          ref={profileRef} // Assign ref to the button
+          onClick={() => setShowProfilePopup(prev => !prev)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 w-full
+            text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+          aria-expanded={showProfilePopup}
+        >
+          <User size={20} /> {/* Person profile icon */}
+          <span>Profile</span>
+        </button>
 
-
-      {/* Footer/Bottom Info */}
-      <div className="mt-auto pt-4 border-t border-gray-700 text-xs text-gray-400">
-        <Link to="/delivery-insights" className="flex items-center gap-2 hover:text-white">
-          <AiOutlineFileSearch size={16} />
-          <span>Delivery insights</span>
-        </Link>
+        {/* Profile Popup */}
+        {showProfilePopup && (
+          <div
+            ref={popupRef} // Assign ref to the popup
+            className="absolute bottom-full left-0 mb-2 w-full bg-gray-700 rounded-lg shadow-lg py-2 z-10"
+          >
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-3 py-2 text-red-400 hover:bg-gray-600 hover:text-red-300 rounded-lg transition-colors duration-200"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

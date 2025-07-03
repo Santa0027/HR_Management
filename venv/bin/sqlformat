@@ -1,4 +1,4 @@
-#!/home/santhakumar/Documents/project/HR_Management/venv/bin/python3
+#!/home/ubuntu/app/HR_Management/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

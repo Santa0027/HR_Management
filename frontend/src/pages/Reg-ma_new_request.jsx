@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+  ChevronDown, CircleUserRound
 } from 'lucide-react';
-// Import your configured axiosInstance
-import axiosInstance from '../api/axiosInstance'; // Adjust this path based on where you saved axiosConfig.js
+import axiosInstance from '../api/axiosInstance';
 
 function Reg_ma_new_request() {
   const [activeTab, setActiveTab] = useState('New Request');
@@ -12,30 +11,25 @@ function Reg_ma_new_request() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Filter states
   const [filterVehicleType, setFilterVehicleType] = useState('');
   const [filterRequestStatus, setFilterRequestStatus] = useState('');
   const [filterRequestId, setFilterRequestId] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterApproval, setFilterApproval] = useState('');
 
-  // Fetch driver data from API
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        // Use axiosInstance.get instead of fetch
-        // axiosInstance returns the response data directly in .data
-        const response = await axiosInstance.get('Register/drivers/'); // Removed 'http://localhost:8000/'
-        setDrivers(response.data); // Axios puts the response body directly in .data
+        const response = await axiosInstance.get('Register/drivers/');
+        setDrivers(response.data);
       } catch (err) {
         console.error("Failed to fetch drivers:", err);
-        // Axios errors have a 'response' property for server errors
         if (err.response) {
-            setError(`Error: ${err.response.status} - ${err.response.statusText}`);
+          setError(`Error: ${err.response.status} - ${err.response.statusText}`);
         } else if (err.request) {
-            setError("Network Error: No response received.");
+          setError("Network Error: No response received.");
         } else {
-            setError("An unexpected error occurred.");
+          setError("An unexpected error occurred.");
         }
       } finally {
         setLoading(false);
@@ -44,10 +38,9 @@ function Reg_ma_new_request() {
     fetchDrivers();
   }, []);
 
-  // Filtered drivers based on selected filters
   const filteredDrivers = drivers.filter(driver => {
     return (
-      (filterVehicleType === '' || (driver.vehicle && driver.vehicle.vehicle_type === filterVehicleType)) && // Check if driver.vehicle exists
+      (filterVehicleType === '' || (driver.vehicle && driver.vehicle.vehicle_type === filterVehicleType)) &&
       (filterRequestStatus === '' || driver.status === filterRequestStatus) &&
       (filterRequestId === '' || String(driver.id).includes(filterRequestId)) &&
       (filterCity === '' || driver.city === filterCity) &&
@@ -55,7 +48,6 @@ function Reg_ma_new_request() {
     );
   });
 
-  // Reset all filters
   const resetFilters = () => {
     setFilterVehicleType('');
     setFilterRequestStatus('');
@@ -64,11 +56,10 @@ function Reg_ma_new_request() {
     setFilterApproval('');
   };
 
-  // Extract unique options for dropdowns
-  // Adjusted to correctly get vehicle_type if `driver.vehicle` is an object
   const getUniqueOptions = (key) => {
-    if (key === 'vehicle_type') { // Specific handling for vehicle type
-      return [...new Set(drivers.map(driver => driver.vehicle?.vehicle_type).filter(Boolean))];
+    if (key === 'vehicle') {
+      return [...new Set(drivers.map(driver => driver.vehicle?.vehicle_type).filter(Boolean))]
+        .map(type => ({ vehicle_type: type }));
     }
     return [...new Set(drivers.map(driver => driver[key]).filter(Boolean))];
   };
@@ -76,62 +67,55 @@ function Reg_ma_new_request() {
   return (
     <div className="min-h-screen bg-white text-[#1E2022] font-inter">
       <div className="flex flex-col p-8">
-        {/* Header */}
         <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
           <div className="text-sm text-[#52616B]">Organization / Registration Management</div>
           <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm">
               English <ChevronDown size={16} className="ml-1" />
             </button>
             <CircleUserRound size={24} className="text-[#1E2022]" />
           </div>
         </header>
 
-        {/* Page Title & Add Driver */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold text-[#187795]">Driver Registration Management</h1>
           <Link to="/adddriverform">
-            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium">
               Add Driver
             </button>
           </Link>
         </div>
 
-        {/* Tabs */}
         <div className="flex space-x-4 mb-8 border-b border-gray-700">
           <Link to="/registration-management">
-            <button className={`bg-[#284B63] px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400'}`}>
+            <button className={`bg-[#284B63] px-4 py-2 rounded-t-lg font-medium ${activeTab === 'New Request' ? 'bg-gray-900 text-white' : 'hover:bg-gray-800 text-gray-400'}`}>
               New Request
             </button>
           </Link>
           <Link to="/registration-management/aproval_status">
-            <button className={` px-4 py-2 rounded-t-lg font-medium transition-colors hover:bg-gray-800 hover:text-white text-gray-500S`}>
+            <button className="px-4 py-2 rounded-t-lg font-medium hover:bg-gray-800 hover:text-white text-gray-500">
               Completed Requests
             </button>
           </Link>
         </div>
 
-        {/* Filters */}
         <div className="bg-[#C9D6DF] p-6 rounded-lg mb-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
           <div>
-            <label htmlFor="vehicleType" className="block text-[#353535] text-sm mb-2">Vehicle Type</label>
+            <label className="block text-[#353535] text-sm mb-2">Vehicle Type</label>
             <select
-              id="vehicleType"
               value={filterVehicleType}
               onChange={e => setFilterVehicleType(e.target.value)}
               className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
             >
+              <option value="">Select Vehicle</option>
               {getUniqueOptions("vehicle").map(vehicle => (
-                <option className="bg-[#D9D9D9]" key={vehicle.id} value={vehicle.vehicle_type}>
-                  {vehicle.vehicle_type}
-                </option>
+                <option key={vehicle.vehicle_type} value={vehicle.vehicle_type}>{vehicle.vehicle_type}</option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="requestStatus" className="block text-[#353535] text-sm mb-2">Request Status</label>
+            <label className="block text-[#353535] text-sm mb-2">Request Status</label>
             <select
-              id="requestStatus"
               value={filterRequestStatus}
               onChange={e => setFilterRequestStatus(e.target.value)}
               className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
@@ -143,10 +127,9 @@ function Reg_ma_new_request() {
             </select>
           </div>
           <div>
-            <label htmlFor="requestId" className="block text-[#353535] text-sm mb-2">Request ID</label>
+            <label className="block text-[#353535] text-sm mb-2">Request ID</label>
             <input
               type="text"
-              id="requestId"
               value={filterRequestId}
               onChange={e => setFilterRequestId(e.target.value)}
               placeholder="Enter Request ID"
@@ -154,9 +137,8 @@ function Reg_ma_new_request() {
             />
           </div>
           <div>
-            <label htmlFor="city" className="block text-[#353535]text-sm mb-2">City</label>
+            <label className="block text-[#353535] text-sm mb-2">City</label>
             <select
-              id="city"
               value={filterCity}
               onChange={e => setFilterCity(e.target.value)}
               className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
@@ -168,9 +150,8 @@ function Reg_ma_new_request() {
             </select>
           </div>
           <div>
-            <label htmlFor="approval" className="block text-[#353535]text-sm mb-2">Approval</label>
+            <label className="block text-[#353535] text-sm mb-2">Approval</label>
             <select
-              id="approval"
               value={filterApproval}
               onChange={e => setFilterApproval(e.target.value)}
               className="w-full bg-[#D9D9D9] border border-gray-700 rounded-md py-2 px-3 text-[#353535]"
@@ -192,11 +173,10 @@ function Reg_ma_new_request() {
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto mb-4">
           <table className="min-w-full bg-gray-900 rounded-lg">
             <thead>
-              <tr className="bg-[#284B63] text-white uppercase text-sm leading-normal">
+              <tr className="bg-[#284B63] text-white uppercase text-sm">
                 <th className="py-3 px-6 text-left rounded-tl-lg">Request Number</th>
                 <th className="py-3 px-6 text-left">Driver ID</th>
                 <th className="py-3 px-6 text-left">Driver Name</th>
@@ -211,44 +191,33 @@ function Reg_ma_new_request() {
             </thead>
             <tbody className="text-gray-400 bg-[#C9D6DF] text-sm font-light">
               {loading ? (
-                <tr><td colSpan="11" className="py-6 text-center">Loading...</td></tr>
+                <tr><td colSpan="10" className="py-6 text-center">Loading...</td></tr>
               ) : error ? (
-                <tr><td colSpan="11" className="py-6 text-center text-red-400">{error}</td></tr>
+                <tr><td colSpan="10" className="py-6 text-center text-red-400">{error}</td></tr>
               ) : filteredDrivers.length > 0 ? (
                 filteredDrivers.map((driver, index) => (
-                  <tr key={index} className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white transition-colors">
+                  <tr key={index} className="border-b text-[#353535] font-bold border-gray-800 hover:bg-white">
                     <td className="py-3 px-6">{driver.driver_}</td>
                     <td className="py-3 px-6">{driver.iqama}</td>
                     <td className="py-3 px-6">{driver.driver_name}</td>
                     <td className="py-3 px-6">{driver.mobile}</td>
-                    <td className="py-3 px-6">{driver.company.company_name}</td>
+                    <td className="py-3 px-6">{driver.company?.company_name}</td>
                     <td className="py-3 px-6">{driver.approval}</td>
-                    <td className="py-3 px-6">
-                      {driver.vehicle ? driver.vehicle.vehicle_type : 'No Vehicle Assigned'}
-                    </td>
+                    <td className="py-3 px-6">{driver.vehicle?.vehicle_type || 'No Vehicle Assigned'}</td>
                     <td className="py-3 px-6">{driver.city}</td>
                     <td className="py-3 px-6">{driver.status}</td>
                     <td className="py-3 px-6 text-center">
                       <Link to={`/profileedit/${driver.id}`}>
-                        <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full text-sm">
-                          View
-                        </button>
+                        <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md">Edit</button>
                       </Link>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="11" className="py-6 text-center text-gray-500">No Entries Available</td></tr>
+                <tr><td colSpan="10" className="py-6 text-center">No drivers found.</td></tr>
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-end items-center mt-auto space-x-2 text-sm text-gray-400">
-          <button className="p-2 rounded-full hover:bg-gray-800"><ChevronLeft size={16} /></button>
-          <span className="bg-green-600 text-white px-3 py-1 rounded-full">1</span>
-          <button className="p-2 rounded-full hover:bg-gray-800"><ChevronRight size={16} /></button>
         </div>
       </div>
     </div>

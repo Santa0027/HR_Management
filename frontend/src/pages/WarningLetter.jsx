@@ -42,7 +42,7 @@ export default function WarningLetters() {
 
   const fetchLetters = async () => {
     try {
-      const res = await axiosInstance.get('/warningletter/');
+      const res = await axiosInstance.get('/warning-letters/');
       const data = Array.isArray(res.data.results) ? res.data.results : res.data;
       const formattedData = data.map(item => ({
         ...item,
@@ -103,10 +103,10 @@ export default function WarningLetters() {
 
     try {
       if (editingId) {
-        await axiosInstance.patch(`/warningletter/${editingId}/`, formData);
+        await axiosInstance.patch(`/warning-letters/${editingId}/`, formData);
         toast.success('Warning letter updated');
       } else {
-        await axiosInstance.post('/warningletter/', formData);
+        await axiosInstance.post('/warning-letters/', formData);
         toast.success('Warning letter issued');
       }
       resetForm();
@@ -156,7 +156,7 @@ export default function WarningLetters() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this letter?')) return;
     try {
-      await axiosInstance.delete(`/warningletter/${id}/`);
+      await axiosInstance.delete(`/warning-letters/${id}/`);
       toast.success('Deleted successfully');
       fetchLetters();
     } catch (error) {

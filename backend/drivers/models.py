@@ -27,7 +27,7 @@ class Driver(models.Model):
         default='pending'
     )
     remarks = models.TextField(blank=True, help_text="Admin or HR remarks for approval, rejection, or additional notes")
-
+    is_active = models.BooleanField(default=True)
     driver_name = models.CharField(max_length=255)
     driver_profile_img= models.FileField(upload_to='drivers/profileimg/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
