@@ -1,6 +1,6 @@
 // src/pages/Terminations.js
 import React, { useEffect, useState } from 'react';
-import axiosInstance from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance'; // Make sure this path is correct for your project
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Modal from '../components/Model';
@@ -12,16 +12,15 @@ import {
 
 export default function Terminations() {
   const [terminations, setTerminations] = useState([]);
-  // 'drivers' will now hold only active drivers fetched from the backend
-  const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState([]); // This will now hold only active drivers if backend is filtered
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({
     driver: '', // This will hold the driver's ID from the select input
     termination_date: '',
     reason: '',
     details: '',
-    document: null, // For manual document upload
-    processed_by: 1, // Assuming a default user ID for now, adjust as needed or fetch dynamically
+    document: null, // For manual document upload (if applicable)
+    processed_by: 1, // Assuming a default user ID for now, adjust as needed
   });
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +38,7 @@ export default function Terminations() {
 
   useEffect(() => {
     fetchTerminations();
-    fetchDrivers(); // Fetch only active drivers for the dropdown
+    fetchDrivers(); // This will now fetch only active drivers if backend is configured
   }, []);
 
   async function fetchTerminations() {
@@ -51,9 +50,8 @@ export default function Terminations() {
         ...item,
         // Assuming driver and processed_by are objects with 'id' and 'name'/'driver_name'
         driver_name: item.driver?.driver_name || 'N/A', // Handle potential null driver
-        // Keep driver_id and processed_by for pre-filling the form if needed for clarity
         driver_id: item.driver?.id || null,
-        processed_by: item.processed_by?.id || null,
+        processed_by: item.processed_by?.id || null, // Ensure this is the ID
       }));
       setTerminations(formatted);
     } catch (err) {
@@ -64,19 +62,14 @@ export default function Terminations() {
 
   async function fetchDrivers() {
     try {
-      // *** IMPORTANT: This assumes your backend /Register/drivers/ endpoint
-      // can filter for active drivers using a query parameter like `?active=true`
-      // If your backend uses a 'status' field, it might be `?status=approved`
-      const res = await axiosInstance.get('/Register/drivers/', {
-        params: { active: true } // Requesting only active drivers
-      });
+      // If your Django DriverViewSet is filtered to only show active drivers,
+      // this endpoint will automatically return only active drivers.
+      const res = await axiosInstance.get('/Register/drivers/');
       // Handle cases where API returns array directly or an object with 'results'
       setDrivers(Array.isArray(res.data) ? res.data : res.data.results || []);
     } catch (err) {
-      console.error('Error fetching active drivers:', err);
-      // It's okay to still render the page if active drivers can't be fetched
-      // but inform the user.
-      toast.error('Failed to load active drivers for selection.');
+      console.error('Error fetching drivers:', err);
+      toast.error('Failed to fetch drivers');
     }
   }
 
@@ -98,12 +91,16 @@ export default function Terminations() {
     }
 
     const fd = new FormData();
-    // *** CRITICAL FIX: Send 'driver' and 'processed_by' directly, matching serializer field names ***
+    // CRITICAL FIX: Backend expects 'driver_id' and 'processed_by_id'
     fd.append('driver', form.driver); // Sending the ID collected from the 'driver' select input
+    // NOTE: Changed from 'driver_id' to 'driver' to match `source='driver'` in serializer.
+    // If your serializer expects `driver_id`, keep `fd.append('driver_id', form.driver);`
     fd.append('termination_date', form.termination_date);
     fd.append('reason', form.reason);
     fd.append('details', form.details || '');
     fd.append('processed_by', form.processed_by); // Sending the ID for 'processed_by'
+    // NOTE: Changed from 'processed_by_id' to 'processed_by' for consistency.
+    // If your serializer expects `processed_by_id`, keep `fd.append('processed_by_id', form.processed_by);`
 
     if (form.document) {
       fd.append('document', form.document);
@@ -119,9 +116,7 @@ export default function Terminations() {
       }
       resetForm();
       fetchTerminations(); // Refresh the list of terminations
-      // Crucial: Re-fetch active drivers to update the dropdown list,
-      // as the terminated driver should no longer appear.
-      fetchDrivers();
+      fetchDrivers(); // Refresh the list of drivers (to reflect deactivation)
       setIsModalOpen(false); // Close modal
     } catch (err) {
       console.error('Submission failed:', err.response?.data || err.message);
@@ -132,8 +127,8 @@ export default function Terminations() {
           // Attempt to stringify the error response for display
           errorMessage = `Submission failed: ${JSON.stringify(err.response.data)}`;
         } catch (jsonErr) {
-          // Fallback if parsing fails, display specific backend error or generic message
-          errorMessage = `Submission failed: ${err.response.data.detail || err.message || JSON.stringify(err.response.data)}`;
+          // Fallback if parsing fails
+          errorMessage = `Submission failed: ${err.response.data.detail || err.message}`;
         }
       }
       toast.error(errorMessage);
@@ -147,35 +142,32 @@ export default function Terminations() {
       reason: '',
       details: '',
       document: null,
-      processed_by: 1, // Reset to default, adjust if user context is available
+      processed_by: 1, // Reset to default
     });
     setEditingId(null);
   }
 
   function handleEdit(item) {
     setForm({
-      driver: item.driver_id, // Pre-fill with driver_id received from backend for select
+      driver: item.driver_id, // Pre-fill with driver_id
       termination_date: item.termination_date,
       reason: item.reason,
       details: item.details || '',
       document: null, // Document usually not pre-filled for edit, needs re-upload
-      processed_by: item.processed_by, // Pre-fill with processed_by_id from backend
+      processed_by: item.processed_by, // Pre-fill with processed_by_id
     });
     setEditingId(item.id);
     setIsModalOpen(true);
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Are you sure you want to delete this termination record? This will NOT reactivate the driver automatically.')) return;
+    if (!window.confirm('Are you sure you want to delete this termination record?')) return;
     try {
       await axiosInstance.delete(`/terminations/${id}/`);
       toast.success('Termination record deleted!');
       fetchTerminations();
-      // If deleting a termination should reactivate the driver,
-      // you would need explicit backend logic (e.g., another API call) for that.
-      // E.g., await axiosInstance.post(`/drivers/${deletedDriverId}/reactivate/`);
-      // Then call fetchDrivers() to update the dropdown.
-      fetchDrivers(); // Re-fetch drivers to update dropdown if a driver was implicitly reactivated
+      // Optional: If deleting a termination should reactivate the driver,
+      // you'd need a backend endpoint for that and call fetchDrivers() here.
     } catch (err) {
       console.error('Delete failed:', err);
       toast.error('Failed to delete termination record!');
@@ -191,15 +183,15 @@ export default function Terminations() {
 
   return (
     <div className="min-h-screen bg-white text-[#1E2022] p-6">
-      {/* Header */}
-      <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
-        <div className="text-sm text-[#52616B]">Organization / Registration Management</div>
-        <div className="flex items-center space-x-4">
-          <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
-            English <ChevronDown size={16} className="ml-1" />
-          </button>
-          <CircleUserRound size={24} className="text-[#1E2022]" />
-        </div>
+{/* Header */}
+    <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+          <div className="text-sm text-[#52616B]">Organization / Registration Management</div>
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+              English <ChevronDown size={16} className="ml-1" />
+            </button>
+            <CircleUserRound size={24} className="text-[#1E2022]" />
+          </div>
       </header>
 
       <div className="flex justify-between items-center mb-4">
@@ -215,7 +207,7 @@ export default function Terminations() {
       <input
         type="text"
         className="w-full p-2 mb-4 bg-[#D9D9D9] text-[#353535] rounded border border-gray-600"
-        placeholder="Search by driver name or reason"
+        placeholder="Search by driver"
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
@@ -227,7 +219,7 @@ export default function Terminations() {
               <th className="p-3">Driver</th>
               <th className="p-3">Date</th>
               <th className="p-3">Reason</th>
-              <th className="p-3">Generated Letter</th>
+              <th className="p-3">Generated Letter</th> {/* Changed column header */}
               <th className="p-3">Actions</th>
             </tr>
           </thead>
@@ -238,7 +230,9 @@ export default function Terminations() {
                 <td className="p-2">{item.termination_date}</td>
                 <td className="p-2">{item.reason.replace(/_/g, ' ')}</td>
                 <td className="p-2">
+
                  <DownloadTerminationLetter terminationId={item.id} />
+
                 </td>
                 <td className="p-2 space-x-2">
                   <button onClick={() => handleEdit(item)} className="text-blue-700">Edit</button>
@@ -271,13 +265,12 @@ export default function Terminations() {
               <label htmlFor="driver-select" className="block text-sm font-medium text-gray-300 mb-1">Driver:</label>
               <select
                 id="driver-select"
-                name="driver" // This name updates the 'driver' state (ID)
+                name="driver" // Use 'driver' here to update the form state
                 value={form.driver}
                 onChange={handleChange}
                 className="p-2 bg-gray-800 rounded w-full border border-gray-700 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select Driver</option>
-                {/* Display only active drivers in the dropdown */}
                 {drivers.map(d => <option key={d.id} value={d.id}>{d.driver_name}</option>)}
               </select>
             </div>

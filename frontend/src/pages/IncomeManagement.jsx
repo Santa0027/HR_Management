@@ -1,25 +1,26 @@
+// src/pages/IncomeManagement.js
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { 
-  Plus, 
-  TrendingUp, 
-  DollarSign, 
+import {
+  Plus,
+  TrendingUp,
+  DollarSign,
   Calendar,
   FileText,
   Edit,
   Trash2,
-  Eye
+  // Eye // Not used in this component currently
 } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/api'; // Ensure this path is correct
 
 const IncomeManagement = () => {
   const [incomes, setIncomes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState([]); // State for drivers
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState(null);
@@ -27,18 +28,18 @@ const IncomeManagement = () => {
     total_income: 0,
     monthly_income: 0,
     pending_income: 0,
-    recurring_income: 0
+    recurring_income_count: 0 // Changed from recurring_income to count
   });
 
-  const [newIncome, setNewIncome] = useState({
+  const initialNewIncomeState = {
     transaction_data: {
       amount: '',
       description: '',
-      category: '',
-      payment_method: '',
-      bank_account: '',
-      company: '',
-      driver: '',
+      category: '', // ID
+      payment_method: '', // ID
+      bank_account: '', // ID, optional
+      company: '', // ID, optional
+      driver: '', // ID, optional
       transaction_date: new Date().toISOString().split('T')[0],
       status: 'pending'
     },
@@ -49,7 +50,9 @@ const IncomeManagement = () => {
     is_recurring: false,
     recurring_frequency: '',
     next_due_date: ''
-  });
+  };
+
+  const [newIncome, setNewIncome] = useState(initialNewIncomeState);
 
   useEffect(() => {
     fetchIncomes();
@@ -96,7 +99,7 @@ const IncomeManagement = () => {
       const [totalRes, monthlyRes] = await Promise.all([
         api.get('/accounting/transactions/summary/', {
           params: {
-            start_date: '2020-01-01',
+            start_date: '2020-01-01', // A sufficiently old date to capture all
             end_date: currentDate.toISOString().split('T')[0],
             transaction_type: 'income'
           }
@@ -110,16 +113,27 @@ const IncomeManagement = () => {
         })
       ]);
 
+      // Calculate pending and recurring from fetched incomes client-side for mock
+      const pending = incomes.filter(inc => inc.transaction.status === 'pending')
+                           .reduce((sum, inc) => sum + parseFloat(inc.transaction.amount), 0);
+      const recurringCount = incomes.filter(inc => inc.is_recurring).length;
+
       setSummary({
         total_income: totalRes.data.total_income || 0,
-        monthly_income: monthlyRes.data.total_income || 0,
-        pending_income: 0, // Calculate from pending transactions
-        recurring_income: 0 // Calculate from recurring incomes
+        monthly_income: monthlyRes.data.monthly_income || 0, // Ensure monthly_income key is used
+        pending_income: pending,
+        recurring_income_count: recurringCount
       });
     } catch (error) {
       console.error('Error fetching summary:', error);
     }
   };
+
+  // Re-fetch summary whenever incomes change
+  useEffect(() => {
+    fetchSummary();
+  }, [incomes]);
+
 
   const handleInputChange = (section, field, value) => {
     if (section === 'transaction_data') {
@@ -140,45 +154,36 @@ const IncomeManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Frontend validation
+    const { transaction_data, income_source } = newIncome;
+    if (!transaction_data.amount || !transaction_data.description || !transaction_data.category ||
+        !transaction_data.payment_method || !transaction_data.transaction_date || !income_source) {
+      alert('Please fill in all required fields (marked with *).');
+      return;
+    }
+
     try {
       if (selectedIncome) {
         await api.put(`/accounting/income/${selectedIncome.id}/`, newIncome);
+        alert('Income updated successfully!');
       } else {
         await api.post('/accounting/income/', newIncome);
+        alert('Income added successfully!');
       }
-      
+
       setShowAddModal(false);
       setSelectedIncome(null);
       resetForm();
-      fetchIncomes();
-      fetchSummary();
+      fetchIncomes(); // Refetch all incomes to update list and summary
     } catch (error) {
-      console.error('Error saving income:', error);
-      alert('Error saving income. Please check all fields.');
+      console.error('Error saving income:', error.response?.data || error.message);
+      alert(`Error saving income: ${error.response?.data?.detail || error.message}`);
     }
   };
 
   const resetForm = () => {
-    setNewIncome({
-      transaction_data: {
-        amount: '',
-        description: '',
-        category: '',
-        payment_method: '',
-        bank_account: '',
-        company: '',
-        driver: '',
-        transaction_date: new Date().toISOString().split('T')[0],
-        status: 'pending'
-      },
-      income_source: '',
-      invoice_number: '',
-      due_date: '',
-      tax_amount: '0.00',
-      is_recurring: false,
-      recurring_frequency: '',
-      next_due_date: ''
-    });
+    setNewIncome(initialNewIncomeState);
   };
 
   const handleEdit = (income) => {
@@ -187,12 +192,12 @@ const IncomeManagement = () => {
       transaction_data: {
         amount: income.transaction.amount,
         description: income.transaction.description,
-        category: income.transaction.category,
-        payment_method: income.transaction.payment_method,
-        bank_account: income.transaction.bank_account || '',
-        company: income.transaction.company || '',
-        driver: income.transaction.driver || '',
-        transaction_date: income.transaction.transaction_date.split('T')[0],
+        category: income.transaction.category, // ID
+        payment_method: income.transaction.payment_method, // ID
+        bank_account: income.transaction.bank_account || '', // ID, handle null
+        company: income.transaction.company || '', // ID, handle null
+        driver: income.transaction.driver || '', // ID, handle null
+        transaction_date: income.transaction.transaction_date, // Already YYYY-MM-DD
         status: income.transaction.status
       },
       income_source: income.income_source,
@@ -210,20 +215,23 @@ const IncomeManagement = () => {
     if (window.confirm('Are you sure you want to delete this income record?')) {
       try {
         await api.delete(`/accounting/income/${incomeId}/`);
-        fetchIncomes();
-        fetchSummary();
+        alert('Income deleted successfully!');
+        fetchIncomes(); // Refetch incomes to update list and summary
       } catch (error) {
-        console.error('Error deleting income:', error);
-        alert('Error deleting income');
+        console.error('Error deleting income:', error.response?.data || error.message);
+        alert(`Error deleting income: ${error.response?.data?.detail || error.message}`);
       }
     }
   };
 
   const formatCurrency = (amount) => {
+    // Ensure amount is a number for formatting
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return '$0.00'; // Handle invalid numbers
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount);
+    }).format(numAmount);
   };
 
   const getStatusColor = (status) => {
@@ -238,20 +246,27 @@ const IncomeManagement = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Income Management</h1>
           <p className="text-gray-600">Track and manage all income sources</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button
+          onClick={() => {
+            setShowAddModal(true);
+            setSelectedIncome(null); // Clear selected income for "Add" mode
+            resetForm(); // Reset form to initial state
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Income
         </Button>
@@ -259,7 +274,7 @@ const IncomeManagement = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Income</CardTitle>
             <DollarSign className="h-4 w-4 text-green-600" />
@@ -271,7 +286,7 @@ const IncomeManagement = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <Calendar className="h-4 w-4 text-blue-600" />
@@ -283,7 +298,7 @@ const IncomeManagement = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
             <FileText className="h-4 w-4 text-yellow-600" />
@@ -295,101 +310,110 @@ const IncomeManagement = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Recurring</CardTitle>
             <TrendingUp className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {incomes.filter(income => income.is_recurring).length}
+              {summary.recurring_income_count}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Income List */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Income Records ({incomes.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full table-auto">
+            <table className="min-w-full table-auto border-collapse">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3 font-medium">Transaction ID</th>
-                  <th className="text-left p-3 font-medium">Date</th>
-                  <th className="text-left p-3 font-medium">Source</th>
-                  <th className="text-left p-3 font-medium">Amount</th>
-                  <th className="text-left p-3 font-medium">Net Amount</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Company</th>
-                  <th className="text-left p-3 font-medium">Recurring</th>
-                  <th className="text-left p-3 font-medium">Actions</th>
+                <tr className="border-b border-gray-200 bg-gray-50 text-gray-700">
+                  <th className="text-left p-3 font-semibold">Transaction ID</th>
+                  <th className="text-left p-3 font-semibold">Date</th>
+                  <th className="text-left p-3 font-semibold">Source</th>
+                  <th className="text-left p-3 font-semibold">Amount</th>
+                  <th className="text-left p-3 font-semibold">Net Amount</th>
+                  <th className="text-left p-3 font-semibold">Status</th>
+                  <th className="text-left p-3 font-semibold">Company</th>
+                  <th className="text-left p-3 font-semibold">Driver</th> {/* Added Driver Column */}
+                  <th className="text-left p-3 font-semibold">Recurring</th>
+                  <th className="text-left p-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {incomes.map((income) => (
-                  <tr key={income.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <div className="font-medium">{income.transaction.transaction_id}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {income.transaction.description}
-                      </div>
-                    </td>
-                    <td className="p-3 text-sm">
-                      {new Date(income.transaction.transaction_date).toLocaleDateString()}
-                    </td>
-                    <td className="p-3 text-sm capitalize">
-                      {income.income_source.replace('_', ' ')}
-                    </td>
-                    <td className="p-3">
-                      <span className="font-bold text-green-600">
-                        {formatCurrency(income.transaction.amount)}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="font-bold text-green-700">
-                        {formatCurrency(income.net_amount)}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <Badge className={getStatusColor(income.transaction.status)}>
-                        {income.transaction.status}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-sm">{income.transaction.company_name || '-'}</td>
-                    <td className="p-3">
-                      {income.is_recurring ? (
-                        <Badge className="bg-purple-100 text-purple-800">
-                          {income.recurring_frequency}
-                        </Badge>
-                      ) : (
-                        <span className="text-gray-400">No</span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(income)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(income.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+                {incomes.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="text-center p-4 text-gray-500">No income records found.</td>
                   </tr>
-                ))}
+                ) : (
+                  incomes.map((income) => (
+                    <tr key={income.id} className="border-b border-gray-100 hover:bg-gray-100">
+                      <td className="p-3">
+                        <div className="font-medium text-gray-800">{income.transaction.transaction_id}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {income.transaction.description}
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm text-gray-700">
+                        {new Date(income.transaction.transaction_date).toLocaleDateString()}
+                      </td>
+                      <td className="p-3 text-sm capitalize text-gray-700">
+                        {income.income_source.replace(/_/g, ' ')}
+                      </td>
+                      <td className="p-3">
+                        <span className="font-bold text-green-600">
+                          {formatCurrency(income.transaction.amount)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className="font-bold text-green-700">
+                          {formatCurrency(income.net_amount)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <Badge className={getStatusColor(income.transaction.status)}>
+                          {income.transaction.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-sm text-gray-700">{income.transaction.company_name || '-'}</td>
+                      <td className="p-3 text-sm text-gray-700">{income.transaction.driver_name || '-'}</td> {/* Display Driver Name */}
+                      <td className="p-3">
+                        {income.is_recurring ? (
+                          <Badge className="bg-purple-100 text-purple-800">
+                            {income.recurring_frequency}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400">No</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 hover:bg-blue-50"
+                            onClick={() => handleEdit(income)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(income.id)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -398,34 +422,36 @@ const IncomeManagement = () => {
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
               {selectedIncome ? 'Edit Income' : 'Add New Income'}
             </h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
+
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Transaction Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Amount *</label>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
                   <input
+                    id="amount"
                     type="number"
                     step="0.01"
                     required
                     value={newIncome.transaction_data.amount}
                     onChange={(e) => handleInputChange('transaction_data', 'amount', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Income Source *</label>
+                  <label htmlFor="income_source" className="block text-sm font-medium text-gray-700 mb-1">Income Source *</label>
                   <select
+                    id="income_source"
                     required
                     value={newIncome.income_source}
                     onChange={(e) => handleInputChange('', 'income_source', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select Source</option>
                     <option value="driver_commission">Driver Commission</option>
@@ -438,12 +464,13 @@ const IncomeManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category *</label>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                   <select
+                    id="category"
                     required
                     value={newIncome.transaction_data.category}
                     onChange={(e) => handleInputChange('transaction_data', 'category', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select Category</option>
                     {categories.map(category => (
@@ -455,12 +482,13 @@ const IncomeManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Payment Method *</label>
+                  <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
                   <select
+                    id="payment_method"
                     required
                     value={newIncome.transaction_data.payment_method}
                     onChange={(e) => handleInputChange('transaction_data', 'payment_method', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select Method</option>
                     {paymentMethods.map(method => (
@@ -472,22 +500,24 @@ const IncomeManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Transaction Date *</label>
+                  <label htmlFor="transaction_date" className="block text-sm font-medium text-gray-700 mb-1">Transaction Date *</label>
                   <input
+                    id="transaction_date"
                     type="date"
                     required
                     value={newIncome.transaction_data.transaction_date}
                     onChange={(e) => handleInputChange('transaction_data', 'transaction_date', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select
+                    id="status"
                     value={newIncome.transaction_data.status}
                     onChange={(e) => handleInputChange('transaction_data', 'status', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="pending">Pending</option>
                     <option value="completed">Completed</option>
@@ -497,57 +527,76 @@ const IncomeManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Description *</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
                 <textarea
+                  id="description"
                   required
                   value={newIncome.transaction_data.description}
                   onChange={(e) => handleInputChange('transaction_data', 'description', e.target.value)}
-                  className="w-full border rounded-md px-3 py-2"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   rows="3"
+                  placeholder="Enter a brief description of the income..."
                 />
               </div>
 
               {/* Additional Income Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Invoice Number</label>
+                  <label htmlFor="invoice_number" className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
                   <input
+                    id="invoice_number"
                     type="text"
                     value={newIncome.invoice_number}
                     onChange={(e) => handleInputChange('', 'invoice_number', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Optional invoice number"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Tax Amount</label>
+                  <label htmlFor="tax_amount" className="block text-sm font-medium text-gray-700 mb-1">Tax Amount</label>
                   <input
+                    id="tax_amount"
                     type="number"
                     step="0.01"
                     value={newIncome.tax_amount}
                     onChange={(e) => handleInputChange('', 'tax_amount', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Due Date</label>
+                  <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                   <input
+                    id="due_date"
                     type="date"
                     value={newIncome.due_date}
                     onChange={(e) => handleInputChange('', 'due_date', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Company</label>
+                  <label htmlFor="bank_account" className="block text-sm font-medium text-gray-700 mb-1">Bank Account</label>
+                  <input
+                    id="bank_account"
+                    type="text" // Assuming text input for bank_account ID/name for simplicity, or make it a dropdown if you fetch bank accounts
+                    value={newIncome.transaction_data.bank_account}
+                    onChange={(e) => handleInputChange('transaction_data', 'bank_account', e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Bank Account ID (Optional)"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">Company</label>
                   <select
+                    id="company"
                     value={newIncome.transaction_data.company}
                     onChange={(e) => handleInputChange('transaction_data', 'company', e.target.value)}
-                    className="w-full border rounded-md px-3 py-2"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select Company</option>
+                    <option value="">Select Company (Optional)</option>
                     {companies.map(company => (
                       <option key={company.id} value={company.id}>
                         {company.company_name}
@@ -555,19 +604,36 @@ const IncomeManagement = () => {
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label htmlFor="driver" className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+                  <select
+                    id="driver"
+                    value={newIncome.transaction_data.driver}
+                    onChange={(e) => handleInputChange('transaction_data', 'driver', e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Driver (Optional)</option>
+                    {drivers.map(driver => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.driver_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Recurring Options */}
-              <div className="border-t pt-4">
+              <div className="border-t border-gray-200 pt-5">
                 <div className="flex items-center space-x-2 mb-4">
                   <input
                     type="checkbox"
                     id="is_recurring"
                     checked={newIncome.is_recurring}
                     onChange={(e) => handleInputChange('', 'is_recurring', e.target.checked)}
-                    className="rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="is_recurring" className="text-sm font-medium">
+                  <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
                     This is a recurring income
                   </label>
                 </div>
@@ -575,11 +641,13 @@ const IncomeManagement = () => {
                 {newIncome.is_recurring && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Frequency</label>
+                      <label htmlFor="recurring_frequency" className="block text-sm font-medium text-gray-700 mb-1">Frequency *</label>
                       <select
+                        id="recurring_frequency"
+                        required={newIncome.is_recurring}
                         value={newIncome.recurring_frequency}
                         onChange={(e) => handleInputChange('', 'recurring_frequency', e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="">Select Frequency</option>
                         <option value="daily">Daily</option>
@@ -591,12 +659,14 @@ const IncomeManagement = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1">Next Due Date</label>
+                      <label htmlFor="next_due_date" className="block text-sm font-medium text-gray-700 mb-1">Next Due Date *</label>
                       <input
+                        id="next_due_date"
                         type="date"
+                        required={newIncome.is_recurring}
                         value={newIncome.next_due_date}
                         onChange={(e) => handleInputChange('', 'next_due_date', e.target.value)}
-                        className="w-full border rounded-md px-3 py-2"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -604,7 +674,7 @@ const IncomeManagement = () => {
               </div>
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-2 pt-4 border-t">
+              <div className="flex justify-end space-x-3 pt-5 border-t border-gray-200">
                 <Button
                   type="button"
                   variant="outline"
@@ -613,10 +683,14 @@ const IncomeManagement = () => {
                     setSelectedIncome(null);
                     resetForm();
                   }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
                   {selectedIncome ? 'Update Income' : 'Add Income'}
                 </Button>
               </div>

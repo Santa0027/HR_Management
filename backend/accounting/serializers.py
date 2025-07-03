@@ -33,76 +33,124 @@ class BankAccountSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
 
+# /home/ubuntu/app/HR_Management/backend/hr/serializers.py
 
+
+class SimpleDriverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Driver
+        fields = ['id', 'driver_name'] # Or whatever name field your Driver model has
+
+class SimpleCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'company_name'] # Or whatever name field your Company model has
+
+
+# --- Transaction Serializer (Nested within IncomeSerializer) ---
+# This serializer needs to handle the fields within newIncome.transaction_data
 class TransactionSerializer(serializers.ModelSerializer):
+    # For display purposes (read-only nested objects)
     category_name = serializers.CharField(source='category.name', read_only=True)
     payment_method_name = serializers.CharField(source='payment_method.name', read_only=True)
     bank_account_name = serializers.CharField(source='bank_account.account_name', read_only=True)
     company_name = serializers.CharField(source='company.company_name', read_only=True)
     driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
-    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
-    approved_by_name = serializers.CharField(source='approved_by.username', read_only=True)
-    
+
+    # For writing (expecting IDs from the frontend)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=AccountingCategory.objects.filter(category_type='income'), # Filter for income categories
+        write_only=True
+    )
+    payment_method = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentMethod.objects.all(),
+        write_only=True
+    )
+    bank_account = serializers.PrimaryKeyRelatedField(
+        queryset=BankAccount.objects.all(),
+        write_only=True,
+        required=False, allow_null=True # Make optional if bank_account is not always required
+    )
+    company = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        write_only=True,
+        required=False, allow_null=True
+    )
+    driver = serializers.PrimaryKeyRelatedField(
+        queryset=Driver.objects.all(),
+        write_only=True,
+        required=False, allow_null=True
+    )
+
     class Meta:
         model = Transaction
-        fields = '__all__'
-        read_only_fields = ('transaction_id', 'created_at', 'updated_at')
-    
-    def validate(self, data):
-        # Ensure category type matches transaction type
-        if data.get('category') and data.get('transaction_type'):
-            if data['category'].category_type != data['transaction_type']:
-                raise serializers.ValidationError(
-                    f"Category type '{data['category'].category_type}' doesn't match transaction type '{data['transaction_type']}'"
-                )
-        return data
+        fields = [
+            'id', 'transaction_id', 'amount', 'description', 'transaction_date', 'status',
+            'category', 'category_name', 'payment_method', 'payment_method_name',
+            'bank_account', 'bank_account_name', 'company', 'company_name',
+            'driver', 'driver_name', 'reference_number', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['transaction_id', 'created_at', 'updated_at']
 
 
+# --- Income Serializer ---
+# This serializer will create/update an Income record AND its associated Transaction record.
 class IncomeSerializer(serializers.ModelSerializer):
-    transaction = TransactionSerializer(read_only=True)
-    transaction_data = serializers.DictField(write_only=True)
+    # Use the TransactionSerializer to handle the nested 'transaction_data' from the frontend
+    transaction = TransactionSerializer() # This creates a nested writable field
 
     class Meta:
         model = Income
-        fields = '__all__'
+        fields = [
+            'id', 'transaction', 'income_source', 'invoice_number',
+            'due_date', 'tax_amount', 'net_amount',
+            'is_recurring', 'recurring_frequency', 'next_due_date',
+            'created_at', 'updated_at', 'created_by'
+        ]
+        read_only_fields = ['net_amount', 'created_at', 'updated_at', 'created_by']
 
-    @db_transaction.atomic
     def create(self, validated_data):
-        transaction_data = validated_data.pop('transaction_data')
-        transaction_data['transaction_type'] = 'income'
+        # Pop the nested transaction data
+        transaction_data = validated_data.pop('transaction')
+        created_by = self.context['request'].user # Get user from request context
 
-        # Create transaction first
-        transaction_serializer = TransactionSerializer(data=transaction_data)
-        if transaction_serializer.is_valid():
-            transaction_obj = transaction_serializer.save()
-        else:
-            raise serializers.ValidationError(transaction_serializer.errors)
+        # 1. Create the Transaction instance first
+        transaction_serializer = TransactionSerializer(data=transaction_data, context=self.context)
+        transaction_serializer.is_valid(raise_exception=True)
+        transaction_instance = transaction_serializer.save(
+            transaction_type='income', # Always 'income' for this context
+            created_by=created_by
+        )
 
-        # Create income record
-        income = Income.objects.create(transaction=transaction_obj, **validated_data)
-        return income
+        # 2. Create the Income instance, linking it to the newly created Transaction
+        income_instance = Income.objects.create(
+            transaction=transaction_instance,
+            created_by=created_by,
+            **validated_data
+        )
 
-    @db_transaction.atomic
+        return income_instance
+
     def update(self, instance, validated_data):
-        transaction_data = validated_data.pop('transaction_data', None)
+        # Handle updating the nested Transaction data
+        transaction_data = validated_data.pop('transaction', {})
+        transaction_instance = instance.transaction
 
-        if transaction_data:
-            transaction_serializer = TransactionSerializer(
-                instance.transaction,
-                data=transaction_data,
-                partial=True
-            )
-            if transaction_serializer.is_valid():
-                transaction_serializer.save()
-            else:
-                raise serializers.ValidationError(transaction_serializer.errors)
+        # Update the Transaction instance
+        transaction_serializer = TransactionSerializer(
+            transaction_instance,
+            data=transaction_data,
+            partial=True, # Allow partial updates
+            context=self.context
+        )
+        transaction_serializer.is_valid(raise_exception=True)
+        transaction_serializer.save() # Save the updated transaction
 
-        # Update income record
+        # Update the Income instance's direct fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         return instance
-
 
 class ExpenseSerializer(serializers.ModelSerializer):
     transaction = TransactionSerializer(read_only=True)

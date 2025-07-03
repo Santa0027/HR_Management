@@ -251,10 +251,12 @@ from .models import Termination  # Assuming your Termination model is here
 
 from rest_framework import serializers
 from .models import Termination # Make sure you import your Termination model
-from driver.models import Driver # Assuming Driver model is in driver.models
-from django.contrib.auth import get_user_model
+# from driver.models import Driver # Assuming Driver model is in driver.models
+# from django.contrib.auth import get_user_model
 
 User = get_user_model() # Get the User model for processed_by
+# /home/ubuntu/app/HR_Management/backend/hr/serializers.py
+
 
 class TerminationSerializer(serializers.ModelSerializer):
     # These fields are for input (write_only) and expect primary keys (IDs)
@@ -269,33 +271,36 @@ class TerminationSerializer(serializers.ModelSerializer):
     )
 
     # These fields are for output (read_only) and display related object details
-    # You'll need to confirm these fields exist on your Driver and User models
+    # They are used when retrieving a Termination object.
+    # You'll need to confirm these fields exist on your Driver and User models.
+    # For Driver, ensure 'driver_name' attribute. For User, ensure 'username' attribute.
     driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
-    processed_by_name = serializers.CharField(source='processed_by.username', read_only=True)
+    processed_by_username = serializers.CharField(source='processed_by.username', read_only=True) # Changed to username
 
 
-    class Meta:
-        model = Termination
+    class Meta: # <--- THIS IS THE MISSING CLASS!
+        model = Termination # Specify the Django model this serializer is for
         fields = [
             'id',
-            'driver',
-            'driver_name', # For display in API responses
+            'driver',         # For writing (input)
+            'driver_name',    # For reading (output)
             'termination_date',
             'reason',
             'details',
             'document',
-            'processed_by',
-            'processed_by_name', # For display in API responses
+            'processed_by',   # For writing (input)
+            'processed_by_username', # For reading (output)
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at'] # These fields are automatically managed by Django
 
 
     def create(self, validated_data):
         driver = validated_data.pop('driver')
         processed_by = validated_data.pop('processed_by', None)
 
+        print(f"DEBUG: Creating Termination for driver ID: {driver.id}")
         termination = Termination.objects.create(
             driver=driver,
             processed_by=processed_by,
@@ -304,11 +309,14 @@ class TerminationSerializer(serializers.ModelSerializer):
 
         # Mark the driver as inactive upon successful termination
         if driver:
+            print(f"DEBUG: Driver {driver.driver_name} (ID: {driver.id}) current is_active: {driver.is_active}")
             driver.is_active = False # Assuming 'is_active' field exists on your Driver model
             driver.save()
+            print(f"DEBUG: Driver {driver.driver_name} (ID: {driver.id}) NEW is_active: {driver.is_active}")
         return termination
 
     def update(self, instance, validated_data):
+        print(f"DEBUG: Updating Termination ID: {instance.id}")
         # Retrieve the old driver and the new driver (if changed)
         current_driver = instance.driver
         new_driver = validated_data.get('driver', current_driver)
@@ -320,7 +328,9 @@ class TerminationSerializer(serializers.ModelSerializer):
         instance.termination_date = validated_data.get('termination_date', instance.termination_date)
         instance.reason = validated_data.get('reason', instance.reason)
         instance.details = validated_data.get('details', instance.details)
-        instance.document = validated_data.get('document', instance.document) # Handle file updates
+        # Handle document file update - check if a new document was provided
+        if 'document' in validated_data:
+            instance.document = validated_data['document']
 
 
         # Logic for managing driver status when updating a termination record
@@ -328,18 +338,24 @@ class TerminationSerializer(serializers.ModelSerializer):
             # If the driver is changed in the termination record:
             # 1. Reactivate the *old* driver (if it exists)
             if current_driver:
+                print(f"DEBUG: Old driver {current_driver.driver_name} (ID: {current_driver.id}) current is_active: {current_driver.is_active}")
                 current_driver.is_active = True
                 current_driver.save()
+                print(f"DEBUG: Old driver {current_driver.driver_name} (ID: {current_driver.id}) NEW is_active: {current_driver.is_active}")
             # 2. Deactivate the *new* driver selected for this termination
             if new_driver:
+                print(f"DEBUG: New driver {new_driver.driver_name} (ID: {new_driver.id}) current is_active: {new_driver.is_active}")
                 new_driver.is_active = False
                 new_driver.save()
+                print(f"DEBUG: New driver {new_driver.driver_name} (ID: {new_driver.id}) NEW is_active: {new_driver.is_active}")
             instance.driver = new_driver # Assign the new driver to the instance
         elif new_driver and new_driver.is_active:
             # If the driver remains the same but was somehow still active, ensure deactivation.
             # This handles edge cases where the driver might have been manually reactivated elsewhere.
+            print(f"DEBUG: Same driver {new_driver.driver_name} (ID: {new_driver.id}) was active, setting to inactive.")
             new_driver.is_active = False
             new_driver.save()
+            print(f"DEBUG: Same driver {new_driver.driver_name} (ID: {new_driver.id}) NEW is_active: {new_driver.is_active}")
 
         # Update the processed_by user
         instance.processed_by = new_processed_by
@@ -348,6 +364,49 @@ class TerminationSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+    # ... (your existing code) ...
+
+    def create(self, validated_data):
+        driver = validated_data.pop('driver')
+        processed_by = validated_data.pop('processed_by', None)
+
+        print(f"Creating Termination for driver ID: {driver.id}") # DEBUG
+        termination = Termination.objects.create(driver=driver, processed_by=processed_by, **validated_data)
+
+        if driver:
+            print(f"Driver {driver.driver_name} (ID: {driver.id}) current is_active: {driver.is_active}") # DEBUG
+            driver.is_active = False
+            driver.save()
+            print(f"Driver {driver.driver_name} (ID: {driver.id}) NEW is_active: {driver.is_active}") # DEBUG
+        return termination
+
+    def update(self, instance, validated_data):
+        print(f"Updating Termination ID: {instance.id}") # DEBUG
+        current_driver = instance.driver
+        new_driver = validated_data.get('driver', current_driver)
+        # ... (rest of your update method) ...
+
+        if new_driver != current_driver:
+            if current_driver:
+                print(f"Old driver {current_driver.driver_name} (ID: {current_driver.id}) current is_active: {current_driver.is_active}") # DEBUG
+                current_driver.is_active = True
+                current_driver.save()
+                print(f"Old driver {current_driver.driver_name} (ID: {current_driver.id}) NEW is_active: {current_driver.is_active}") # DEBUG
+            if new_driver:
+                print(f"New driver {new_driver.driver_name} (ID: {new_driver.id}) current is_active: {new_driver.is_active}") # DEBUG
+                new_driver.is_active = False
+                new_driver.save()
+                print(f"New driver {new_driver.driver_name} (ID: {new_driver.id}) NEW is_active: {new_driver.is_active}") # DEBUG
+            instance.driver = new_driver
+        elif new_driver and new_driver.is_active:
+            print(f"Same driver {new_driver.driver_name} (ID: {new_driver.id}) was active, setting to inactive.") # DEBUG
+            new_driver.is_active = False
+            new_driver.save()
+            print(f"Same driver {new_driver.driver_name} (ID: {new_driver.id}) NEW is_active: {new_driver.is_active}") # DEBUG
+
+        # ... (rest of your update method) ...
+        instance.save()
+        return instance
 class EmployeeSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
     years_of_service = serializers.ReadOnlyField()

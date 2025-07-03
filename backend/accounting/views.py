@@ -265,34 +265,60 @@ class TransactionViewSet(viewsets.ModelViewSet):
         serializer = CategorySummarySerializer(breakdown, many=True)
         return Response(serializer.data)
 
+# Assuming this would be in your hr/views.py file, below TransactionViewSet
 
 class IncomeViewSet(viewsets.ModelViewSet):
-    queryset = Income.objects.select_related('transaction').all()
+    queryset = Income.objects.all()
     serializer_class = IncomeSerializer
-    permission_classes = [IsAccountantUser]
+    permission_classes = [IsAuthenticated] # Adjust permissions as needed
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
-        'income_source', 'is_recurring', 'recurring_frequency',
-        'transaction__status', 'transaction__company', 'transaction__driver'
+        'transaction__category', 'transaction__payment_method',
+        'transaction__bank_account', 'transaction__company', 'transaction__driver',
+        'income_source', 'is_recurring', 'transaction__status',
+        'due_date', 'next_due_date'
     ]
-    search_fields = ['transaction__description', 'invoice_number']
-    ordering_fields = ['transaction__transaction_date', 'transaction__amount', 'due_date']
-    ordering = ['-transaction__transaction_date']
+    search_fields = [
+        'income_source', 'invoice_number', 'transaction__description',
+        'transaction__transaction_id', 'transaction__company__company_name',
+        'transaction__driver__driver_name'
+    ]
+    ordering_fields = [
+        'transaction__amount', 'transaction__transaction_date',
+        'due_date', 'next_due_date', 'created_at'
+    ]
+    ordering = ['-transaction__transaction_date', '-created_at']
+
+    def get_permissions(self):
+        # Example permissions: Only accountants can create/update/delete income
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAccountantUser] # Or IsAdminUser
+        else:
+            # Other roles like management, HR, or even drivers might view
+            permission_classes = [IsAuthenticated] # Use specific permission if needed
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
+        """
+        Filter queryset based on user role and permissions.
+        For example, drivers might only see incomes related to them.
+        """
         queryset = super().get_queryset()
         user = self.request.user
 
-        if user.role == 'admin':
+        if user.role == 'admin' or user.role == 'accountant':
             return queryset
-        elif user.role in ['accountant', 'hr', 'management']:
+        elif user.role in ['hr', 'management']:
+            # Maybe they can see all incomes, or filtered by company they manage
             return queryset
         elif user.role == 'driver':
+            # Drivers can only see income where they are the associated driver
             return queryset.filter(transaction__driver__user=user)
-        else:
-            return queryset.none()
+        return queryset.none() # Default to no access if role isn't recognized
 
-
+    def perform_create(self, serializer):
+        # Automatically set the creator for auditing purposes
+        serializer.save(created_by=self.request.user)
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.select_related('transaction').all()
     serializer_class = ExpenseSerializer
