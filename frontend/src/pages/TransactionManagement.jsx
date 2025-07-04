@@ -12,7 +12,7 @@ import {
   Eye,
   ArrowUpDown
 } from 'lucide-react';
-import api from '../services/api';
+import axiosInstance from '../api/axiosInstance';
 
 const TransactionManagement = () => {
   const [transactions, setTransactions] = useState([]);
@@ -60,7 +60,7 @@ const TransactionManagement = () => {
         if (params[key] === '') delete params[key];
       });
 
-      const response = await api.get('/accounting/transactions/', { params });
+      const response = await axiosInstance.get('/accounting/transactions/', { params });
       setTransactions(response.data.results || []);
       setPagination({
         count: response.data.count,
@@ -79,10 +79,10 @@ const TransactionManagement = () => {
   const fetchFilterOptions = async () => {
     try {
       const [categoriesRes, paymentMethodsRes, companiesRes, driversRes] = await Promise.all([
-        api.get('/accounting/categories/'),
-        api.get('/accounting/payment-methods/'),
-        api.get('/companies/'),
-        api.get('/Register/drivers/')
+        axiosInstance.get('/accounting/categories/'),
+        axiosInstance.get('/accounting/payment-methods/'),
+        axiosInstance.get('/companies/'),
+        axiosInstance.get('/Register/drivers/')
       ]);
 
       setCategories(categoriesRes.data.results || categoriesRes.data || []);
@@ -134,7 +134,7 @@ const TransactionManagement = () => {
   const handleDeleteTransaction = async (transactionId) => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
-        await api.delete(`/accounting/transactions/${transactionId}/`);
+        await axiosInstance.delete(`/accounting/transactions/${transactionId}/`);
         fetchTransactions(pagination.current_page);
       } catch (error) {
         console.error('Error deleting transaction:', error);
@@ -150,7 +150,7 @@ const TransactionManagement = () => {
         if (params[key] === '') delete params[key];
       });
 
-      const response = await api.get('/accounting/transactions/export/', { 
+      const response = await axiosInstance.get('/accounting/transactions/export/', { 
         params,
         responseType: 'blob'
       });

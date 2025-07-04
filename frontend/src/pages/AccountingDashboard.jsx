@@ -12,7 +12,8 @@ import {
   Plus,
   Filter
 } from 'lucide-react';
-import api from '../services/api';
+// import api from '../services/api';
+import axiosInstance from '../api/axiosInstance';
 
 const AccountingDashboard = () => {
   const [summary, setSummary] = useState({
@@ -37,13 +38,13 @@ const AccountingDashboard = () => {
     setLoading(true);
     try {
       // Fetch transaction summary
-      const summaryResponse = await api.get('/accounting/transactions/summary/', {
+      const summaryResponse = await axiosInstance.get('/accounting/transactions/summary/', {
         params: dateRange
       });
       setSummary(summaryResponse.data);
 
       // Fetch recent transactions
-      const transactionsResponse = await api.get('/accounting/transactions/', {
+      const transactionsResponse = await axiosInstance.get('/accounting/transactions/', {
         params: { 
           ordering: '-transaction_date',
           limit: 10
@@ -52,7 +53,7 @@ const AccountingDashboard = () => {
       setRecentTransactions(transactionsResponse.data.results || []);
 
       // Fetch category breakdown
-      const categoryResponse = await api.get('/accounting/transactions/category_breakdown/', {
+      const categoryResponse = await axiosInstance.get('/accounting/transactions/category_breakdown/', {
         params: dateRange
       });
       setCategoryBreakdown(categoryResponse.data);

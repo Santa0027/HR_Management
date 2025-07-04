@@ -75,7 +75,7 @@ CORS_EXPOSE_HEADERS = [
 
 # Disable CSRF for API endpoints (since we're using JWT)
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:5174",
     "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -157,16 +157,25 @@ WSGI_APPLICATION = 'config.wsgi.application'
 import os   
 
 
+# Temporarily using SQLite for development
 DATABASES = {
-     'default': {
-         'ENGINE': 'django.db.backends.postgresql',
-         'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
-         'USER': os.getenv('DATABASE_USER', 'admin'),
-         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
-         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-         'PORT': os.getenv('DATABASE_PORT', '5432'),
-     }
- }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# PostgreSQL Database Config (commented out for now)
+# DATABASES = {
+#      'default': {
+#          'ENGINE': 'django.db.backends.postgresql',
+#          'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
+#          'USER': os.getenv('DATABASE_USER', 'admin'),
+#          'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
+#          'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+#          'PORT': os.getenv('DATABASE_PORT', '5432'),
+#      }
+#  }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -234,3 +243,13 @@ MEDIA_URL = '/media/'
 # your_project/settings.py
 
 CORS_ALLOW_CREDENTIALS = True
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated', # This is a common default
+    ),
+    # ... other DRF settings
+}

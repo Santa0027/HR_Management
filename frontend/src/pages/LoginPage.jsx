@@ -5,7 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { loginUser } from '../services/authService';
 
 const LoginPage = () => {
-  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [credentials, setCredentials] = useState({
+    email: 'admin@example.com',  // Pre-filled for testing
+    password: 'admin123'         // Pre-filled for testing
+  });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -32,20 +35,36 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
+      console.log('Attempting login with credentials:', { email: credentials.email, password: '***' });
       const res = await loginUser(credentials);
-      console.log('Login success:', res);
+      console.log('Login response received:', res);
 
       if (res?.access || res?.token) {
+        console.log('Valid tokens found, calling login context...');
         // Use the AuthContext login method
         login(res);
-        console.log('Navigating to dashboard...');
+        console.log('Login context updated, navigating to dashboard...');
         navigate('/dashboard');
       } else {
-        setError('Unexpected response from server.');
+        console.error('No valid tokens in response:', res);
+        setError('Unexpected response from server. No authentication tokens received.');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.detail || 'Invalid credentials. Please try again.';
+      console.error('Login error details:', err);
+      console.error('Error response:', err.response);
+
+      let errorMessage = 'Login failed. Please try again.';
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);

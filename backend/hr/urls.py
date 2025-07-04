@@ -9,16 +9,7 @@ from .views import (
     TerminationViewSet,
     WarningLetterViewSet,
     CompanyViewSet, # Make sure CompanyViewSet is imported if used in router
-    VehicleRegistrationViewSet, # Make sure VehicleRegistrationViewSet is imported if used in router
-    # Enhanced HR Views
-    EmployeeViewSet,
-    LeaveTypeViewSet,
-    LeaveBalanceViewSet,
-    LeaveRequestViewSet,
-    PerformanceReviewViewSet,
-    GoalViewSet,
-    EmployeeDocumentViewSet,
-    PayrollViewSet
+    VehicleRegistrationViewSet # Make sure VehicleRegistrationViewSet is imported if used in router
 )
 
 router = DefaultRouter()
@@ -30,16 +21,6 @@ router.register(r'warning-letters', WarningLetterViewSet, basename='warning-lett
 router.register(r'terminations', TerminationViewSet)
 router.register(r'companies', CompanyViewSet) # Assuming these are used
 router.register(r'vehicle-registrations', VehicleRegistrationViewSet) # Assuming these are used
-
-# Enhanced HR endpoints
-router.register(r'employees', EmployeeViewSet, basename='employees')
-router.register(r'leave-types', LeaveTypeViewSet, basename='leave-types')
-router.register(r'leave-balances', LeaveBalanceViewSet, basename='leave-balances')
-router.register(r'leave-requests', LeaveRequestViewSet, basename='leave-requests')
-router.register(r'performance-reviews', PerformanceReviewViewSet, basename='performance-reviews')
-router.register(r'goals', GoalViewSet, basename='goals')
-router.register(r'employee-documents', EmployeeDocumentViewSet, basename='employee-documents')
-router.register(r'payroll', PayrollViewSet, basename='payroll')
 
 
 urlpatterns = [

@@ -73,6 +73,7 @@ class Transaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
         ('income', 'Income'),
         ('expense', 'Expense'),
+        # Add other transaction types if needed, e.g., ('transfer', 'Transfer')
     ]
 
     STATUS_CHOICES = [
@@ -118,14 +119,12 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.transaction_id:
-            # Generate unique transaction ID
             import uuid
             self.transaction_id = f"TXN-{timezone.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.transaction_id} - {self.get_transaction_type_display()} - {self.amount} {self.currency}"
-
 
 class Income(models.Model):
     """Specific income tracking model"""
@@ -139,8 +138,8 @@ class Income(models.Model):
     ]
 
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='income_detail')
-    income_source = models.CharField(max_length=20, choices=INCOME_SOURCE_CHOICES)
-    invoice_number = models.CharField(max_length=50, blank=True, null=True)
+    income_source = models.CharField(max_length=50, choices=INCOME_SOURCE_CHOICES) # Adjusted max_length
+    invoice_number = models.CharField(max_length=100, blank=True, null=True)
     due_date = models.DateField(null=True, blank=True)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     net_amount = models.DecimalField(max_digits=15, decimal_places=2, editable=False)
@@ -156,16 +155,29 @@ class Income(models.Model):
     ], blank=True, null=True)
     next_due_date = models.DateField(null=True, blank=True)
 
+    # Standard audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='incomes_created'
+    )
+    updated_at = models.DateTimeField(auto_now=True) # Added updated_at
+
     class Meta:
         ordering = ['-transaction__transaction_date']
 
     def save(self, *args, **kwargs):
         # Calculate net amount (gross - tax)
-        self.net_amount = self.transaction.amount - self.tax_amount
+        if self.transaction and self.transaction.amount is not None:
+            self.net_amount = self.transaction.amount - self.tax_amount
+        else:
+            self.net_amount = 0.00 # Default or handle error if transaction is not yet linked or amount is None
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Income: {self.transaction.transaction_id} - {self.get_income_source_display()}"
+        return f"Income: {self.transaction.transaction_id if self.transaction else 'N/A'} - {self.get_income_source_display()}"
 
 
 class Expense(models.Model):
@@ -211,6 +223,12 @@ class Expense(models.Model):
         ('rejected', 'Rejected'),
     ], default='pending')
     approved_at = models.DateTimeField(null=True, blank=True)
+
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses_created')
+
 
     class Meta:
         ordering = ['-transaction__transaction_date']

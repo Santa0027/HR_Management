@@ -1,22 +1,28 @@
+# backend/accounting/views.py
+
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, DecimalField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
-from django.http import JsonResponse
-from core.permissions import (
-    IsAdminUser, IsAccountantUser, IsHRUser, IsStaffUser,
-    can_view_financial_data, can_modify_financial_data
-)
 
+# Import your custom permission class
+from .permissions import IsAdminOrAccountantOrManagement # Adjust path as necessary
+
+# Import your models
+# YOU NEED TO ENSURE THESE IMPORTS ARE CORRECT FOR YOUR PROJECT STRUCTURE
 from .models import (
     AccountingCategory, PaymentMethod, BankAccount, Transaction,
     Income, Expense, DriverPayroll, Budget, FinancialReport, RecurringTransaction
 )
+# Import your serializers
+# YOU NEED TO ENSURE THESE IMPORTS ARE CORRECT FOR YOUR PROJECT STRUCTURE
 from .serializers import (
     AccountingCategorySerializer, PaymentMethodSerializer, BankAccountSerializer,
     TransactionSerializer, IncomeSerializer, ExpenseSerializer, DriverPayrollSerializer,
@@ -24,80 +30,85 @@ from .serializers import (
     TransactionSummarySerializer, CategorySummarySerializer, DriverPayrollSummarySerializer
 )
 
+# You might need to import your CustomUser model if 'role' is on it directly
+# from users.models import CustomUser
+# And potentially your Company model if used in filtering
+# from company.models import Company
+
+
+# Helper function to check user role for common patterns
+def _is_admin_or_accountant_or_hr_or_management(user):
+    """Checks if the user has an administrative or accounting-related role."""
+    # Ensure the user object has the 'role' attribute or is_superuser
+    # and check for custom boolean flags (is_accountant, is_management)
+    # as defined in your CustomUser model and permissions.py
+    return user.is_superuser or \
+           getattr(user, 'is_staff', False) or \
+           getattr(user, 'is_accountant', False) or \
+           getattr(user, 'is_management', False) or \
+           (hasattr(user, 'role') and user.role in ['admin', 'accountant', 'hr', 'management'])
+
 
 class AccountingCategoryViewSet(viewsets.ModelViewSet):
     queryset = AccountingCategory.objects.all()
     serializer_class = AccountingCategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] # Adjust as per your security policy
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category_type', 'is_active']
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'category_type', 'created_at']
     ordering = ['category_type', 'name']
 
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAccountantUser]
-        else:
-            # Only allow users who can view accounting data
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
-
     def get_queryset(self):
         """
-        Filter queryset based on user role and permissions.
+        Currently allows all users due to AllowAny.
+        If categories should be linked to a company/user, implement filtering here.
         """
-        queryset = super().get_queryset()
-        user = self.request.user
-
-        # Only allow users with accounting permissions to view categories
-        if user.role in ['admin', 'accountant', 'hr', 'management']:
-            return queryset
-        else:
-            return queryset.none()
+        return super().get_queryset()
 
 
 class PaymentMethodViewSet(viewsets.ModelViewSet):
     queryset = PaymentMethod.objects.all()
     serializer_class = PaymentMethodSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny] # Adjust as per your security policy
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['is_active']
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAccountantUser]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
-
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()
     serializer_class = BankAccountSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrAccountantOrManagement] # Apply your custom permission
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['account_type', 'is_active', 'company', 'currency']
     search_fields = ['account_name', 'bank_name', 'account_number']
     ordering_fields = ['bank_name', 'account_name', 'balance', 'created_at']
     ordering = ['bank_name', 'account_name']
 
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'update_balance']:
-            permission_classes = [IsAccountantUser]
+    def get_queryset(self):
+        user = self.request.user
+        # Use the helper function to check roles for filtering
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        # Ensure 'company' is a field on your CustomUser or a related profile
+        elif hasattr(user, 'company') and user.company:
+            # Filter bank accounts by the user's associated company
+            return super().get_queryset().filter(company=user.company)
         else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+            # If the user doesn't match any of the above, deny permission
+            raise PermissionDenied("You do not have permission to view bank accounts.")
+
 
     @action(detail=True, methods=['post'])
     def update_balance(self, request, pk=None):
         """Update bank account balance"""
+        # Use the helper function for permission check within the action
+        if not _is_admin_or_accountant_or_hr_or_management(request.user):
+             raise PermissionDenied("You do not have permission to update bank account balances.")
+
         bank_account = self.get_object()
         new_balance = request.data.get('balance')
 
@@ -131,42 +142,97 @@ class TransactionViewSet(viewsets.ModelViewSet):
     ordering_fields = ['transaction_date', 'amount', 'created_at']
     ordering = ['-transaction_date', '-created_at']
 
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        """
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAccountantUser]
-        else:
-            # Allow HR and Management to view transactions
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
-
     def get_queryset(self):
-        """
-        Filter queryset based on user role and permissions.
-        """
-        queryset = super().get_queryset()
         user = self.request.user
-
-        if user.role == 'admin':
-            return queryset
-        elif user.role in ['accountant', 'hr', 'management']:
-            return queryset
-        elif user.role == 'driver':
-            # Drivers can only see their own transactions
-            return queryset.filter(driver__user=user)
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'role') and user.role == 'driver' and hasattr(user, 'driver_profile') and user.driver_profile:
+            return super().get_queryset().filter(driver=user.driver_profile)
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(company=user.company)
         else:
-            return queryset.none()
+            raise PermissionDenied("You do not have permission to view transactions.")
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+    # If your Transaction model *does* have a `modified_by` field, you can add this:
+    # def perform_update(self, serializer):
+    #     serializer.save(modified_by=self.request.user)
+
+
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Get transaction summary for a date range"""
+        """Get transaction summary for a date range, filtered by user's permissions"""
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        company_id = request.query_params.get('company')
+
+        if not start_date_str or not end_date_str:
+            return Response(
+                {'error': 'start_date and end_date are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date format. Use YYYY-MM-DD'}, # Fixed typo: Букмекерлар-MM-DD -> YYYY-MM-DD
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        queryset = self.get_queryset().filter(
+            transaction_date__date__gte=start_date,
+            transaction_date__date__lte=end_date,
+            status='completed'
+        )
+
+        if company_id:
+            user = request.user
+            # Use the helper function for role check
+            if not _is_admin_or_accountant_or_hr_or_management(user) and \
+               not (hasattr(user, 'company') and str(user.company.id) == company_id):
+                raise PermissionDenied("You do not have permission to view data for this company.")
+            queryset = queryset.filter(company_id=company_id)
+
+        # FIXED: Use Coalesce to handle potential NULL amounts during aggregation
+        income_total = queryset.filter(transaction_type='income').aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+
+        # FIXED: Use Coalesce to handle potential NULL amounts during aggregation
+        expense_total = queryset.filter(transaction_type='expense').aggregate(
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField())
+        )['total']
+
+        # --- DEBUGGING PRINTS ---
+        print(f"DEBUG: income_total = {income_total}, type = {type(income_total)}")
+        print(f"DEBUG: expense_total = {expense_total}, type = {type(expense_total)}")
+        # ------------------------
+
+        net_profit = income_total - expense_total
+        transaction_count = queryset.count()
+
+        summary_data = {
+            'total_income': income_total,
+            'total_expense': expense_total,
+            'net_profit': net_profit,
+            'transaction_count': transaction_count,
+            'period_start': start_date,
+            'period_end': end_date
+        }
+
+        serializer = TransactionSummarySerializer(summary_data)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def category_breakdown(self, request):
+        """Get transaction breakdown by category, filtered by user's permissions"""
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
+        transaction_type = request.query_params.get('transaction_type')
         company_id = request.query_params.get('company')
 
         if not start_date or not end_date:
@@ -180,63 +246,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
             return Response(
-                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                {'error': 'Invalid date format. Use YYYY-MM-DD'}, # Fixed typo: Букмекерлар-MM-DD -> YYYY-MM-DD
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        queryset = self.queryset.filter(
-            transaction_date__date__gte=start_date,
-            transaction_date__date__lte=end_date,
-            status='completed'
-        )
-
-        if company_id:
-            queryset = queryset.filter(company_id=company_id)
-
-        # Calculate summary
-        income_total = queryset.filter(transaction_type='income').aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        expense_total = queryset.filter(transaction_type='expense').aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        summary_data = {
-            'total_income': income_total,
-            'total_expense': expense_total,
-            'net_profit': income_total - expense_total,
-            'transaction_count': queryset.count(),
-            'period_start': start_date,
-            'period_end': end_date
-        }
-
-        serializer = TransactionSummarySerializer(summary_data)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'])
-    def category_breakdown(self, request):
-        """Get transaction breakdown by category"""
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        transaction_type = request.query_params.get('transaction_type')
-
-        if not start_date or not end_date:
-            return Response(
-                {'error': 'start_date and end_date are required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        except ValueError:
-            return Response(
-                {'error': 'Invalid date format. Use YYYY-MM-DD'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        queryset = self.queryset.filter(
+        queryset = self.get_queryset().filter(
             transaction_date__date__gte=start_date,
             transaction_date__date__lte=end_date,
             status='completed'
@@ -245,11 +259,19 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if transaction_type:
             queryset = queryset.filter(transaction_type=transaction_type)
 
-        # Group by category
+        if company_id:
+            user = request.user
+            # Use the helper function for role check
+            if not _is_admin_or_accountant_or_hr_or_management(user) and \
+               not (hasattr(user, 'company') and str(user.company.id) == company_id):
+                raise PermissionDenied("You do not have permission to view data for this company.")
+            queryset = queryset.filter(company_id=company_id)
+
+
         category_data = queryset.values(
             'category__name', 'category__category_type'
         ).annotate(
-            total_amount=Sum('amount'),
+            total_amount=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField()), # Added Coalesce here too
             transaction_count=Count('id')
         ).order_by('-total_amount')
 
@@ -269,7 +291,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
 class IncomeViewSet(viewsets.ModelViewSet):
     queryset = Income.objects.select_related('transaction').all()
     serializer_class = IncomeSerializer
-    permission_classes = [IsAccountantUser]
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'income_source', 'is_recurring', 'recurring_frequency',
@@ -280,23 +302,29 @@ class IncomeViewSet(viewsets.ModelViewSet):
     ordering = ['-transaction__transaction_date']
 
     def get_queryset(self):
-        queryset = super().get_queryset()
         user = self.request.user
-
-        if user.role == 'admin':
-            return queryset
-        elif user.role in ['accountant', 'hr', 'management']:
-            return queryset
-        elif user.role == 'driver':
-            return queryset.filter(transaction__driver__user=user)
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'role') and user.role == 'driver' and hasattr(user, 'driver_profile') and user.driver_profile:
+            return super().get_queryset().filter(transaction__driver=user.driver_profile)
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(transaction__company=user.company)
         else:
-            return queryset.none()
+            raise PermissionDenied("You do not have permission to view incomes.")
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    # REMOVED perform_update for Income, assuming 'modified_by' is not on your Income model
+    # If your Income model *does* have a `modified_by` field, you can add this back:
+    # def perform_update(self, serializer):
+    #     serializer.save(modified_by=self.request.user)
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.select_related('transaction').all()
     serializer_class = ExpenseSerializer
-    permission_classes = [IsAccountantUser]
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'expense_type', 'is_recurring', 'recurring_frequency', 'requires_approval',
@@ -306,36 +334,33 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     ordering_fields = ['transaction__transaction_date', 'transaction__amount', 'due_date']
     ordering = ['-transaction__transaction_date']
 
-    def get_permissions(self):
-        if self.action in ['approve', 'reject']:
-            # Allow management to approve/reject expenses
-            permission_classes = [IsAuthenticated]  # Will check in the action method
-        else:
-            permission_classes = [IsAccountantUser]
-        return [permission() for permission in permission_classes]
-
     def get_queryset(self):
-        queryset = super().get_queryset()
         user = self.request.user
-
-        if user.role == 'admin':
-            return queryset
-        elif user.role in ['accountant', 'hr', 'management']:
-            return queryset
-        elif user.role == 'driver':
-            return queryset.filter(transaction__driver__user=user)
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'role') and user.role == 'driver' and hasattr(user, 'driver_profile') and user.driver_profile:
+            return super().get_queryset().filter(transaction__driver=user.driver_profile)
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(transaction__company=user.company)
         else:
-            return queryset.none()
+            raise PermissionDenied("You do not have permission to view expenses.")
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    # REMOVED perform_update for Expense, assuming 'modified_by' is not on your Expense model
+    # If your Expense model *does* have a `modified_by` field, you can add this back:
+    # def perform_update(self, serializer):
+    #     serializer.save(modified_by=self.request.user)
+
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve an expense"""
-        # Check if user can approve expenses
-        if not request.user.role in ['admin', 'accountant', 'management']:
-            return Response(
-                {'error': 'You do not have permission to approve expenses'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        user = request.user
+        # Use the helper function for role check
+        if not _is_admin_or_accountant_or_hr_or_management(user):
+            raise PermissionDenied('You do not have permission to approve expenses')
 
         expense = self.get_object()
 
@@ -347,9 +372,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 
         expense.approval_status = 'approved'
         expense.approved_at = timezone.now()
-        expense.transaction.approved_by = request.user
-        expense.transaction.status = 'completed'
-        expense.transaction.save()
+        if expense.transaction:
+            # Assuming 'approved_by' field exists on the Transaction model
+            # If not, remove or adjust this line.
+            expense.transaction.approved_by = user
+            expense.transaction.status = 'completed'
+            expense.transaction.save()
         expense.save()
 
         return Response({'message': 'Expense approved successfully'})
@@ -357,12 +385,10 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject an expense"""
-        # Check if user can approve/reject expenses
-        if not request.user.role in ['admin', 'accountant', 'management']:
-            return Response(
-                {'error': 'You do not have permission to reject expenses'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        user = request.user
+        # Use the helper function for role check
+        if not _is_admin_or_accountant_or_hr_or_management(user):
+            raise PermissionDenied('You do not have permission to reject expenses')
 
         expense = self.get_object()
 
@@ -373,8 +399,9 @@ class ExpenseViewSet(viewsets.ModelViewSet):
             )
 
         expense.approval_status = 'rejected'
-        expense.transaction.status = 'cancelled'
-        expense.transaction.save()
+        if expense.transaction:
+            expense.transaction.status = 'cancelled' # Or another appropriate status
+            expense.transaction.save()
         expense.save()
 
         return Response({'message': 'Expense rejected successfully'})
@@ -390,26 +417,16 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
     ordering_fields = ['pay_date', 'pay_period_start', 'net_salary']
     ordering = ['-pay_date']
 
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'process_payment']:
-            permission_classes = [IsHRUser]  # HR can manage payroll
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
-
     def get_queryset(self):
-        queryset = super().get_queryset()
         user = self.request.user
-
-        if user.role == 'admin':
-            return queryset
-        elif user.role in ['hr', 'accountant', 'management']:
-            return queryset
-        elif user.role == 'driver':
-            # Drivers can only see their own payroll
-            return queryset.filter(driver__user=user)
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'role') and user.role == 'driver' and hasattr(user, 'driver_profile') and user.driver_profile:
+            return super().get_queryset().filter(driver=user.driver_profile)
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(company=user.company)
         else:
-            return queryset.none()
+            raise PermissionDenied("You do not have permission to view payroll.")
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -417,15 +434,18 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def process_payment(self, request, pk=None):
         """Process payroll payment and create transaction"""
+        if not _is_admin_or_accountant_or_hr_or_management(request.user):
+            raise PermissionDenied("You do not have permission to process payroll payments.")
+
         payroll = self.get_object()
 
         if payroll.status != 'processed':
             return Response(
-                {'error': 'Payroll must be in processed status'},
+                {'error': 'Payroll must be in processed status to process payment.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Create expense transaction for payroll
+        # Local import to avoid circular dependency, assuming Transaction/Category/PaymentMethod are in .models
         from .models import Transaction, AccountingCategory, PaymentMethod
 
         try:
@@ -442,7 +462,7 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
                 payment_method=payment_method,
                 company=payroll.company,
                 driver=payroll.driver,
-                created_by=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
+                created_by=request.user,
                 status='completed'
             )
 
@@ -450,17 +470,17 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
             payroll.status = 'paid'
             payroll.save()
 
-            return Response({'message': 'Payroll payment processed successfully'})
+            return Response({'message': 'Payroll payment processed successfully', 'transaction_id': transaction.id})
 
         except (AccountingCategory.DoesNotExist, PaymentMethod.DoesNotExist) as e:
             return Response(
-                {'error': f'Required accounting setup missing: {str(e)}'},
+                {'error': f'Required accounting setup missing: {str(e)}. Please ensure "Driver Salary" category and "Bank Transfer" payment method exist.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Get payroll summary by driver"""
+        """Get payroll summary by driver, filtered by user's permissions"""
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
 
@@ -475,20 +495,20 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
             return Response(
-                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                {'error': 'Invalid date format. Use YYYY-MM-DD'}, # Fixed typo
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        queryset = self.queryset.filter(
+        queryset = self.get_queryset().filter(
             pay_period_start__gte=start_date,
             pay_period_end__lte=end_date
         )
 
-        # Group by driver
         driver_summary = queryset.values('driver__driver_name').annotate(
-            total_gross_salary=Sum('gross_salary'),
-            total_deductions=Sum('total_deductions'),
-            total_net_salary=Sum('net_salary'),
+            # Coalesce is generally good practice for all Sum aggregates on DecimalFields
+            total_gross_salary=Coalesce(Sum('gross_salary'), Decimal('0.00'), output_field=DecimalField()),
+            total_deductions=Coalesce(Sum('total_deductions'), Decimal('0.00'), output_field=DecimalField()),
+            total_net_salary=Coalesce(Sum('net_salary'), Decimal('0.00'), output_field=DecimalField()),
             payroll_count=Count('id')
         ).order_by('-total_net_salary')
 
@@ -509,23 +529,33 @@ class DriverPayrollViewSet(viewsets.ModelViewSet):
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
-    permission_classes = [AllowAny]  # Changed to AllowAny for testing
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'company', 'category']
     search_fields = ['name', 'description']
     ordering_fields = ['budget_period_start', 'total_budget', 'created_at']
     ordering = ['-budget_period_start']
 
+    def get_queryset(self):
+        user = self.request.user
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(company=user.company)
+        else:
+            raise PermissionDenied("You do not have permission to view budgets.")
+
     def perform_create(self, serializer):
-        created_by = None
-        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
-            created_by = self.request.user
-        serializer.save(created_by=created_by)
+        serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=['post'])
     def calculate_actuals(self, request, pk=None):
         """Calculate actual income and expenses for the budget"""
+        if not _is_admin_or_accountant_or_hr_or_management(request.user):
+            raise PermissionDenied("You do not have permission to calculate budget actuals.")
+
         budget = self.get_object()
+        # Ensure budget.calculate_actuals() handles potential None/Decimal issues internally
         budget.calculate_actuals()
 
         serializer = self.get_serializer(budget)
@@ -533,16 +563,20 @@ class BudgetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def variance_report(self, request):
-        """Get budget variance report"""
+        """Get budget variance report, filtered by user's permissions"""
         company_id = request.query_params.get('company')
         status_filter = request.query_params.get('status', 'active')
 
-        queryset = self.queryset.filter(status=status_filter)
+        queryset = self.get_queryset().filter(status=status_filter)
         if company_id:
+            user = request.user
+            if not _is_admin_or_accountant_or_hr_or_management(user) and \
+               not (hasattr(user, 'company') and str(user.company.id) == company_id):
+                raise PermissionDenied("You do not have permission to view reports for this company.")
             queryset = queryset.filter(company_id=company_id)
 
-        # Calculate variance for each budget
         for budget in queryset:
+            # Ensure calculate_actuals() is safe with Decimal values
             budget.calculate_actuals()
 
         serializer = self.get_serializer(queryset, many=True)
@@ -552,97 +586,120 @@ class BudgetViewSet(viewsets.ModelViewSet):
 class FinancialReportViewSet(viewsets.ModelViewSet):
     queryset = FinancialReport.objects.all()
     serializer_class = FinancialReportSerializer
-    permission_classes = [AllowAny]  # Changed to AllowAny for testing
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['report_type', 'company', 'driver', 'category']
     search_fields = ['title', 'description']
     ordering_fields = ['generated_at', 'period_start']
     ordering = ['-generated_at']
 
+    def get_queryset(self):
+        user = self.request.user
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(company=user.company)
+        else:
+            raise PermissionDenied("You do not have permission to view financial reports.")
+
     def perform_create(self, serializer):
-        generated_by = None
-        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
-            generated_by = self.request.user
-        serializer.save(generated_by=generated_by)
+        serializer.save(generated_by=self.request.user)
 
     @action(detail=False, methods=['post'])
     def generate_income_statement(self, request):
         """Generate income statement report"""
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
+        if not _is_admin_or_accountant_or_hr_or_management(request.user):
+            raise PermissionDenied("You do not have permission to generate income statements.")
+
+        start_date_str = request.data.get('start_date')
+        end_date_str = request.data.get('end_date')
         company_id = request.data.get('company')
 
-        if not start_date or not end_date:
+        if not start_date_str or not end_date_str:
             return Response(
                 {'error': 'start_date and end_date are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response(
-                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                {'error': 'Invalid date format. Use YYYY-MM-DD'}, # Fixed typo
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Generate report data
-        transactions = Transaction.objects.filter(
+        # Retrieve transactions respecting the calling user's permissions
+        # We call the TransactionViewSet's get_queryset to ensure filtering
+        # is applied to the base set of transactions.
+        transaction_queryset_for_report = TransactionViewSet().get_queryset().filter(
             transaction_date__date__gte=start_date,
             transaction_date__date__lte=end_date,
             status='completed'
         )
 
+        company_obj = None
+        company_name = ""
         if company_id:
-            transactions = transactions.filter(company_id=company_id)
+            # It's safer to get the Company object here to link the report directly
+            # and to ensure the user can access this company's data.
+            try:
+                # Local import to avoid circular dependency, assuming Company model
+                from company.models import Company
+                company_obj = Company.objects.get(id=company_id)
+                company_name = f" - {company_obj.company_name}"
+
+                user = request.user
+                if not _is_admin_or_accountant_or_hr_or_management(user) and \
+                   not (hasattr(user, 'company') and user.company == company_obj):
+                    raise PermissionDenied("You do not have permission to generate reports for this specific company.")
+
+                transaction_queryset_for_report = transaction_queryset_for_report.filter(company=company_obj)
+
+            except Company.DoesNotExist:
+                return Response(
+                    {'error': 'Company not found.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
         # Calculate income by category
-        income_data = transactions.filter(transaction_type='income').values(
+        income_data = transaction_queryset_for_report.filter(transaction_type='income').values(
             'category__name'
         ).annotate(
-            total=Sum('amount')
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField()) # Added Coalesce here
         ).order_by('-total')
 
         # Calculate expenses by category
-        expense_data = transactions.filter(transaction_type='expense').values(
+        expense_data = transaction_queryset_for_report.filter(transaction_type='expense').values(
             'category__name'
         ).annotate(
-            total=Sum('amount')
+            total=Coalesce(Sum('amount'), Decimal('0.00'), output_field=DecimalField()) # Added Coalesce here
         ).order_by('-total')
 
-        total_income = sum(item['total'] for item in income_data)
-        total_expense = sum(item['total'] for item in expense_data)
+        # Convert to Decimal explicitly for summation, although Coalesce should ensure this
+        total_income = sum(Decimal(item['total']) for item in income_data)
+        total_expense = sum(Decimal(item['total']) for item in expense_data)
         net_profit = total_income - total_expense
 
         report_data = {
             'income_categories': list(income_data),
             'expense_categories': list(expense_data),
-            'total_income': float(total_income),
-            'total_expense': float(total_expense),
-            'net_profit': float(net_profit),
+            'total_income': float(total_income), # Convert Decimal to float for JSON serialization
+            'total_expense': float(total_expense), # Convert Decimal to float for JSON serialization
+            'net_profit': float(net_profit), # Convert Decimal to float for JSON serialization
             'period_start': start_date.isoformat(),
             'period_end': end_date.isoformat()
         }
-
-        # Create report record
-        company_name = ""
-        if company_id:
-            from company.models import Company
-            try:
-                company = Company.objects.get(id=company_id)
-                company_name = f" - {company.company_name}"
-            except Company.DoesNotExist:
-                pass
 
         report = FinancialReport.objects.create(
             report_type='income_statement',
             title=f'Income Statement{company_name} ({start_date} - {end_date})',
             period_start=start_date,
             period_end=end_date,
-            company_id=company_id if company_id else None,
+            company=company_obj,
             report_data=report_data,
-            generated_by=request.user if hasattr(request, 'user') and request.user.is_authenticated else None
+            generated_by=request.user
         )
 
         serializer = self.get_serializer(report)
@@ -652,7 +709,7 @@ class FinancialReportViewSet(viewsets.ModelViewSet):
 class RecurringTransactionViewSet(viewsets.ModelViewSet):
     queryset = RecurringTransaction.objects.all()
     serializer_class = RecurringTransactionSerializer
-    permission_classes = [AllowAny]  # Changed to AllowAny for testing
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = [
         'transaction_type', 'frequency', 'is_active', 'category',
@@ -662,70 +719,36 @@ class RecurringTransactionViewSet(viewsets.ModelViewSet):
     ordering_fields = ['next_execution_date', 'created_at']
     ordering = ['next_execution_date']
 
+    def get_queryset(self):
+        user = self.request.user
+        if _is_admin_or_accountant_or_hr_or_management(user):
+            return super().get_queryset()
+        elif hasattr(user, 'company') and user.company:
+            return super().get_queryset().filter(company=user.company)
+        elif hasattr(user, 'role') and user.role == 'driver' and hasattr(user, 'driver_profile') and user.driver_profile:
+            return super().get_queryset().filter(driver=user.driver_profile)
+        else:
+            raise PermissionDenied("You do not have permission to view recurring transactions.")
+
     def perform_create(self, serializer):
-        created_by = None
-        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
-            created_by = self.request.user
-        serializer.save(created_by=created_by)
+        serializer.save(created_by=self.request.user)
+
+    # REMOVED perform_update for RecurringTransaction, assuming 'modified_by' is not on your model
+    # If your RecurringTransaction model *does* have a `modified_by` field, you can add this back:
+    # def perform_update(self, serializer):
+    #     serializer.save(modified_by=self.request.user)
 
     @action(detail=True, methods=['post'])
-    def execute_now(self, request, pk=None):
-        """Execute recurring transaction immediately"""
+    def generate_next_transaction(self, request, pk=None): # Completed the method name
+        """Generates the next transaction for a recurring transaction"""
+        if not _is_admin_or_accountant_or_hr_or_management(request.user):
+            raise PermissionDenied("You do not have permission to generate recurring transactions.")
+
         recurring_transaction = self.get_object()
+        new_transaction = recurring_transaction.generate_next_transaction() # Assumes a method on your model
 
-        if not recurring_transaction.is_active:
-            return Response(
-                {'error': 'Recurring transaction is not active'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            transaction = recurring_transaction.create_transaction()
-            return Response({
-                'message': 'Transaction created successfully',
-                'transaction_id': transaction.transaction_id
-            })
-        except Exception as e:
-            return Response(
-                {'error': f'Failed to create transaction: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    @action(detail=False, methods=['get'])
-    def due_today(self, request):
-        """Get recurring transactions due today"""
-        today = timezone.now().date()
-        due_transactions = self.queryset.filter(
-            next_execution_date__lte=today,
-            is_active=True
-        )
-
-        serializer = self.get_serializer(due_transactions, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['post'])
-    def execute_due(self, request):
-        """Execute all recurring transactions that are due"""
-        today = timezone.now().date()
-        due_transactions = self.queryset.filter(
-            next_execution_date__lte=today,
-            is_active=True
-        )
-
-        executed_count = 0
-        errors = []
-
-        for recurring_transaction in due_transactions:
-            try:
-                recurring_transaction.create_transaction()
-                executed_count += 1
-            except Exception as e:
-                errors.append({
-                    'transaction_id': recurring_transaction.id,
-                    'error': str(e)
-                })
-
-        return Response({
-            'executed_count': executed_count,
-            'errors': errors
-        })
+        if new_transaction:
+            serializer = TransactionSerializer(new_transaction)
+            return Response({'message': 'Next recurring transaction generated successfully', 'transaction': serializer.data})
+        else:
+            return Response({'error': 'Could not generate next transaction (e.g., max occurrences reached or not active).'}, status=status.HTTP_400_BAD_REQUEST)

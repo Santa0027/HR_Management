@@ -43,7 +43,7 @@ export default function Terminations() {
 
   async function fetchTerminations() {
     try {
-      const res = await axiosInstance.get('/terminationletter/');
+      const res = await axiosInstance.get('/terminations/');
       // Ensure res.data is handled correctly whether it has 'results' or is direct array
       const data = Array.isArray(res.data.results) ? res.data.results : res.data;
       const formatted = data.map(item => ({
@@ -156,7 +156,7 @@ export default function Terminations() {
   async function handleDelete(id) {
     if (!window.confirm('Are you sure you want to delete this termination record?')) return;
     try {
-      await axiosInstance.delete(`/terminationletter/${id}/`);
+      await axiosInstance.delete(`/terminations/${id}/`);
       toast.success('Termination record deleted!');
       fetchTerminations();
     } catch (err) {
