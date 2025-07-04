@@ -1,5 +1,3 @@
-# backend/accounting/serializers.py
-
 from rest_framework import serializers
 from .models import (
     AccountingCategory, PaymentMethod, BankAccount, Transaction,
@@ -204,8 +202,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
     Serializer for the Expense model.
     Handles nested creation/update of a Transaction object along with Expense.
     """
-    # Use 'transaction_data' for the nested serializer to avoid conflict with 'transaction' FK
-    transaction_data = TransactionSerializer(source='transaction', required=True)
+    # Changed field name from 'transaction_data' to 'transaction' and removed 'source'
+    transaction = TransactionSerializer(required=True)
     
     # Calculate net_amount based on transaction.amount and tax_amount
     # Ensure net_amount is a DecimalField
@@ -219,8 +217,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
         fields = [
-            'id', 'transaction_data', 'expense_type', 'vendor_name',
-            'bill_number', # Corrected field name
+            'id', 'transaction', 'expense_type', 'vendor_name', # Changed 'transaction_data' to 'transaction'
+            'bill_number',
             'due_date', 'tax_amount', 'net_amount', 'is_recurring',
             'recurring_frequency', 'next_due_date', 'created_at',
             'updated_at', 'created_by', 'created_by_username'
@@ -235,8 +233,10 @@ class ExpenseSerializer(serializers.ModelSerializer):
         Create a new Expense instance and its associated Transaction instance.
         Handles setting 'created_by' and 'transaction_type' for the Transaction.
         """
-        # Pop the nested transaction data
-        transaction_data = validated_data.pop('transaction')
+        # --- FIX START ---
+        # Pop the nested transaction data using the serializer field name 'transaction'
+        transaction_data = validated_data.pop('transaction') 
+        # --- FIX END ---
         
         # IMPORTANT: Ensure 'created_by' is handled correctly for the nested Transaction.
         if 'created_by' in transaction_data:
@@ -244,7 +244,11 @@ class ExpenseSerializer(serializers.ModelSerializer):
             transaction_data.pop('created_by')
 
         # Set 'created_by' for the Transaction from the request context
-        transaction_data['created_by'] = self.context['request'].user
+        # Handle anonymous users for testing
+        if self.context['request'].user.is_authenticated:
+            transaction_data['created_by'] = self.context['request'].user
+        else:
+            transaction_data['created_by'] = None
         # Ensure transaction_type is always 'expense' for Expense-related transactions
         transaction_data['transaction_type'] = 'expense'
 
@@ -254,12 +258,13 @@ class ExpenseSerializer(serializers.ModelSerializer):
         except Exception as e:
             print(f"Error creating Transaction object for Expense: {e}")
             from rest_framework.exceptions import ValidationError
+            # Changed key to 'transaction' as per serializer field name
             if hasattr(e, 'message_dict'):
-                raise ValidationError({'transaction_data': e.message_dict})
+                raise ValidationError({'transaction': e.message_dict})
             elif hasattr(e, 'detail'):
-                raise ValidationError({'transaction_data': e.detail})
+                raise ValidationError({'transaction': e.detail})
             else:
-                raise serializers.ValidationError({'transaction_data': str(e)})
+                raise serializers.ValidationError({'transaction': str(e)})
 
         # IMPORTANT: If 'created_by' is in validated_data for Expense, pop it.
         if 'created_by' in validated_data:
@@ -267,9 +272,11 @@ class ExpenseSerializer(serializers.ModelSerializer):
             validated_data.pop('created_by')
 
         # Create the Expense instance, linking it to the newly created Transaction
+        # Handle anonymous users for testing
+        created_by = self.context['request'].user if self.context['request'].user.is_authenticated else None
         expense = Expense.objects.create(
             transaction=transaction,
-            created_by=self.context['request'].user, # Explicitly set created_by for Expense
+            created_by=created_by, # Explicitly set created_by for Expense
             **validated_data
         )
         return expense
@@ -278,8 +285,10 @@ class ExpenseSerializer(serializers.ModelSerializer):
         """
         Update an existing Expense instance and its associated Transaction instance.
         """
-        # Pop the nested transaction data
+        # --- FIX START ---
+        # Pop the nested transaction data using the serializer field name 'transaction'
         transaction_data = validated_data.pop('transaction', {})
+        # --- FIX END ---
         transaction_instance = instance.transaction
 
         # Prevent 'transaction_type' and 'created_by' from being updated via nested serializer
@@ -485,4 +494,3 @@ class DriverPayrollSummarySerializer(serializers.Serializer):
     total_deductions = serializers.DecimalField(max_digits=15, decimal_places=2) # Increased max_digits
     total_net_salary = serializers.DecimalField(max_digits=15, decimal_places=2) # Increased max_digits
     payroll_count = serializers.IntegerField()
-

@@ -23,6 +23,7 @@ const ExpenseManagement = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]); // Added state for bank accounts
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
@@ -35,7 +36,7 @@ const ExpenseManagement = () => {
 
   // Initial state for a new expense, matching backend serializer expectations
   const initialNewExpenseState = {
-    transaction_data: {
+    transaction_data: { // This is the frontend state structure, maps to 'transaction' in backend
       amount: '',
       description: '',
       category: '', // Should be category ID
@@ -43,32 +44,32 @@ const ExpenseManagement = () => {
       bank_account: '', // Optional, bank account ID
       company: '', // Optional, company ID
       driver: '', // Optional, driver ID
-      transaction_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+      transaction_date: new Date().toISOString().split('T')[0], //YYYY-MM-DD
       status: 'pending',
-      reference_number: '', // Added missing field
-      notes: '',           // Added missing field
-      receipt_document: null // Added missing field (for file URL, actual upload needs FormData)
+      reference_number: '',
+      notes: '',
+      receipt_document: null // Changed to null for file input
     },
     expense_type: '',
     vendor_name: '',
     bill_number: '',
-    due_date: '', // YYYY-MM-DD
+    due_date: '', //YYYY-MM-DD
     tax_amount: '0.00', // Send as string to preserve decimal precision
     is_recurring: false,
     recurring_frequency: '',
-    next_due_date: '', // YYYY-MM-DD
+    next_due_date: '', //YYYY-MM-DD
     requires_approval: false,
     approval_status: 'pending'
   };
 
   const [newExpense, setNewExpense] = useState(initialNewExpenseState);
+  const [currentReceiptUrl, setCurrentReceiptUrl] = useState(null); // State to hold existing receipt URL for display
 
   // useCallback to memoize functions that are dependencies of useEffect
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get('/accounting/expenses/');
-      // Assuming response.data is either an array or an object with a 'results' key
       setExpenses(response.data.results || response.data || []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -76,7 +77,7 @@ const ExpenseManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies, so it only gets created once
+  }, []);
 
   const fetchFilterOptions = useCallback(async () => {
     try {
@@ -95,7 +96,17 @@ const ExpenseManagement = () => {
       console.error('Error fetching filter options:', error);
       toast.error("Failed to load form options.");
     }
-  }, []); // No dependencies
+  }, []);
+
+  const fetchBankAccounts = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get('/accounting/bank-accounts/'); // Assuming this endpoint exists
+      setBankAccounts(response.data.results || response.data || []);
+    } catch (error) {
+      console.error('Error fetching bank accounts:', error);
+      toast.error("Failed to load bank accounts.");
+    }
+  }, []);
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -118,8 +129,6 @@ const ExpenseManagement = () => {
         })
       ]);
 
-      // Recalculate pending based on fetched expenses, as expenses might be filtered
-      // Use the 'expenses' state directly, which will be up-to-date after fetchExpenses
       const pendingApprovalCount = expenses.filter(exp => exp.requires_approval && exp.approval_status === 'pending').length;
       const pendingPaymentCount = expenses.filter(exp => exp.transaction?.status === 'pending').length;
 
@@ -133,17 +142,17 @@ const ExpenseManagement = () => {
       console.error('Error fetching summary:', error);
       toast.error("Failed to load summary data.");
     }
-  }, [expenses]); // Dependency on expenses to recalculate pending counts when expenses change
+  }, [expenses]);
 
   // Initial data fetch on component mount
   useEffect(() => {
     fetchExpenses();
     fetchFilterOptions();
-  }, [fetchExpenses, fetchFilterOptions]); // Dependencies are the memoized functions
+    fetchBankAccounts(); // Fetch bank accounts
+  }, [fetchExpenses, fetchFilterOptions, fetchBankAccounts]);
 
-  // Re-fetch summary when expenses change (e.g., after add/edit/delete) or loading state changes
+  // Re-fetch summary when expenses change or loading state changes
   useEffect(() => {
-    // Only fetch if expenses are loaded (not empty and not still loading) or if loading has completed
     if ((expenses.length > 0 && !loading) || (!loading && expenses.length === 0)) {
       fetchSummary();
     }
@@ -167,64 +176,123 @@ const ExpenseManagement = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    // For file input, store the File object
+    setNewExpense(prev => ({
+      ...prev,
+      transaction_data: {
+        ...prev.transaction_data,
+        receipt_document: e.target.files[0] || null // Store the file object, or null if cleared
+      }
+    }));
+  };
+
   const resetForm = useCallback(() => {
     setNewExpense(initialNewExpenseState);
-  }, [initialNewExpenseState]); // Dependency on initialNewExpenseState if it could change
+    setCurrentReceiptUrl(null); // Clear existing receipt URL on form reset
+  }, [initialNewExpenseState]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const dataToSend = { ...newExpense };
+      const formData = new FormData();
 
-      // Ensure numbers are parsed correctly and sent as strings for DecimalField
-      // DRF DecimalField expects string representation for precision
-      dataToSend.transaction_data.amount = String(parseFloat(dataToSend.transaction_data.amount));
-      dataToSend.tax_amount = String(parseFloat(dataToSend.tax_amount));
-
-      // Convert empty strings to null for optional date/frequency/FK/other fields
-      // This is crucial for Django's null=True fields
-      if (dataToSend.due_date === '') dataToSend.due_date = null;
-      if (dataToSend.next_due_date === '') dataToSend.next_due_date = null;
-      if (dataToSend.recurring_frequency === '') dataToSend.recurring_frequency = null;
-      if (dataToSend.transaction_data.reference_number === '') dataToSend.transaction_data.reference_number = null;
-      if (dataToSend.transaction_data.notes === '') dataToSend.transaction_data.notes = null;
-      // For receipt_document, if it's an empty string, set to null.
-      // Actual file upload would require FormData and more complex handling.
-      if (dataToSend.transaction_data.receipt_document === '') dataToSend.transaction_data.receipt_document = null;
-
-
-      // Filter out empty foreign key fields from transaction_data if they are optional
-      for (const key of ['bank_account', 'company', 'driver', 'category', 'payment_method']) {
-        if (dataToSend.transaction_data[key] === '') {
-          dataToSend.transaction_data[key] = null;
+      // Append top-level expense fields
+      for (const key in newExpense) {
+        if (key !== 'transaction_data') { // transaction_data fields are handled separately
+          let value = newExpense[key];
+          // Handle boolean values for FormData
+          if (typeof value === 'boolean') {
+            formData.append(key, value ? 'true' : 'false');
+          }
+          // Convert empty strings to null for optional fields
+          else if (value === '') {
+            formData.append(key, ''); // Send empty string for null-able fields
+          }
+          else if (value !== null) {
+            formData.append(key, value);
+          }
         }
       }
 
-      // --- DEBUGGING: Log the payload being sent ---
-      console.log("Payload being sent to backend:", dataToSend);
-      // ---------------------------------------------
+      // --- FIX START ---
+      // Append all nested transaction_data fields with 'transaction.' prefix
+      // This aligns with DRF's MultiPartParser expecting flattened fields for nested objects
+      for (const key in newExpense.transaction_data) {
+        let value = newExpense.transaction_data[key];
+
+        if (key === 'receipt_document') {
+          // Handle the file directly
+          if (value instanceof File) {
+            formData.append(`transaction.receipt_document`, value);
+          } else if (selectedExpense && !value && selectedExpense.transaction?.receipt_document) {
+            // If it's an edit, no new file is selected, AND there was an existing file,
+            // and the user explicitly cleared it (receipt_document is null in state),
+            // send an empty string to tell DRF to clear the file.
+            formData.append(`transaction.receipt_document`, ''); // Explicitly clear the file
+          }
+          // If value is null and no existing file, do nothing (don't append it).
+        } else {
+          // Handle other transaction_data fields
+          // Ensure amount is sent as string for DecimalField
+          if (key === 'amount') {
+            value = String(parseFloat(value));
+          } else if (typeof value === 'boolean') {
+            value = value ? 'true' : 'false';
+          }
+          if (value === '') {
+            value = null; // Convert empty strings to null for optional fields
+          }
+          if (value !== null) {
+            formData.append(`transaction.${key}`, value);
+          }
+        }
+      }
+      // --- FIX END ---
+
+      // --- DEBUGGING: Log FormData contents ---
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
+      // ----------------------------------------
 
       if (selectedExpense) {
-        await axiosInstance.put(`/accounting/expenses/${selectedExpense.id}/`, dataToSend);
+        await axiosInstance.put(`/accounting/expenses/${selectedExpense.id}/`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data' // Important for file uploads
+          }
+        });
         toast.success("Expense updated successfully!");
       } else {
-        await axiosInstance.post('/accounting/expenses/', dataToSend);
+        await axiosInstance.post('/accounting/expenses/', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data' // Important for file uploads
+          }
+        });
         toast.success("Expense added successfully!");
       }
       
       setShowAddModal(false);
       setSelectedExpense(null);
-      resetForm(); // Reset form after successful submission
-      fetchExpenses(); // Re-fetch expenses to update the list and trigger summary re-fetch
+      resetForm();
+      fetchExpenses();
     } catch (error) {
       console.error('Error saving expense:', error);
       if (error.response) {
         console.error("Error response data:", error.response.data);
         let errorMessage = "Error saving expense: ";
-        // Iterate through error response data to build a user-friendly message
         if (typeof error.response.data === 'object') {
+          // Handle nested errors from transaction (now the correct key in backend)
+          if (error.response.data.transaction) { // Check for 'transaction' key now
+            for (const key in error.response.data.transaction) {
+              errorMessage += `Transaction Data - ${key}: ${Array.isArray(error.response.data.transaction[key]) ? error.response.data.transaction[key].join(', ') : error.response.data.transaction[key]}. `;
+            }
+          }
+          // Handle top-level errors
           for (const key in error.response.data) {
-            errorMessage += `${key}: ${Array.isArray(error.response.data[key]) ? error.response.data[key].join(', ') : error.response.data[key]}. `;
+            if (key !== 'transaction') { // Exclude 'transaction' as it's handled above
+              errorMessage += `${key}: ${Array.isArray(error.response.data[key]) ? error.response.data[key].join(', ') : error.response.data[key]}. `;
+            }
           }
         } else {
           errorMessage += error.response.data.detail || error.response.data || 'An unexpected error occurred.';
@@ -238,10 +306,13 @@ const ExpenseManagement = () => {
 
   const handleEdit = useCallback((expense) => {
     setSelectedExpense(expense);
-    // Map existing expense data to the form state, ensuring null/empty strings for optional fields
+    // When editing, set receipt_document to null so the file input is cleared.
+    // Display the current URL separately.
+    setCurrentReceiptUrl(expense.transaction?.receipt_document || null);
+
     setNewExpense({
-      transaction_data: {
-        amount: String(expense.transaction?.amount || ''), // Convert to string for input type="number"
+      transaction_data: { // Frontend state structure
+        amount: String(expense.transaction?.amount || ''),
         description: expense.transaction?.description || '',
         category: expense.transaction?.category || '',
         payment_method: expense.transaction?.payment_method || '',
@@ -250,15 +321,15 @@ const ExpenseManagement = () => {
         driver: expense.transaction?.driver || '',
         transaction_date: expense.transaction?.transaction_date ? expense.transaction.transaction_date.split('T')[0] : '',
         status: expense.transaction?.status || 'pending',
-        reference_number: expense.transaction?.reference_number || '', // Added missing field
-        notes: expense.transaction?.notes || '',                       // Added missing field
-        receipt_document: expense.transaction?.receipt_document || null // Added missing field
+        reference_number: expense.transaction?.reference_number || '',
+        notes: expense.transaction?.notes || '',
+        receipt_document: null // Always null for file input on edit to allow new selection
       },
       expense_type: expense.expense_type || '',
       vendor_name: expense.vendor_name || '',
       bill_number: expense.bill_number || '',
       due_date: expense.due_date ? expense.due_date.split('T')[0] : '',
-      tax_amount: String(expense.tax_amount || '0.00'), // Convert to string
+      tax_amount: String(expense.tax_amount || '0.00'),
       is_recurring: expense.is_recurring,
       recurring_frequency: expense.recurring_frequency || '',
       next_due_date: expense.next_due_date ? expense.next_due_date.split('T')[0] : '',
@@ -269,13 +340,11 @@ const ExpenseManagement = () => {
   }, []);
 
   const handleDelete = async (expenseId) => {
-    // IMPORTANT: Replace window.confirm with a custom modal UI for better UX and consistency.
-    // window.confirm is blocked in some environments (like iframes).
     if (window.confirm('Are you sure you want to delete this expense record?')) {
       try {
         await axiosInstance.delete(`/accounting/expenses/${expenseId}/`);
         toast.success("Expense deleted successfully!");
-        fetchExpenses(); // Re-fetch to update list and summary
+        fetchExpenses();
       } catch (error) {
         console.error('Error deleting expense:', error);
         toast.error('Error deleting expense.');
@@ -287,7 +356,7 @@ const ExpenseManagement = () => {
     try {
       await axiosInstance.post(`/accounting/expenses/${expenseId}/approve/`);
       toast.success("Expense approved successfully!");
-      fetchExpenses(); // Re-fetch to update list and summary
+      fetchExpenses();
     } catch (error) {
       console.error('Error approving expense:', error);
       toast.error('Error approving expense.');
@@ -298,7 +367,7 @@ const ExpenseManagement = () => {
     try {
       await axiosInstance.post(`/accounting/expenses/${expenseId}/reject/`);
       toast.success("Expense rejected successfully!");
-      fetchExpenses(); // Re-fetch to update list and summary
+      fetchExpenses();
     } catch (error) {
       console.error('Error rejecting expense:', error);
       toast.error('Error rejecting expense.');
@@ -306,10 +375,9 @@ const ExpenseManagement = () => {
   };
 
   const formatCurrency = useCallback((amount) => {
-    // Safely convert to number before formatting
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount)) {
-      return '$0.00'; // Default if not a valid number
+      return '$0.00';
     }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -344,14 +412,14 @@ const ExpenseManagement = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 font-inter"> {/* Added font-inter for consistency */}
+    <div className="p-6 space-y-6 font-inter">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Expense Management</h1>
           <p className="text-gray-600">Track and manage all business expenses</p>
         </div>
-        <Button onClick={() => { setShowAddModal(true); resetForm(); }}> {/* Reset form when opening add modal */}
+        <Button onClick={() => { setShowAddModal(true); resetForm(); }}>
           <Plus className="h-4 w-4 mr-2" />
           Add Expense
         </Button>
@@ -359,7 +427,7 @@ const ExpenseManagement = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="rounded-lg shadow-md"> {/* Added rounded-lg and shadow-md */}
+        <Card className="rounded-lg shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
             <DollarSign className="h-4 w-4 text-red-600" />
@@ -371,7 +439,7 @@ const ExpenseManagement = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg shadow-md"> {/* Added rounded-lg and shadow-md */}
+        <Card className="rounded-lg shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <Calendar className="h-4 w-4 text-blue-600" />
@@ -383,7 +451,7 @@ const ExpenseManagement = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg shadow-md"> {/* Added rounded-lg and shadow-md */}
+        <Card className="rounded-lg shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Payment</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
@@ -395,7 +463,7 @@ const ExpenseManagement = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg shadow-md"> {/* Added rounded-lg and shadow-md */}
+        <Card className="rounded-lg shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
             <FileText className="h-4 w-4 text-orange-600" />
@@ -409,15 +477,15 @@ const ExpenseManagement = () => {
       </div>
 
       {/* Expense List */}
-      <Card className="rounded-lg shadow-md"> {/* Added rounded-lg and shadow-md */}
+      <Card className="rounded-lg shadow-md">
         <CardHeader>
           <CardTitle>Expense Records ({expenses.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="min-w-full table-auto"> {/* Changed w-full to min-w-full for better responsiveness */}
+            <table className="min-w-full table-auto">
               <thead>
-                <tr className="border-b bg-gray-50"> {/* Added bg-gray-50 for header */}
+                <tr className="border-b bg-gray-50">
                   <th className="text-left p-3 font-medium text-gray-700">Transaction ID</th>
                   <th className="text-left p-3 font-medium text-gray-700">Date</th>
                   <th className="text-left p-3 font-medium text-gray-700">Type</th>
@@ -436,7 +504,7 @@ const ExpenseManagement = () => {
                   </tr>
                 ) : (
                   expenses.map((expense) => (
-                    <tr key={expense.id} className="border-b last:border-b-0 hover:bg-gray-50"> {/* last:border-b-0 for last row */}
+                    <tr key={expense.id} className="border-b last:border-b-0 hover:bg-gray-50">
                       <td className="p-3">
                         <div className="font-medium">{expense.transaction?.transaction_id || 'N/A'}</div>
                         <div className="text-sm text-gray-500 truncate max-w-xs">
@@ -447,7 +515,7 @@ const ExpenseManagement = () => {
                         {expense.transaction?.transaction_date ? new Date(expense.transaction.transaction_date).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="p-3 text-sm capitalize">
-                        {expense.expense_type?.replace(/_/g, ' ') || 'N/A'} {/* Replaced all underscores */}
+                        {expense.expense_type?.replace(/_/g, ' ') || 'N/A'}
                       </td>
                       <td className="p-3 text-sm">{expense.vendor_name || '-'}</td>
                       <td className="p-3">
@@ -662,7 +730,7 @@ const ExpenseManagement = () => {
                 />
               </div>
 
-              {/* Additional Transaction Details (newly added fields) */}
+              {/* Additional Transaction Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="reference_number" className="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
@@ -683,23 +751,27 @@ const ExpenseManagement = () => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   >
                     <option value="">Select Bank Account</option>
-                    {/* Assuming bankAccounts data is available */}
-                    {/* You'll need to fetch bank accounts and populate this dropdown */}
-                    {/* For now, it's a placeholder. Add a fetchBankAccounts function similar to others. */}
-                    {/* Example: {bankAccounts.map(account => <option key={account.id} value={account.id}>{account.account_name}</option>)} */}
+                    {bankAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.account_name} ({account.bank_name})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="receipt_document" className="block text-sm font-medium text-gray-700 mb-1">Receipt Document URL (for display)</label>
+                  <label htmlFor="receipt_document" className="block text-sm font-medium text-gray-700 mb-1">Receipt Document</label>
                   <input
                     id="receipt_document"
-                    type="text"
-                    value={newExpense.transaction_data.receipt_document || ''}
-                    onChange={(e) => handleInputChange('transaction_data', 'receipt_document', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                    placeholder="Enter URL if available"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Note: Actual file upload requires more complex logic.</p>
+                  {currentReceiptUrl && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Current: <a href={currentReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{currentReceiptUrl.split('/').pop()}</a>
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Select a new file to upload or leave empty to keep current/none.</p>
                 </div>
               </div>
 
@@ -789,7 +861,7 @@ const ExpenseManagement = () => {
                     <option value="">Select Driver</option>
                     {drivers.map(driver => (
                       <option key={driver.id} value={driver.id}>
-                        {driver.full_name} {/* Assuming driver has full_name field */}
+                        {driver.full_name}
                       </option>
                     ))}
                   </select>
