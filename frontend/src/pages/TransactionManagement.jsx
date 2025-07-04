@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -13,6 +13,8 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import axiosInstance from '../api/axiosInstance';
+import { toast } from 'react-toastify'; // Added toast import
+import 'react-toastify/dist/ReactToastify.css'; // Ensure CSS is imported
 
 const TransactionManagement = () => {
   const [transactions, setTransactions] = useState([]);
@@ -40,12 +42,8 @@ const TransactionManagement = () => {
     page_size: 20
   });
 
-  useEffect(() => {
-    fetchTransactions();
-    fetchFilterOptions();
-  }, [filters]);
-
-  const fetchTransactions = async (page = 1) => {
+  // Memoized fetchTransactions using useCallback
+  const fetchTransactions = useCallback(async (page = 1) => {
     setLoading(true);
     try {
       const params = {
@@ -61,22 +59,30 @@ const TransactionManagement = () => {
       });
 
       const response = await axiosInstance.get('/accounting/transactions/', { params });
-      setTransactions(response.data.results || []);
-      setPagination({
-        count: response.data.count,
-        next: response.data.next,
-        previous: response.data.previous,
+
+      // Handle both paginated and non-paginated responses
+      const transactionData = response.data.results || response.data || [];
+      setTransactions(transactionData);
+
+      setPagination(prev => ({
+        count: response.data.count || transactionData.length,
+        next: response.data.next || null,
+        previous: response.data.previous || null,
         current_page: page,
-        page_size: pagination.page_size
-      });
+        page_size: prev.page_size
+      }));
+
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      toast.error("Failed to load transactions.");
+      setTransactions([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, pagination.page_size]);
 
-  const fetchFilterOptions = async () => {
+  // Memoized fetchFilterOptions using useCallback
+  const fetchFilterOptions = useCallback(async () => {
     try {
       const [categoriesRes, paymentMethodsRes, companiesRes, driversRes] = await Promise.all([
         axiosInstance.get('/accounting/categories/'),
@@ -91,8 +97,14 @@ const TransactionManagement = () => {
       setDrivers(driversRes.data.results || driversRes.data || []);
     } catch (error) {
       console.error('Error fetching filter options:', error);
+      toast.error("Failed to load filter options."); // Replaced alert with toast
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchFilterOptions();
+  }, [filters, fetchTransactions, fetchFilterOptions]); // Added fetchTransactions and fetchFilterOptions as dependencies
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -110,14 +122,16 @@ const TransactionManagement = () => {
     });
   };
 
-  const formatCurrency = (amount) => {
+  // Memoized formatCurrency using useCallback
+  const formatCurrency = useCallback((amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
-  };
+  }, []);
 
-  const getStatusColor = (status) => {
+  // Memoized getStatusColor using useCallback
+  const getStatusColor = useCallback((status) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -125,25 +139,29 @@ const TransactionManagement = () => {
       case 'failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
+  }, []);
 
-  const getTransactionTypeColor = (type) => {
+  // Memoized getTransactionTypeColor using useCallback
+  const getTransactionTypeColor = useCallback((type) => {
     return type === 'income' ? 'text-green-600' : 'text-red-600';
-  };
+  }, []);
 
-  const handleDeleteTransaction = async (transactionId) => {
+  // Memoized handleDeleteTransaction using useCallback
+  const handleDeleteTransaction = useCallback(async (transactionId) => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
         await axiosInstance.delete(`/accounting/transactions/${transactionId}/`);
+        toast.success("Transaction deleted successfully!"); // Replaced alert with toast
         fetchTransactions(pagination.current_page);
       } catch (error) {
         console.error('Error deleting transaction:', error);
-        alert('Error deleting transaction');
+        toast.error("Error deleting transaction."); // Replaced alert with toast
       }
     }
-  };
+  }, [fetchTransactions, pagination.current_page]); // Added dependencies
 
-  const exportTransactions = async () => {
+  // Memoized exportTransactions using useCallback
+  const exportTransactions = useCallback(async () => {
     try {
       const params = { ...filters, format: 'csv' };
       Object.keys(params).forEach(key => {
@@ -162,11 +180,12 @@ const TransactionManagement = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success("Transactions exported successfully!"); // Added toast
     } catch (error) {
       console.error('Error exporting transactions:', error);
-      alert('Error exporting transactions');
+      toast.error("Error exporting transactions."); // Replaced alert with toast
     }
-  };
+  }, [filters]); // Added dependencies
 
   if (loading && transactions.length === 0) {
     return (
@@ -182,9 +201,13 @@ const TransactionManagement = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Transaction Management</h1>
-          <p className="text-gray-600">Manage all financial transactions</p>
+          <p className="text-gray-600">Manage all financial transactions ({pagination.count} total records)</p>
         </div>
         <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={() => fetchTransactions(1)}>
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
           <Button variant="outline" size="sm" onClick={exportTransactions}>
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -195,6 +218,44 @@ const TransactionManagement = () => {
           </Button>
         </div>
       </div>
+
+      {/* Summary Statistics */}
+      {transactions.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {pagination.count}
+              </div>
+              <div className="text-sm text-gray-600">Total Transactions</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {transactions.filter(t => t.transaction_type === 'income').length}
+              </div>
+              <div className="text-sm text-gray-600">Income Records</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-red-600">
+                {transactions.filter(t => t.transaction_type === 'expense').length}
+              </div>
+              <div className="text-sm text-gray-600">Expense Records</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-yellow-600">
+                {transactions.filter(t => t.status === 'pending').length}
+              </div>
+              <div className="text-sm text-gray-600">Pending Approval</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -330,66 +391,84 @@ const TransactionManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">
-                      <div className="font-medium">{transaction.transaction_id}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {transaction.description}
-                      </div>
-                    </td>
-                    <td className="p-3 text-sm">
-                      {new Date(transaction.transaction_date).toLocaleDateString()}
-                    </td>
-                    <td className="p-3">
-                      <span className={`capitalize font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}>
-                        {transaction.transaction_type}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className={`font-bold ${getTransactionTypeColor(transaction.transaction_type)}`}>
-                        {transaction.transaction_type === 'income' ? '+' : '-'}
-                        {formatCurrency(transaction.amount)}
-                      </span>
-                    </td>
-                    <td className="p-3 text-sm">{transaction.category_name}</td>
-                    <td className="p-3">
-                      <Badge className={getStatusColor(transaction.status)}>
-                        {transaction.status}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-sm">{transaction.company_name || '-'}</td>
-                    <td className="p-3">
-                      <div className="flex space-x-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedTransaction(transaction)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedTransaction(transaction);
-                            setShowAddModal(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteTransaction(transaction.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="p-8 text-center text-gray-500">
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                          Loading transactions...
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-lg font-medium">No transactions found</p>
+                          <p className="text-sm">Try adjusting your filters or add a new transaction</p>
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  transactions.map((transaction) => (
+                    <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <div className="font-medium">{transaction.transaction_id}</div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                          {transaction.description}
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm">
+                        {new Date(transaction.transaction_date).toLocaleDateString()}
+                      </td>
+                      <td className="p-3">
+                        <span className={`capitalize font-medium ${getTransactionTypeColor(transaction.transaction_type)}`}>
+                          {transaction.transaction_type}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={`font-bold ${getTransactionTypeColor(transaction.transaction_type)}`}>
+                          {transaction.transaction_type === 'income' ? '+' : '-'}
+                          {formatCurrency(transaction.amount)}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm">{transaction.category_name}</td>
+                      <td className="p-3">
+                        <Badge className={getStatusColor(transaction.status)}>
+                          {transaction.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-sm">{transaction.company_name || '-'}</td>
+                      <td className="p-3">
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedTransaction(transaction)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedTransaction(transaction);
+                              setShowAddModal(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteTransaction(transaction.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -424,6 +503,31 @@ const TransactionManagement = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Add/Edit Transaction Modal (Placeholder - you would implement this) */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+              {selectedTransaction ? 'Edit Transaction' : 'Add New Transaction'}
+            </h2>
+            <p>This is a placeholder for the Add/Edit Transaction form.</p>
+            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

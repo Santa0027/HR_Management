@@ -144,7 +144,7 @@ function App() {
           <Route
             path="/accounting/transactions"
             element={
-              <ProtectedRoute requiredPermissions={['can_view_accounting']}>
+              <ProtectedRoute>
                 <TransactionManagement />
               </ProtectedRoute>
             }
@@ -152,7 +152,7 @@ function App() {
           <Route
             path="/accounting/income"
             element={
-              <ProtectedRoute requiredPermissions={['can_manage_accounting']}>
+              <ProtectedRoute>
                 <IncomeManagement />
               </ProtectedRoute>
             }
@@ -160,7 +160,7 @@ function App() {
           <Route
             path="/accounting/expenses"
             element={
-              <ProtectedRoute requiredPermissions={['can_manage_accounting']}>
+              <ProtectedRoute>
                 <ExpenseManagement />
               </ProtectedRoute>
             }

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Transaction Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .transaction { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .income { border-left: 5px solid #28a745; }
+        .expense { border-left: 5px solid #dc3545; }
+        .amount { font-weight: bold; font-size: 1.2em; }
+        .income .amount { color: #28a745; }
+        .expense .amount { color: #dc3545; }
+        .meta { color: #666; font-size: 0.9em; margin-top: 5px; }
+        .loading { text-align: center; padding: 20px; }
+        .error { color: red; padding: 20px; border: 1px solid red; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Transaction Data Verification</h1>
+    <p>This page shows the actual transaction data from the database as received by the frontend.</p>
+    
+    <div id="status" class="loading">Loading transaction data...</div>
+    <div id="transactions"></div>
+    
+    <script>
+        async function loadTransactions() {
+            const statusDiv = document.getElementById('status');
+            const transactionsDiv = document.getElementById('transactions');
+            
+            try {
+                console.log('Fetching transactions from API...');
+                const response = await axios.get('http://localhost:8000/accounting/transactions/');
+                console.log('API Response:', response.data);
+                
+                const data = response.data;
+                const transactions = data.results || data;
+                
+                statusDiv.innerHTML = `
+                    <h2>✅ Successfully loaded ${data.count || transactions.length} transactions</h2>
+                    <p><strong>API Response Structure:</strong> ${data.count ? 'Paginated' : 'Direct Array'}</p>
+                `;
+                
+                if (transactions.length === 0) {
+                    transactionsDiv.innerHTML = '<p>No transactions found in database.</p>';
+                    return;
+                }
+                
+                let html = '<h3>📊 Transaction Details:</h3>';
+                
+                transactions.forEach((transaction, index) => {
+                    const isIncome = transaction.transaction_type === 'income';
+                    const sign = isIncome ? '+' : '-';
+                    const amountFormatted = new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: transaction.currency || 'USD'
+                    }).format(transaction.amount);
+                    
+                    html += `
+                        <div class="transaction ${transaction.transaction_type}">
+                            <div class="amount">${sign}${amountFormatted}</div>
+                            <div><strong>${transaction.transaction_id}</strong> - ${transaction.description}</div>
+                            <div class="meta">
+                                📅 ${new Date(transaction.transaction_date).toLocaleDateString()} | 
+                                🏷️ ${transaction.category_name} | 
+                                💳 ${transaction.payment_method_name} | 
+                                📊 ${transaction.status.toUpperCase()}
+                                ${transaction.company_name ? ` | 🏢 ${transaction.company_name}` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                transactionsDiv.innerHTML = html;
+                
+                // Show summary
+                const incomeCount = transactions.filter(t => t.transaction_type === 'income').length;
+                const expenseCount = transactions.filter(t => t.transaction_type === 'expense').length;
+                const totalIncome = transactions
+                    .filter(t => t.transaction_type === 'income')
+                    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                const totalExpenses = transactions
+                    .filter(t => t.transaction_type === 'expense')
+                    .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                
+                statusDiv.innerHTML += `
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                        <h4>📈 Summary:</h4>
+                        <p>💰 <strong>Income:</strong> ${incomeCount} transactions, Total: $${totalIncome.toLocaleString()}</p>
+                        <p>💸 <strong>Expenses:</strong> ${expenseCount} transactions, Total: $${totalExpenses.toLocaleString()}</p>
+                        <p>📊 <strong>Net:</strong> $${(totalIncome - totalExpenses).toLocaleString()}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        <h2>❌ Error Loading Transactions</h2>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <p><strong>Status:</strong> ${error.response?.status || 'Unknown'}</p>
+                        <p><strong>Details:</strong> ${error.response?.data?.detail || 'Check console for more details'}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load transactions when page loads
+        window.onload = loadTransactions;
+    </script>
+</body>
+</html>

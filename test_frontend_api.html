@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend API Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Frontend API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing API connections...</p>';
+            
+            try {
+                // Test transactions endpoint
+                console.log('Testing transactions endpoint...');
+                const transactionsResponse = await axios.get(`${API_BASE_URL}/accounting/transactions/`);
+                console.log('Transactions response:', transactionsResponse.data);
+                
+                // Test categories endpoint
+                console.log('Testing categories endpoint...');
+                const categoriesResponse = await axios.get(`${API_BASE_URL}/accounting/categories/`);
+                console.log('Categories response:', categoriesResponse.data);
+                
+                // Test companies endpoint
+                console.log('Testing companies endpoint...');
+                const companiesResponse = await axios.get(`${API_BASE_URL}/companies/`);
+                console.log('Companies response:', companiesResponse.data);
+                
+                // Test drivers endpoint
+                console.log('Testing drivers endpoint...');
+                const driversResponse = await axios.get(`${API_BASE_URL}/Register/drivers/`);
+                console.log('Drivers response:', driversResponse.data);
+                
+                results.innerHTML = `
+                    <h2>✅ All API endpoints working!</h2>
+                    <p><strong>Transactions:</strong> ${transactionsResponse.data.count || transactionsResponse.data.length} found</p>
+                    <p><strong>Categories:</strong> ${categoriesResponse.data.length} found</p>
+                    <p><strong>Companies:</strong> ${companiesResponse.data.results?.length || companiesResponse.data.length} found</p>
+                    <p><strong>Drivers:</strong> ${driversResponse.data.results?.length || driversResponse.data.length} found</p>
+                    <h3>Sample Transaction:</h3>
+                    <pre>${JSON.stringify(transactionsResponse.data.results?.[0] || transactionsResponse.data[0], null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                results.innerHTML = `
+                    <h2>❌ API Test Failed</h2>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Status:</strong> ${error.response?.status}</p>
+                    <p><strong>Details:</strong> ${error.response?.data?.detail || 'Unknown error'}</p>
+                `;
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testAPI;
+    </script>
+</body>
+</html>
