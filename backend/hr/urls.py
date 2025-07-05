@@ -9,7 +9,14 @@ from .views import (
     TerminationViewSet,
     WarningLetterViewSet,
     CompanyViewSet, # Make sure CompanyViewSet is imported if used in router
-    VehicleRegistrationViewSet # Make sure VehicleRegistrationViewSet is imported if used in router
+    VehicleRegistrationViewSet, # Make sure VehicleRegistrationViewSet is imported if used in router
+    # New shift management viewsets
+    ShiftTypeViewSet,
+    DriverShiftAssignmentViewSet,
+    # Leave management viewsets
+    LeaveTypeViewSet,
+    LeaveRequestViewSet,
+    LeaveBalanceViewSet
 )
 
 router = DefaultRouter()
@@ -21,6 +28,16 @@ router.register(r'warning-letters', WarningLetterViewSet, basename='warning-lett
 router.register(r'terminations', TerminationViewSet)
 router.register(r'companies', CompanyViewSet) # Assuming these are used
 router.register(r'vehicle-registrations', VehicleRegistrationViewSet) # Assuming these are used
+
+# New shift management endpoints
+router.register(r'shift-types', ShiftTypeViewSet, basename='shift-types')
+router.register(r'shift-assignments', DriverShiftAssignmentViewSet, basename='shift-assignments')
+
+# Leave management endpoints
+router.register(r'leave-types', LeaveTypeViewSet, basename='leave-types')
+router.register(r'leave-requests', LeaveRequestViewSet, basename='leave-requests')
+router.register(r'leave-balances', LeaveBalanceViewSet, basename='leave-balances')
+# Leave management endpoints will be added in the next phase
 
 
 urlpatterns = [

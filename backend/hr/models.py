@@ -199,3 +199,231 @@ class Termination(models.Model):
 
     def __str__(self):
         return f"Termination of {self.driver.driver_name} on {self.termination_date} due to {self.reason}"
+
+
+# ==================== SHIFT MANAGEMENT MODELS ====================
+
+class ShiftType(models.Model):
+    """Defines different types of shifts (Morning, Evening, Night, etc.)"""
+    SHIFT_TYPE_CHOICES = [
+        ('morning', 'Morning Shift'),
+        ('afternoon', 'Afternoon Shift'),
+        ('evening', 'Evening Shift'),
+        ('night', 'Night Shift'),
+        ('flexible', 'Flexible Shift'),
+        ('custom', 'Custom Shift'),
+    ]
+
+    name = models.CharField(max_length=100, unique=True)
+    shift_type = models.CharField(max_length=20, choices=SHIFT_TYPE_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    break_duration_minutes = models.IntegerField(default=30, help_text="Break duration in minutes")
+    is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True, null=True)
+
+    # Overtime settings
+    overtime_threshold_hours = models.DecimalField(max_digits=4, decimal_places=2, default=8.0)
+    overtime_rate_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default=1.5)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['start_time', 'name']
+        verbose_name = "Shift Type"
+        verbose_name_plural = "Shift Types"
+
+    def __str__(self):
+        return f"{self.name} ({self.start_time} - {self.end_time})"
+
+    @property
+    def duration_hours(self):
+        """Calculate shift duration in hours"""
+        from datetime import datetime, timedelta
+
+        # Handle overnight shifts
+        start = datetime.combine(datetime.today(), self.start_time)
+        end = datetime.combine(datetime.today(), self.end_time)
+
+        if end < start:  # Overnight shift
+            end += timedelta(days=1)
+
+        duration = end - start
+        return duration.total_seconds() / 3600
+
+
+class DriverShiftAssignment(models.Model):
+    """Assigns shifts to drivers for specific date ranges"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='shift_assignments')
+    shift_type = models.ForeignKey(ShiftType, on_delete=models.CASCADE, related_name='driver_assignments')
+
+    # Date range for the assignment
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True, help_text="Leave blank for ongoing assignment")
+
+    # Days of the week (for recurring assignments)
+    WEEKDAY_CHOICES = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+
+    # Store as JSON field for multiple days
+    working_days = models.JSONField(default=list, help_text="List of working days: ['monday', 'tuesday', ...]")
+
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+
+    # Assignment metadata
+    assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date', 'driver__driver_name']
+        verbose_name = "Driver Shift Assignment"
+        verbose_name_plural = "Driver Shift Assignments"
+
+    def __str__(self):
+        end_date_str = self.end_date.strftime('%Y-%m-%d') if self.end_date else 'Ongoing'
+        return f"{self.driver.driver_name} - {self.shift_type.name} ({self.start_date} to {end_date_str})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.end_date and self.end_date < self.start_date:
+            raise ValidationError("End date cannot be before start date")
+
+    def is_valid_for_date(self, date):
+        """Check if this assignment is valid for a given date"""
+        if not self.is_active:
+            return False
+
+        if date < self.start_date:
+            return False
+
+        if self.end_date and date > self.end_date:
+            return False
+
+        # Check if the day of the week is in working_days
+        weekday_name = date.strftime('%A').lower()
+        return weekday_name in self.working_days
+
+
+# ==================== LEAVE MANAGEMENT MODELS ====================
+
+class LeaveType(models.Model):
+    """Define different types of leaves available"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    max_days_per_year = models.IntegerField(default=30, help_text="Maximum days allowed per year")
+    is_paid = models.BooleanField(default=True, help_text="Is this a paid leave?")
+    requires_approval = models.BooleanField(default=True, help_text="Does this leave require approval?")
+    advance_notice_days = models.IntegerField(default=1, help_text="Minimum advance notice required in days")
+    is_active = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Leave Type"
+        verbose_name_plural = "Leave Types"
+
+    def __str__(self):
+        return self.name
+
+
+class LeaveRequest(models.Model):
+    """Leave requests submitted by drivers"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='leave_requests')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='requests')
+
+    # Leave dates
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_days = models.IntegerField(help_text="Total number of leave days")
+
+    # Request details
+    reason = models.TextField(help_text="Reason for leave")
+    emergency_contact = models.CharField(max_length=20, blank=True, null=True)
+    supporting_document = models.FileField(upload_to='leave_documents/', blank=True, null=True)
+
+    # Status and approval
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    applied_date = models.DateTimeField(auto_now_add=True)
+
+    # Approval details
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leaves')
+    reviewed_date = models.DateTimeField(null=True, blank=True)
+    admin_comments = models.TextField(blank=True, null=True, help_text="Comments from admin/HR")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-applied_date', 'driver__driver_name']
+        verbose_name = "Leave Request"
+        verbose_name_plural = "Leave Requests"
+
+    def __str__(self):
+        return f"{self.driver.driver_name} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.end_date < self.start_date:
+            raise ValidationError("End date cannot be before start date")
+
+    def save(self, *args, **kwargs):
+        # Calculate total days
+        if self.start_date and self.end_date:
+            self.total_days = (self.end_date - self.start_date).days + 1
+        super().save(*args, **kwargs)
+
+
+class LeaveBalance(models.Model):
+    """Track leave balances for each driver and leave type"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='leave_balances')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='balances')
+    year = models.IntegerField(default=timezone.now().year)
+
+    # Balance tracking
+    allocated_days = models.IntegerField(default=0, help_text="Days allocated for this year")
+    used_days = models.IntegerField(default=0, help_text="Days already used")
+    pending_days = models.IntegerField(default=0, help_text="Days in pending requests")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('driver', 'leave_type', 'year')
+        ordering = ['-year', 'driver__driver_name', 'leave_type__name']
+        verbose_name = "Leave Balance"
+        verbose_name_plural = "Leave Balances"
+
+    def __str__(self):
+        return f"{self.driver.driver_name} - {self.leave_type.name} ({self.year})"
+
+    @property
+    def remaining_days(self):
+        """Calculate remaining leave days"""
+        return self.allocated_days - self.used_days - self.pending_days
+
+    @property
+    def available_days(self):
+        """Calculate available days (excluding pending)"""
+        return self.allocated_days - self.used_days

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 
 function UserForm() {
@@ -10,7 +10,7 @@ function UserForm() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    await api.post('users/', form);
+    await axiosInstance.post('users/', form);
     navigate('/users');
   };
 

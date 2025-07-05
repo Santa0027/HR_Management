@@ -3,10 +3,12 @@ from django.contrib.auth import get_user_model
 
 # Assuming these imports are correct based on your setup
 from .models import (
-    Driver, Company, 
+    Driver, Company,
     CheckinLocation, ApartmentLocation,
     Attendance, MonthlyAttendanceSummary,
-    WarningLetter, Termination
+    WarningLetter, Termination,
+    ShiftType, DriverShiftAssignment,
+    LeaveType, LeaveRequest, LeaveBalance
 )
 from vehicle.models import VehicleRegistration
 
@@ -263,3 +265,184 @@ class TerminationSerializer(serializers.ModelSerializer):
         except ImportError:
             # Fallback if CustomUserSerializer cannot be imported
             return {'id': obj.processed_by.id, 'username': obj.processed_by.username} if obj.processed_by else None
+
+
+# ==================== SHIFT MANAGEMENT SERIALIZERS ====================
+
+class ShiftTypeSerializer(serializers.ModelSerializer):
+    duration_hours = serializers.ReadOnlyField()
+
+    class Meta:
+        model = ShiftType
+        fields = [
+            'id', 'name', 'shift_type', 'start_time', 'end_time',
+            'break_duration_minutes', 'is_active', 'description',
+            'overtime_threshold_hours', 'overtime_rate_multiplier',
+            'duration_hours', 'created_at', 'updated_at'
+        ]
+
+
+class DriverShiftAssignmentSerializer(serializers.ModelSerializer):
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+    shift_name = serializers.CharField(source='shift_type.name', read_only=True)
+    shift_details = ShiftTypeSerializer(source='shift_type', read_only=True)
+    assigned_by_name = serializers.CharField(source='assigned_by.username', read_only=True)
+
+    class Meta:
+        model = DriverShiftAssignment
+        fields = [
+            'id', 'driver', 'driver_name', 'shift_type', 'shift_name', 'shift_details',
+            'start_date', 'end_date', 'working_days', 'is_active', 'notes',
+            'assigned_by', 'assigned_by_name', 'created_at', 'updated_at'
+        ]
+
+    def validate(self, data):
+        if data.get('end_date') and data.get('end_date') < data.get('start_date'):
+            raise serializers.ValidationError("End date cannot be before start date")
+        return data
+
+
+# ==================== LEAVE MANAGEMENT SERIALIZERS ====================
+
+class LeaveTypeSerializer(serializers.ModelSerializer):
+    """Serializer for leave types"""
+
+    class Meta:
+        model = LeaveType
+        fields = [
+            'id', 'name', 'description', 'max_days_per_year', 'is_paid',
+            'requires_approval', 'advance_notice_days', 'is_active',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class LeaveRequestSerializer(serializers.ModelSerializer):
+    """Serializer for leave requests"""
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+    driver_id = serializers.CharField(source='driver.id', read_only=True)
+    leave_type_name = serializers.CharField(source='leave_type.name', read_only=True)
+    reviewed_by_name = serializers.CharField(source='reviewed_by.get_full_name', read_only=True)
+
+    class Meta:
+        model = LeaveRequest
+        fields = [
+            'id', 'driver', 'driver_id', 'driver_name', 'leave_type', 'leave_type_name',
+            'start_date', 'end_date', 'total_days', 'reason', 'emergency_contact',
+            'supporting_document', 'status', 'applied_date', 'reviewed_by',
+            'reviewed_by_name', 'reviewed_date', 'admin_comments',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'total_days', 'applied_date', 'reviewed_by', 'reviewed_date',
+            'created_at', 'updated_at'
+        ]
+
+    def validate(self, data):
+        """Validate leave request data"""
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if end_date and start_date and end_date < start_date:
+            raise serializers.ValidationError("End date cannot be before start date")
+
+        # Check if dates are in the future (for new requests)
+        if self.instance is None:  # Creating new request
+            from django.utils import timezone
+            today = timezone.now().date()
+            if start_date and start_date < today:
+                raise serializers.ValidationError("Start date cannot be in the past")
+
+        return data
+
+
+class LeaveRequestCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating leave requests"""
+
+    class Meta:
+        model = LeaveRequest
+        fields = [
+            'driver', 'leave_type', 'start_date', 'end_date',
+            'reason', 'emergency_contact', 'supporting_document'
+        ]
+
+    def validate(self, data):
+        """Validate leave request creation"""
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        leave_type = data.get('leave_type')
+        driver = data.get('driver')
+
+        if end_date < start_date:
+            raise serializers.ValidationError("End date cannot be before start date")
+
+        # Check advance notice requirement
+        from django.utils import timezone
+        today = timezone.now().date()
+        days_notice = (start_date - today).days
+
+        if days_notice < leave_type.advance_notice_days:
+            raise serializers.ValidationError(
+                f"This leave type requires at least {leave_type.advance_notice_days} days advance notice"
+            )
+
+        # Check for overlapping leave requests
+        total_days = (end_date - start_date).days + 1
+        overlapping_requests = LeaveRequest.objects.filter(
+            driver=driver,
+            status__in=['pending', 'approved'],
+            start_date__lte=end_date,
+            end_date__gte=start_date
+        )
+
+        if overlapping_requests.exists():
+            raise serializers.ValidationError("You have overlapping leave requests for these dates")
+
+        return data
+
+
+class LeaveRequestUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating leave request status (admin use)"""
+
+    class Meta:
+        model = LeaveRequest
+        fields = ['status', 'admin_comments']
+
+    def update(self, instance, validated_data):
+        """Update leave request and set review details"""
+        from django.utils import timezone
+
+        # Set reviewed_by and reviewed_date when status changes
+        if 'status' in validated_data and validated_data['status'] != instance.status:
+            instance.reviewed_by = self.context['request'].user
+            instance.reviewed_date = timezone.now()
+
+        return super().update(instance, validated_data)
+
+
+class LeaveBalanceSerializer(serializers.ModelSerializer):
+    """Serializer for leave balances"""
+    driver_name = serializers.CharField(source='driver.driver_name', read_only=True)
+    leave_type_name = serializers.CharField(source='leave_type.name', read_only=True)
+    remaining_days = serializers.IntegerField(read_only=True)
+    available_days = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = LeaveBalance
+        fields = [
+            'id', 'driver', 'driver_name', 'leave_type', 'leave_type_name',
+            'year', 'allocated_days', 'used_days', 'pending_days',
+            'remaining_days', 'available_days', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class LeaveStatsSerializer(serializers.Serializer):
+    """Serializer for leave statistics"""
+    total_requests = serializers.IntegerField()
+    pending_requests = serializers.IntegerField()
+    approved_requests = serializers.IntegerField()
+    rejected_requests = serializers.IntegerField()
+    total_leave_days = serializers.IntegerField()
+    leave_types_count = serializers.IntegerField()
+    drivers_on_leave_today = serializers.IntegerField()

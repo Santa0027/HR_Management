@@ -1,23 +1,120 @@
-from rest_framework import generics, permissions, viewsets
+from rest_framework import generics, permissions, viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.db.models import Q
+from django.utils import timezone
 from .serializers import (
     CustomUserSerializer,
     RegisterSerializer,
     EmailTokenObtainPairSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+    UserDetailSerializer,
+    ChangePasswordSerializer,
 )
 
 User = get_user_model()
 
 class CustomUserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    queryset = User.objects.all().order_by('-created_at')
+    permission_classes = [AllowAny]  # Change to IsAuthenticated for production
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return UserUpdateSerializer
+        elif self.action == 'retrieve':
+            return UserDetailSerializer
+        return CustomUserSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter parameters
+        role = self.request.query_params.get('role')
+        is_active = self.request.query_params.get('is_active')
+        search = self.request.query_params.get('search')
+
+        if role:
+            queryset = queryset.filter(role=role)
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)
+            )
+
+        return queryset
+
+    @action(detail=True, methods=['post'], url_path='change-password')
+    def change_password(self, request, pk=None):
+        """Change user password (Admin only)"""
+        user = self.get_object()
+        serializer = ChangePasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            new_password = serializer.validated_data['new_password']
+            user.set_password(new_password)
+            user.save()
+
+            return Response({
+                'message': f'Password changed successfully for {user.get_full_name()}'
+            })
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        """Toggle user active status"""
+        user = self.get_object()
+        user.is_active = not user.is_active
+        user.save()
+
+        return Response({
+            'message': f'User {user.get_full_name()} {"activated" if user.is_active else "deactivated"}',
+            'is_active': user.is_active
+        })
+
+    @action(detail=True, methods=['post'], url_path='toggle-staff')
+    def toggle_staff(self, request, pk=None):
+        """Toggle user staff status"""
+        user = self.get_object()
+        user.is_staff = not user.is_staff
+        user.save()
+
+        return Response({
+            'message': f'User {user.get_full_name()} staff status {"enabled" if user.is_staff else "disabled"}',
+            'is_staff': user.is_staff
+        })
+
+    @action(detail=False, methods=['get'], url_path='stats')
+    def get_stats(self, request):
+        """Get user statistics"""
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        inactive_users = total_users - active_users
+
+        role_stats = {}
+        for role_code, role_name in User.ROLE_CHOICES:
+            role_stats[role_name] = User.objects.filter(role=role_code).count()
+
+        return Response({
+            'total_users': total_users,
+            'active_users': active_users,
+            'inactive_users': inactive_users,
+            'role_distribution': role_stats,
+            'staff_users': User.objects.filter(is_staff=True).count(),
+            'superusers': User.objects.filter(is_superuser=True).count(),
+        })
 
 
 

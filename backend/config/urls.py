@@ -15,7 +15,7 @@ urlpatterns = [
     path('', include('vehicle.urls')),
     path('', include('company.urls')),
     path('', include('usermanagement.urls')),
-    path('', include('hr.urls')),
+    path('hr/', include('hr.urls')),
     path('accounting/', include('accounting.urls')),  # Add accounting URLs
 
 
