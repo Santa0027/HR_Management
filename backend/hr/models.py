@@ -28,78 +28,78 @@ class ApartmentLocation(models.Model):
     # THIS LINE IS CRUCIAL: What is the name of your ForeignKey field to Driver?
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE,null=True,blank=True,related_name='apartment_locations') # <--- Is it 'driver'? Or something else?
     created_at = models.DateTimeField(auto_now_add=True)
-    update_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
 
 
 
+# your_app_name/models.py (Excerpt, focus on Attendance model)
+
+from django.db import models
+from django.utils import timezone
+# from drivers.models import Driver, CheckinLocation # Assuming these imports are correct
 
 class Attendance(models.Model):
-    ATTENDANCE_STATUS_CHOICES = [
-        ('on_time', 'On-time'),
-        ('late', 'Late'),
-        ('absent', 'Absent'),
-    ]
-
-    DEDUCTION_REASON_CHOICES = [
-        ('traffic', 'Traffic'),
-        ('personal', 'Personal'),
-        ('logistics_issue', 'Logistics Issue'),
-        ('other', 'Other'),
-    ]
-
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='attendances')
-    date = models.DateField(default=timezone.now)
-    assigned_time = models.TimeField(blank=True, null=True)
-    login_time = models.TimeField(blank=True, null=True)
-    login_photo = models.ImageField(upload_to='attendance_photos/login/', null=True, blank=True)
-    login_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    login_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    checked_in_location = models.ForeignKey(CheckinLocation, on_delete=models.SET_NULL, null=True, blank=True, related_name='login_checkins')
-    logout_time = models.TimeField(blank=True, null=True)
-    logout_photo = models.ImageField(upload_to='attendance_photos/logout/', null=True, blank=True)
-    logout_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    logout_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS_CHOICES, default='absent')
-    reason_for_deduction = models.CharField(max_length=50, choices=DEDUCTION_REASON_CHOICES, blank=True, null=True)
-    deduct_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    platform = models.CharField(max_length=100, blank=True, null=True)
+    date = models.DateField(default=timezone.localdate) # Date of attendance
+    assigned_time = models.TimeField(null=True, blank=True) # E.g., scheduled start time
+
+    # Login (Check-in) details
+    login_time = models.TimeField(null=True, blank=True)
+    login_photo = models.ImageField(upload_to='login_photos/', null=True, blank=True) # <<< IMPORTANT: null=True, blank=True
+    login_latitude = models.CharField(max_length=20, null=True, blank=True)
+    login_longitude = models.CharField(max_length=20, null=True, blank=True)
+    checked_in_location = models.ForeignKey(CheckinLocation, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Logout (Check-out) details
+    logout_time = models.TimeField(null=True, blank=True)
+    logout_photo = models.ImageField(upload_to='logout_photos/', null=True, blank=True) # <<< IMPORTANT: null=True, blank=True
+    logout_latitude = models.CharField(max_length=20, null=True, blank=True)
+    logout_longitude = models.CharField(max_length=20, null=True, blank=True)
+
+    # Status and deduction
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('logged_in', 'Logged In'),
+        ('logged_out', 'Logged Out'),
+        ('absent', 'Absent'),
+        ('leave', 'Leave'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reason_for_deduction = models.TextField(null=True, blank=True)
+    deduct_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # Other details
+    platform = models.CharField(max_length=50, null=True, blank=True) # E.g., 'mobile_app', 'web_admin'
+
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('driver', 'date')
+        unique_together = ('driver', 'date') # A driver can only have one attendance record per day
         ordering = ['-date', 'driver__driver_name']
 
     def __str__(self):
-        return f"Attendance for {self.driver.driver_name} on {self.date}"
+        return f"{self.driver.driver_name} - {self.date} ({self.status})"
 
     @property
     def active_time_hours(self):
+        """Calculates the duration the driver was logged in, in hours."""
         if self.login_time and self.logout_time:
-            login_dt = timezone.datetime.combine(self.date, self.login_time)
-            logout_dt = timezone.datetime.combine(self.date, self.logout_time)
-            if logout_dt < login_dt:
-                logout_dt += timezone.timedelta(days=1)
-            duration = logout_dt - login_dt
-            return round(duration.total_seconds() / 3600, 2)
-        return None
+            # Convert time objects to datetime objects for calculation (using a dummy date)
+            dummy_date = timezone.localdate()
+            login_datetime = timezone.datetime.combine(dummy_date, self.login_time)
+            logout_datetime = timezone.datetime.combine(dummy_date, self.logout_time)
 
-    def save(self, *args, **kwargs):
-        if self.login_time and self.assigned_time:
-            login_dt = timezone.datetime.combine(self.date, self.login_time)
-            assigned_dt = timezone.datetime.combine(self.date, self.assigned_time)
-            if login_dt <= assigned_dt + timezone.timedelta(minutes=5):
-                self.status = 'on_time'
-            else:
-                self.status = 'late'
-        elif self.login_time:
-            self.status = 'on_time'
-        else:
-            self.status = 'absent'
-        super().save(*args, **kwargs)
+            # Ensure logout is after login for valid calculation
+            if logout_datetime > login_datetime:
+                duration = logout_datetime - login_datetime
+                return duration.total_seconds() / 3600
+        return 0.0 # Return 0 if not logged in/out or invalid times
+
 
 
 class MonthlyAttendanceSummary(models.Model):
@@ -199,3 +199,231 @@ class Termination(models.Model):
 
     def __str__(self):
         return f"Termination of {self.driver.driver_name} on {self.termination_date} due to {self.reason}"
+
+
+# ==================== SHIFT MANAGEMENT MODELS ====================
+
+class ShiftType(models.Model):
+    """Defines different types of shifts (Morning, Evening, Night, etc.)"""
+    SHIFT_TYPE_CHOICES = [
+        ('morning', 'Morning Shift'),
+        ('afternoon', 'Afternoon Shift'),
+        ('evening', 'Evening Shift'),
+        ('night', 'Night Shift'),
+        ('flexible', 'Flexible Shift'),
+        ('custom', 'Custom Shift'),
+    ]
+
+    name = models.CharField(max_length=100, unique=True)
+    shift_type = models.CharField(max_length=20, choices=SHIFT_TYPE_CHOICES)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    break_duration_minutes = models.IntegerField(default=30, help_text="Break duration in minutes")
+    is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True, null=True)
+
+    # Overtime settings
+    overtime_threshold_hours = models.DecimalField(max_digits=4, decimal_places=2, default=8.0)
+    overtime_rate_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default=1.5)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['start_time', 'name']
+        verbose_name = "Shift Type"
+        verbose_name_plural = "Shift Types"
+
+    def __str__(self):
+        return f"{self.name} ({self.start_time} - {self.end_time})"
+
+    @property
+    def duration_hours(self):
+        """Calculate shift duration in hours"""
+        from datetime import datetime, timedelta
+
+        # Handle overnight shifts
+        start = datetime.combine(datetime.today(), self.start_time)
+        end = datetime.combine(datetime.today(), self.end_time)
+
+        if end < start:  # Overnight shift
+            end += timedelta(days=1)
+
+        duration = end - start
+        return duration.total_seconds() / 3600
+
+
+class DriverShiftAssignment(models.Model):
+    """Assigns shifts to drivers for specific date ranges"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='shift_assignments')
+    shift_type = models.ForeignKey(ShiftType, on_delete=models.CASCADE, related_name='driver_assignments')
+
+    # Date range for the assignment
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True, help_text="Leave blank for ongoing assignment")
+
+    # Days of the week (for recurring assignments)
+    WEEKDAY_CHOICES = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
+
+    # Store as JSON field for multiple days
+    working_days = models.JSONField(default=list, help_text="List of working days: ['monday', 'tuesday', ...]")
+
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+
+    # Assignment metadata
+    assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date', 'driver__driver_name']
+        verbose_name = "Driver Shift Assignment"
+        verbose_name_plural = "Driver Shift Assignments"
+
+    def __str__(self):
+        end_date_str = self.end_date.strftime('%Y-%m-%d') if self.end_date else 'Ongoing'
+        return f"{self.driver.driver_name} - {self.shift_type.name} ({self.start_date} to {end_date_str})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.end_date and self.end_date < self.start_date:
+            raise ValidationError("End date cannot be before start date")
+
+    def is_valid_for_date(self, date):
+        """Check if this assignment is valid for a given date"""
+        if not self.is_active:
+            return False
+
+        if date < self.start_date:
+            return False
+
+        if self.end_date and date > self.end_date:
+            return False
+
+        # Check if the day of the week is in working_days
+        weekday_name = date.strftime('%A').lower()
+        return weekday_name in self.working_days
+
+
+# ==================== LEAVE MANAGEMENT MODELS ====================
+
+class LeaveType(models.Model):
+    """Define different types of leaves available"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    max_days_per_year = models.IntegerField(default=30, help_text="Maximum days allowed per year")
+    is_paid = models.BooleanField(default=True, help_text="Is this a paid leave?")
+    requires_approval = models.BooleanField(default=True, help_text="Does this leave require approval?")
+    advance_notice_days = models.IntegerField(default=1, help_text="Minimum advance notice required in days")
+    is_active = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Leave Type"
+        verbose_name_plural = "Leave Types"
+
+    def __str__(self):
+        return self.name
+
+
+class LeaveRequest(models.Model):
+    """Leave requests submitted by drivers"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='leave_requests')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='requests')
+
+    # Leave dates
+    start_date = models.DateField()
+    end_date = models.DateField()
+    total_days = models.IntegerField(help_text="Total number of leave days")
+
+    # Request details
+    reason = models.TextField(help_text="Reason for leave")
+    emergency_contact = models.CharField(max_length=20, blank=True, null=True)
+    supporting_document = models.FileField(upload_to='leave_documents/', blank=True, null=True)
+
+    # Status and approval
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    applied_date = models.DateTimeField(auto_now_add=True)
+
+    # Approval details
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leaves')
+    reviewed_date = models.DateTimeField(null=True, blank=True)
+    admin_comments = models.TextField(blank=True, null=True, help_text="Comments from admin/HR")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-applied_date', 'driver__driver_name']
+        verbose_name = "Leave Request"
+        verbose_name_plural = "Leave Requests"
+
+    def __str__(self):
+        return f"{self.driver.driver_name} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.end_date < self.start_date:
+            raise ValidationError("End date cannot be before start date")
+
+    def save(self, *args, **kwargs):
+        # Calculate total days
+        if self.start_date and self.end_date:
+            self.total_days = (self.end_date - self.start_date).days + 1
+        super().save(*args, **kwargs)
+
+
+class LeaveBalance(models.Model):
+    """Track leave balances for each driver and leave type"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='leave_balances')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='balances')
+    year = models.IntegerField(default=timezone.now().year)
+
+    # Balance tracking
+    allocated_days = models.IntegerField(default=0, help_text="Days allocated for this year")
+    used_days = models.IntegerField(default=0, help_text="Days already used")
+    pending_days = models.IntegerField(default=0, help_text="Days in pending requests")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('driver', 'leave_type', 'year')
+        ordering = ['-year', 'driver__driver_name', 'leave_type__name']
+        verbose_name = "Leave Balance"
+        verbose_name_plural = "Leave Balances"
+
+    def __str__(self):
+        return f"{self.driver.driver_name} - {self.leave_type.name} ({self.year})"
+
+    @property
+    def remaining_days(self):
+        """Calculate remaining leave days"""
+        return self.allocated_days - self.used_days - self.pending_days
+
+    @property
+    def available_days(self):
+        """Calculate available days (excluding pending)"""
+        return self.allocated_days - self.used_days

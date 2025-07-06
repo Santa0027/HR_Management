@@ -17,18 +17,72 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 
-# CORS configuration
-CORS_ALLOW_ALL_ORIGINS = True  # Allow all frontend origins (React etc.)
-# CORS settings
-CORS_ALLOW_CREDENTIALS = True
+# CORS configuration - Comprehensive setup for login and API access
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins for development
+CORS_ALLOW_CREDENTIALS = True  # Required for authentication
 
-# Also ensure you have your allowed origins configured, e.g.:
+# Specific allowed origins (backup if CORS_ALLOW_ALL_ORIGINS is disabled)
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",  # Common Vite port
+    "http://127.0.0.1:5173",
+    "http://13.204.66.176:5174",
+    "http://172.31.8.148:5174",
+]
+
+# Allow all headers that might be needed for authentication and API calls
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'access-control-allow-origin',
+    'access-control-allow-credentials',
+    'access-control-allow-headers',
+    'access-control-allow-methods',
+    'cache-control',
+    'pragma',
+    'expires',
+    'last-modified',
+    'if-modified-since',
+]
+
+# Allow all HTTP methods
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+    'HEAD',
+]
+
+# Additional CORS settings for better compatibility
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
+CORS_EXPOSE_HEADERS = [
+    'access-control-allow-origin',
+    'access-control-allow-credentials',
+]
+
+# Disable CSRF for API endpoints (since we're using JWT)
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://13.204.66.176:5173", # Your public frontend IP
-    "http://172.31.8.148:5173", # Your private frontend IP
-    # Add any other origins your frontend might be served from
+    "http://13.204.66.176:5174",
+    "http://172.31.8.148:5174",
 ]
 
 INSTALLED_APPS = [
@@ -41,16 +95,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',  # keep this here
+    'django_filters',  # Add django-filters for accounting filtering
     # your apps
     'services',
     'hr',
     'drivers',
     'code',
-    'accounts_module',
     'vehicle',
     'logs',
     'usermanagement',
     'company',
+    'accounting',  # Add the new accounting app
+    'trips',  # Add the new trips app
 ]
 # settings.py
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
@@ -62,7 +118,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # Disabled for API-only backend with JWT
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -101,16 +157,25 @@ WSGI_APPLICATION = 'config.wsgi.application'
 import os   
 
 
+# Temporarily using SQLite for development
 DATABASES = {
-     'default': {
-         'ENGINE': 'django.db.backends.postgresql',
-         'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
-         'USER': os.getenv('DATABASE_USER', 'admin'),
-         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
-         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
-         'PORT': os.getenv('DATABASE_PORT', '5432'),
-     }
- }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# PostgreSQL Database Config (commented out for now)
+# DATABASES = {
+#      'default': {
+#          'ENGINE': 'django.db.backends.postgresql',
+#          'NAME': os.getenv('DATABASE_NAME', 'hr_management_db'),
+#          'USER': os.getenv('DATABASE_USER', 'admin'),
+#          'PASSWORD': os.getenv('DATABASE_PASSWORD', 'admin@vellore'),
+#          'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+#          'PORT': os.getenv('DATABASE_PORT', '5432'),
+#      }
+#  }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -152,11 +217,16 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.AllowAny',  # Changed for testing
     ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
-
-
 
 # AUTHENTICATION_BACKENDS = [
 #     'usermanagement.backends.EmailBackend',
@@ -165,7 +235,6 @@ REST_FRAMEWORK = {
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
 
 # settings.py
 import os

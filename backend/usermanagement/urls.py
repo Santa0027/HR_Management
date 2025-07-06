@@ -6,12 +6,16 @@ from .views import (
     CurrentUserView,
     EmailTokenObtainPairView,
     LoginView,  # <- your custom login view
+    AdminUserViewSet,
+    DriverAuthenticationViewSet,
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
 router = DefaultRouter()
 router.register(r'users', CustomUserViewSet)
+router.register(r'admin/users', AdminUserViewSet, basename='admin-users')
+router.register(r'admin/driver-auth', DriverAuthenticationViewSet, basename='driver-auth')
 
 urlpatterns = [
     # API routes
