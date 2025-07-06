@@ -179,7 +179,7 @@ class Migration(migrations.Migration):
                 ('alarm_radius_meters', models.IntegerField()),
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('update_at', models.DateTimeField(auto_now=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
                 ('driver', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='apartment_locations', to='drivers.driver')),
             ],
         ),

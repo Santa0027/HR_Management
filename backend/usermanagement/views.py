@@ -17,7 +17,10 @@ from .serializers import (
     UserUpdateSerializer,
     UserDetailSerializer,
     ChangePasswordSerializer,
+    AdminUserSerializer,
+    DriverAuthenticationSerializer,
 )
+from .models import DriverAuthentication
 
 User = get_user_model()
 
@@ -241,3 +244,164 @@ class LoginView(APIView):
         response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
         response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
         return response
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
+    """ViewSet for admin user management"""
+    queryset = User.objects.filter(role__in=['super_admin', 'admin', 'hr_manager', 'supervisor', 'viewer']).order_by('-created_at')
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter parameters
+        role = self.request.query_params.get('role')
+        status = self.request.query_params.get('status')
+        search = self.request.query_params.get('search')
+
+        if role and role != 'all':
+            queryset = queryset.filter(role=role)
+        if status and status != 'all':
+            is_active = status == 'active'
+            queryset = queryset.filter(is_active=is_active)
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(username__icontains=search)
+            )
+
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, pk=None):
+        """Toggle user active status"""
+        user = self.get_object()
+        user.is_active = not user.is_active
+        user.save()
+
+        return Response({
+            'status': 'success',
+            'message': f'User {"activated" if user.is_active else "deactivated"} successfully',
+            'is_active': user.is_active
+        })
+
+    @action(detail=True, methods=['post'])
+    def reset_password(self, request, pk=None):
+        """Reset user password"""
+        user = self.get_object()
+
+        # Generate random password
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        new_password = ''.join(secrets.choice(alphabet) for i in range(8))
+
+        user.set_password(new_password)
+        user.login_attempts = 0
+        user.is_locked = False
+        user.locked_until = None
+        user.save()
+
+        return Response({
+            'status': 'success',
+            'message': 'Password reset successfully',
+            'new_password': new_password
+        })
+
+
+class DriverAuthenticationViewSet(viewsets.ModelViewSet):
+    """ViewSet for driver authentication management"""
+    queryset = DriverAuthentication.objects.all().order_by('-created_at')
+    serializer_class = DriverAuthenticationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter parameters
+        status = self.request.query_params.get('status')
+        search = self.request.query_params.get('search')
+
+        if status and status != 'all':
+            queryset = queryset.filter(status=status)
+        if search:
+            queryset = queryset.filter(
+                Q(driver__name__icontains=search) |
+                Q(username__icontains=search) |
+                Q(driver__mobile__icontains=search)
+            )
+
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, pk=None):
+        """Toggle driver authentication status"""
+        driver_auth = self.get_object()
+        driver_auth.status = 'inactive' if driver_auth.status == 'active' else 'active'
+        driver_auth.save()
+
+        return Response({
+            'status': 'success',
+            'message': f'Driver authentication {"activated" if driver_auth.status == "active" else "deactivated"} successfully',
+            'auth_status': driver_auth.status
+        })
+
+    @action(detail=True, methods=['post'])
+    def reset_password(self, request, pk=None):
+        """Reset driver password"""
+        driver_auth = self.get_object()
+
+        # Generate random password
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        new_password = ''.join(secrets.choice(alphabet) for i in range(8))
+
+        # Hash the password (you should use proper hashing)
+        from django.contrib.auth.hashers import make_password
+        driver_auth.password_hash = make_password(new_password)
+        driver_auth.login_attempts = 0
+        driver_auth.locked_until = None
+        if driver_auth.status == 'locked':
+            driver_auth.status = 'active'
+        driver_auth.save()
+
+        return Response({
+            'status': 'success',
+            'message': 'Password reset successfully',
+            'new_password': new_password
+        })
+
+    @action(detail=True, methods=['post'])
+    def unlock_account(self, request, pk=None):
+        """Unlock driver account"""
+        driver_auth = self.get_object()
+        driver_auth.unlock_account()
+
+        return Response({
+            'status': 'success',
+            'message': 'Account unlocked successfully'
+        })
+
+    @action(detail=True, methods=['get'])
+    def generate_qr(self, request, pk=None):
+        """Generate QR code for app download"""
+        driver_auth = self.get_object()
+
+        # In a real implementation, you would generate an actual QR code
+        # For now, return the data that would be encoded
+        qr_data = {
+            'app_download_url': 'https://your-app-store-link.com',
+            'driver_id': driver_auth.driver.id,
+            'username': driver_auth.username,
+            'setup_code': f"SETUP_{driver_auth.id}_{driver_auth.driver.id}"
+        }
+
+        return Response({
+            'status': 'success',
+            'qr_data': qr_data,
+            'message': 'QR code data generated successfully'
+        })

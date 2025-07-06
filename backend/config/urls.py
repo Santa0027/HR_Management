@@ -17,8 +17,7 @@ urlpatterns = [
     path('', include('usermanagement.urls')),
     path('hr/', include('hr.urls')),
     path('accounting/', include('accounting.urls')),  # Add accounting URLs
-    # Mobile app direct routes (redirect to accounting)
-    path('trips/', include('accounting.urls')),  # Mobile app trips routes
+    path('trips/', include('trips.urls')),  # Add trips URLs
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

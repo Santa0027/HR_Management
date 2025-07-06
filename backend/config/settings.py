@@ -101,7 +101,6 @@ INSTALLED_APPS = [
     'hr',
     'drivers',
     'code',
-    'accounts_module',
     'vehicle',
     'logs',
     'usermanagement',
