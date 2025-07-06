@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance';
 import { useNavigate, useParams } from 'react-router-dom';
 
 function UserEditForm() {
@@ -8,14 +8,14 @@ function UserEditForm() {
   const [form, setForm] = useState({ username: '', email: '', phone: '' });
 
   useEffect(() => {
-    api.get(`users/${id}/`).then(res => setForm(res.data));
+    axiosInstance.get(`users/${id}/`).then(res => setForm(res.data));
   }, [id]);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
-    await api.put(`users/${id}/`, form);
+    await axiosInstance.put(`users/${id}/`, form);
     navigate('/users');
   };
 

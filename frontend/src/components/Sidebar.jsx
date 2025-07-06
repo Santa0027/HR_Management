@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MdDashboard, MdManageAccounts } from "react-icons/md";
+import { MdDashboard, MdManageAccounts, MdAdminPanelSettings } from "react-icons/md";
 import { AiOutlineFileSearch } from "react-icons/ai";
+import { FaDollarSign } from "react-icons/fa"; // Add accounting icon
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Import Chevron icons
+import { useAuth } from '../context/AuthContext';
+import RoleBasedComponent from './RoleBasedComponent';
 
 // Sidebar Item Component
 const SidebarItem = ({ icon, label, to, active = false, children }) => {
@@ -107,65 +110,127 @@ const Sidebar = () => {
       <nav className="space-y-2 text-sm font-medium">
         <div className="text-gray-400 text-xs mb-2">Menu</div>
 
-        <SidebarItem
-          icon={<MdDashboard />}
-          label="Driver Management"
-          to="/dashboard" // Link for Driver Management
-          active={location.pathname === "/dashboard"}
-        />
+        <RoleBasedComponent requiredPermissions={['can_view_drivers']}>
+          <SidebarItem
+            icon={<MdDashboard />}
+            label="Driver Management"
+            to="/dashboard"
+            active={location.pathname === "/dashboard"}
+          />
+        </RoleBasedComponent>
 
         {/* Registration Management Dropdown Item */}
-        <SidebarItem
-          icon={<MdManageAccounts />}
-          label="Registration Management"
-          to="/registration-management" // Base path for the dropdown group (optional, can be removed if parent is not a clickable page)
-          active={location.pathname.startsWith("/registration-management")} // Parent active if any sub-item path matches
-        >
-          {/* Nested Sidebar Items for the dropdown */}
+        <RoleBasedComponent requiredRoles={['admin', 'hr']}>
           <SidebarItem
-            label="Driver Registration"
+            icon={<MdManageAccounts />}
+            label="Registration Management"
             to="/registration-management"
-            active={location.pathname === "/registration-management"}
-          />
+            active={location.pathname.startsWith("/registration-management")}
+          >
+            <SidebarItem
+              label="Driver Registration"
+              to="/registration-management"
+              active={location.pathname === "/registration-management"}
+            />
+            <SidebarItem
+              label="Vehicle Registration"
+              to="/vehicle-list"
+              active={location.pathname === "/vehicle-list"}
+            />
+            <SidebarItem
+              label="Company Registration"
+              to="/platform-list"
+              active={location.pathname === "/platform-list"}
+            />
+          </SidebarItem>
+        </RoleBasedComponent>
+        <RoleBasedComponent requiredPermissions={['can_view_hr']}>
           <SidebarItem
-            label="Vehicle Registration"
-            to="/vehicle-list"
-            active={location.pathname === "/vehicle-list"}
-          />
-          <SidebarItem
-            label="Componay Registration"
-            to="/platform-list"
-            active={location.pathname === "/platform-list"}
-          />
-         
-        </SidebarItem>
-         <SidebarItem
-          icon={<MdManageAccounts />}
-          label="HR Management"
-          to="/" // Base path for the dropdown group (optional, can be removed if parent is not a clickable page)
-          active={location.pathname.startsWith("/")} // Parent active if any sub-item path matches
-        >
-          <SidebarItem
-            label="HRDashboard"
+            icon={<MdManageAccounts />}
+            label="HR Management"
             to="/HRDashboard"
-            active={location.pathname === "/HRDashboard"}
-          />
+            active={location.pathname.startsWith("/HR") || location.pathname.startsWith("/Attendance") || location.pathname.startsWith("/warning") || location.pathname.startsWith("/termination")}
+          >
+            <SidebarItem
+              label="HR Dashboard"
+              to="/HRDashboard"
+              active={location.pathname === "/HRDashboard"}
+            />
+            <SidebarItem
+              label="Attendance Report"
+              to="/AttendanceDashboard"
+              active={location.pathname === "/AttendanceDashboard"}
+            />
+            <SidebarItem
+              label="Warning Report"
+              to="/warningletter"
+              active={location.pathname === "/warningletter"}
+            />
+            <SidebarItem
+              label="Termination Report"
+              to="/terminationletter"
+              active={location.pathname === "/terminationletter"}
+            />
+          </SidebarItem>
+        </RoleBasedComponent>
+
+        {/* Accounting Management Dropdown Item */}
+        <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
           <SidebarItem
-            label="Attendence Report"
-            to="/AttendanceDashboard"
-            active={location.pathname === "/AttendanceDashboard"}
-          />
+            icon={<FaDollarSign />}
+            label="Accounting"
+            to="/accounting"
+            active={location.pathname.startsWith("/accounting")}
+          >
+            <SidebarItem
+              label="Dashboard"
+              to="/accounting"
+              active={location.pathname === "/accounting"}
+            />
+            <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
+              <SidebarItem
+                label="Transactions"
+                to="/accounting/transactions"
+                active={location.pathname === "/accounting/transactions"}
+              />
+            </RoleBasedComponent>
+            <RoleBasedComponent requiredPermissions={['can_manage_accounting']}>
+              <SidebarItem
+                label="Income"
+                to="/accounting/income"
+                active={location.pathname === "/accounting/income"}
+              />
+              <SidebarItem
+                label="Expenses"
+                to="/accounting/expenses"
+                active={location.pathname === "/accounting/expenses"}
+              />
+            </RoleBasedComponent>
+          </SidebarItem>
+        </RoleBasedComponent>
+      </nav>
+
+      {/* Admin Management - Admin only */}
+      <nav className="space-y-2 text-sm font-medium mt-4">
+        <RoleBasedComponent requiredPermissions={['can_manage_users', 'can_manage_drivers']}>
           <SidebarItem
-            label="warning Report"
-            to="/warningletter"
-            active={location.pathname === "/warningletter"}
-          />
-          <SidebarItem
-            label="termination Report"
-            to="/terminationletter"
-            active={location.pathname === "/terminationletter"}
-          />
-        </SidebarItem>
+            icon={<MdAdminPanelSettings />}
+            label="Admin Management"
+            to="/admin/users"
+            active={location.pathname.startsWith("/admin")}
+          >
+            <SidebarItem
+              label="User Management"
+              to="/admin/users"
+              active={location.pathname === "/admin/users"}
+            />
+            <SidebarItem
+              label="Driver Authentication"
+              to="/admin/driver-auth"
+              active={location.pathname === "/admin/driver-auth"}
+            />
+          </SidebarItem>
+        </RoleBasedComponent>
       </nav>
 
       {/* Accounts Management (Add if needed, currently not in the provided Sidebar code) */}

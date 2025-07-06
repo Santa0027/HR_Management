@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance';
 import { Link } from 'react-router-dom';
 
 function UserList() {
   const [users, setUsers] = useState([]);
 
   const fetchUsers = async () => {
-    const res = await api.get('users/');
+    const res = await axiosInstance.get('users/');
     setUsers(res.data);
   };
 
   const deleteUser = async (id) => {
-    await api.delete(`users/${id}/`);
+    await axiosInstance.delete(`users/${id}/`);
     fetchUsers();
   };
 
