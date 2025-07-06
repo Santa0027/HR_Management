@@ -1,22 +1,32 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 
+<<<<<<< HEAD
 /**
  * Component that conditionally renders children based on user roles and permissions
  */
+=======
+>>>>>>> e1d21cec (internal)
 const RoleBasedComponent = ({ 
   children, 
   requiredRoles = [], 
   requiredPermissions = [], 
+<<<<<<< HEAD
   fallback = null,
   requireAll = false // If true, user must have ALL roles/permissions, not just one
 }) => {
   const { user, canAccess, hasAnyRole, hasPermission } = useAuth();
+=======
+  fallback = null 
+}) => {
+  const { user, hasRole, hasPermission } = useAuth();
+>>>>>>> e1d21cec (internal)
 
   if (!user) {
     return fallback;
   }
 
+<<<<<<< HEAD
   // Check roles
   if (requiredRoles.length > 0) {
     if (requireAll) {
@@ -39,12 +49,28 @@ const RoleBasedComponent = ({
       // User must have at least ONE required permission
       const hasAnyPermission = requiredPermissions.some(permission => hasPermission(permission));
       if (!hasAnyPermission) return fallback;
+=======
+  // Check if user has any of the required roles
+  if (requiredRoles.length > 0) {
+    const hasRequiredRole = requiredRoles.some(role => hasRole(role));
+    if (!hasRequiredRole) {
+      return fallback;
+    }
+  }
+
+  // Check if user has any of the required permissions
+  if (requiredPermissions.length > 0) {
+    const hasRequiredPermission = requiredPermissions.some(permission => hasPermission(permission));
+    if (!hasRequiredPermission) {
+      return fallback;
+>>>>>>> e1d21cec (internal)
     }
   }
 
   return children;
 };
 
+<<<<<<< HEAD
 /**
  * Higher-order component for role-based rendering
  */
@@ -171,4 +197,6 @@ export const useRoleAccess = () => {
   };
 };
 
+=======
+>>>>>>> e1d21cec (internal)
 export default RoleBasedComponent;

@@ -76,6 +76,7 @@ import AccountingCRUDTest from './pages/AccountingCRUDTest';
 // Admin Management
 import AdminUserManagement from './pages/AdminUserManagement';
 import DriverAuthManagement from './pages/DriverAuthManagement';
+import DriverAuthentication from './pages/DriverAuthentication';
 
 function App() {
   return (
@@ -242,7 +243,7 @@ function App() {
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute requiredRoles={['admin']}>
+              <ProtectedRoute requiredPermissions={['can_manage_users']}>
                 <AdminUserManagement />
               </ProtectedRoute>
             }
@@ -250,8 +251,16 @@ function App() {
           <Route
             path="/admin/driver-auth"
             element={
-              <ProtectedRoute requiredRoles={['admin']}>
+              <ProtectedRoute requiredPermissions={['can_manage_drivers']}>
                 <DriverAuthManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/driver-authentication"
+            element={
+              <ProtectedRoute requiredPermissions={['can_manage_drivers']}>
+                <DriverAuthentication />
               </ProtectedRoute>
             }
           />

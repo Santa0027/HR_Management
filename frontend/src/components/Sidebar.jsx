@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MdDashboard, MdManageAccounts } from "react-icons/md";
+import { MdDashboard, MdManageAccounts, MdAdminPanelSettings } from "react-icons/md";
 import { AiOutlineFileSearch } from "react-icons/ai";
+<<<<<<< HEAD
 import { FaDollarSign, FaUsers } from "react-icons/fa"; // Add accounting and users icons
+=======
+import { FaDollarSign } from "react-icons/fa"; // Add accounting icon
+>>>>>>> e1d21cec (internal)
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Import Chevron icons
 import { useAuth } from '../context/AuthContext';
@@ -118,6 +122,7 @@ const Sidebar = () => {
             active={location.pathname === "/dashboard"}
           />
         </RoleBasedComponent>
+<<<<<<< HEAD
 
         <RoleBasedComponent requiredPermissions={['can_view_drivers']}>
           <SidebarItem
@@ -127,6 +132,8 @@ const Sidebar = () => {
             active={location.pathname === "/driver-management-dashboard"}
           />
         </RoleBasedComponent>
+=======
+>>>>>>> e1d21cec (internal)
 
         {/* Registration Management Dropdown Item */}
         <RoleBasedComponent requiredRoles={['admin', 'hr']}>
@@ -183,6 +190,7 @@ const Sidebar = () => {
           </SidebarItem>
         </RoleBasedComponent>
 
+<<<<<<< HEAD
         {/* Admin Management Dropdown Item */}
         <RoleBasedComponent requiredRoles={['admin']}>
           <SidebarItem
@@ -251,6 +259,63 @@ const Sidebar = () => {
                 active={location.pathname === "/accounting/bank-accounts"}
               />
             </RoleBasedComponent>
+=======
+        {/* Accounting Management Dropdown Item */}
+        <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
+          <SidebarItem
+            icon={<FaDollarSign />}
+            label="Accounting"
+            to="/accounting"
+            active={location.pathname.startsWith("/accounting")}
+          >
+            <SidebarItem
+              label="Dashboard"
+              to="/accounting"
+              active={location.pathname === "/accounting"}
+            />
+            <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
+              <SidebarItem
+                label="Transactions"
+                to="/accounting/transactions"
+                active={location.pathname === "/accounting/transactions"}
+              />
+            </RoleBasedComponent>
+            <RoleBasedComponent requiredPermissions={['can_manage_accounting']}>
+              <SidebarItem
+                label="Income"
+                to="/accounting/income"
+                active={location.pathname === "/accounting/income"}
+              />
+              <SidebarItem
+                label="Expenses"
+                to="/accounting/expenses"
+                active={location.pathname === "/accounting/expenses"}
+              />
+            </RoleBasedComponent>
+          </SidebarItem>
+        </RoleBasedComponent>
+      </nav>
+
+      {/* Admin Management - Admin only */}
+      <nav className="space-y-2 text-sm font-medium mt-4">
+        <RoleBasedComponent requiredPermissions={['can_manage_users', 'can_manage_drivers']}>
+          <SidebarItem
+            icon={<MdAdminPanelSettings />}
+            label="Admin Management"
+            to="/admin/users"
+            active={location.pathname.startsWith("/admin")}
+          >
+            <SidebarItem
+              label="User Management"
+              to="/admin/users"
+              active={location.pathname === "/admin/users"}
+            />
+            <SidebarItem
+              label="Driver Authentication"
+              to="/admin/driver-auth"
+              active={location.pathname === "/admin/driver-auth"}
+            />
+>>>>>>> e1d21cec (internal)
           </SidebarItem>
         </RoleBasedComponent>
       </nav>
