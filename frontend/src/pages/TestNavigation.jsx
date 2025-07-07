@@ -64,15 +64,12 @@ const TestNavigation = () => {
       color: 'bg-purple-500 hover:bg-purple-700'
     },
     {
-<<<<<<< HEAD
       title: '💰 Accounting System Test',
       description: 'Comprehensive test of all accounting features, API endpoints, and data flow',
       path: '/accounting-system-test',
       color: 'bg-green-500 hover:bg-green-700'
     },
     {
-=======
->>>>>>> e1d21cec (internal)
       title: '🏠 Main Application',
       description: 'Go to the main HR management application',
       path: '/',

@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     'services',
     'hr',
     'drivers',
+    'trips',
     'code',
     'vehicle',
     'logs',
@@ -107,7 +108,8 @@ INSTALLED_APPS = [
     'company',
     'accounting',  # Add the new accounting app
 ]
-# settings.py
+
+
 AUTH_USER_MODEL = 'usermanagement.CustomUser'
 
 

@@ -534,7 +534,7 @@ class Trip(models.Model):
 
     # Basic trip information
     trip_id = models.CharField(max_length=50, unique=True, editable=False)
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='trips')
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='accounting_trips')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='trips', null=True, blank=True)
 
     # Customer information

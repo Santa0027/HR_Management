@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   Users,
@@ -18,7 +19,42 @@ import {
   AlertTriangle,
   FileText,
   Download,
-  Upload
+  Upload,
+  MoreVertical,
+  Star,
+  Award,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  BarChart3,
+  PieChart,
+  RefreshCw,
+  Settings,
+  Mail,
+  Shield,
+  UserCheck,
+  UserX,
+  UserPlus,
+  Zap,
+  Target,
+  DollarSign,
+  Navigation,
+  Fuel,
+  Timer,
+  Bell,
+  Archive,
+  Bookmark,
+  Copy,
+  ExternalLink,
+  History,
+  Info,
+  MessageSquare,
+  Share2,
+  Printer,
+  FileSpreadsheet,
+  Database,
+  CloudDownload,
+  CloudUpload
 } from 'lucide-react';
 
 // A generic Modal component to be reused for Add, View, and Edit forms.
@@ -50,8 +86,178 @@ const Modal = ({ show, onClose, title, children }) => {
   );
 };
 
+// Enhanced Statistics Card Component
+const StatCard = ({ title, value, change, changeType, icon: Icon, color, onClick, subtitle }) => (
+  <div
+    className={`bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all cursor-pointer group ${onClick ? 'hover:scale-105' : ''}`}
+    onClick={onClick}
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-4">
+        <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
+          <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+        </div>
+      </div>
+      {change && (
+        <div className={`flex items-center space-x-1 ${changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
+          {changeType === 'increase' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+          <span className="text-sm font-medium">{change}</span>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Enhanced Driver Card Component
+const DriverCard = ({ driver, onView, onEdit, onDelete, onToggleStatus }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
+      case 'approved': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'suspended': return 'bg-red-100 text-red-800 border-red-200';
+      case 'rejected': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'active': return <CheckCircle className="w-3 h-3" />;
+      case 'approved': return <UserCheck className="w-3 h-3" />;
+      case 'pending': return <Clock className="w-3 h-3" />;
+      case 'suspended': return <UserX className="w-3 h-3" />;
+      case 'rejected': return <XCircle className="w-3 h-3" />;
+      default: return <AlertTriangle className="w-3 h-3" />;
+    }
+  };
+
+  const isDocumentExpiring = (expiryDate) => {
+    if (!expiryDate) return false;
+    const expiry = new Date(expiryDate);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return expiry <= thirtyDaysFromNow;
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all group">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <Users className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{driver.driver_name}</h3>
+            <p className="text-sm text-gray-500">ID: {driver.iqama}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(driver.status)}`}>
+            {getStatusIcon(driver.status)}
+            <span className="ml-1 capitalize">{driver.status}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Driver Info */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="flex items-center space-x-2">
+          <Phone className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600">{driver.mobile}</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <MapPin className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600">{driver.city}</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Car className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600">{driver.vehicle?.vehicle_name || 'No Vehicle'}</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Calendar className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-600">{new Date(driver.created_at).toLocaleDateString()}</span>
+        </div>
+      </div>
+
+      {/* Document Status */}
+      <div className="mb-4">
+        <h4 className="text-sm font-medium text-gray-700 mb-2">Document Status</h4>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'IQAMA', expiry: driver.iqama_expiry },
+            { label: 'License', expiry: driver.license_expiry },
+            { label: 'Passport', expiry: driver.passport_expiry },
+            { label: 'Medical', expiry: driver.medical_expiry }
+          ].map((doc) => (
+            <span
+              key={doc.label}
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                isDocumentExpiring(doc.expiry)
+                  ? 'bg-red-100 text-red-800 border border-red-200'
+                  : 'bg-green-100 text-green-800 border border-green-200'
+              }`}
+            >
+              {doc.label}
+              {isDocumentExpiring(doc.expiry) && <AlertTriangle className="w-3 h-3 ml-1" />}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onView(driver)}
+            className="flex items-center px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+          >
+            <Eye className="w-4 h-4 mr-1" />
+            View
+          </button>
+          <button
+            onClick={() => onEdit(driver)}
+            className="flex items-center px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-md transition-colors"
+          >
+            <Edit className="w-4 h-4 mr-1" />
+            Edit
+          </button>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onToggleStatus(driver)}
+            className={`flex items-center px-3 py-1 text-sm rounded-md transition-colors ${
+              driver.status === 'active'
+                ? 'text-red-600 hover:bg-red-50'
+                : 'text-green-600 hover:bg-green-50'
+            }`}
+          >
+            {driver.status === 'active' ? <UserX className="w-4 h-4 mr-1" /> : <UserCheck className="w-4 h-4 mr-1" />}
+            {driver.status === 'active' ? 'Suspend' : 'Activate'}
+          </button>
+          <button
+            onClick={() => onDelete(driver)}
+            className="flex items-center px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main Driver Management component
 const DriverManagement = () => {
+  const navigate = useNavigate();
+
   // State to hold all driver data
   const [drivers, setDrivers] = useState([]);
   // State to hold drivers after applying search and filters
@@ -62,22 +268,44 @@ const DriverManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   // Filter for driver status (e.g., 'all', 'approved', 'pending')
   const [statusFilter, setStatusFilter] = useState('all');
-  // Stores the driver object currently selected for viewing or editing
-  const [selectedDriver, setSelectedDriver] = useState(null);
+
   // Boolean states to control the visibility of different modals
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   // States to hold data for dropdowns in forms (e.g., companies, vehicles)
   const [companies, setCompanies] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  // State for displaying driver statistics
+  // Enhanced state for displaying comprehensive driver statistics
   const [driverStats, setDriverStats] = useState({
     total: 0,
     active: 0,
     pending: 0,
     suspended: 0,
-    approved: 0
+    approved: 0,
+    rejected: 0,
+    documentsExpiring: 0,
+    newThisMonth: 0,
+    averageAge: 0,
+    maleDrivers: 0,
+    femaleDrivers: 0,
+    withVehicles: 0,
+    withoutVehicles: 0
+  });
+
+  // Additional state for enhanced features
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+  const [sortBy, setSortBy] = useState('name'); // 'name', 'date', 'status'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  const [selectedDrivers, setSelectedDrivers] = useState([]); // For bulk operations
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    nationality: '',
+    city: '',
+    company: '',
+    vehicle_type: '',
+    document_expiry: '',
+    age_range: { min: '', max: '' },
+    join_date_range: { start: '', end: '' }
   });
 
   // State for the new/edited driver form data
@@ -107,6 +335,118 @@ const DriverManagement = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewDriver(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Enhanced statistics calculation function
+  const calculateEnhancedStats = (driversData) => {
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Document expiry check
+    const documentsExpiring = driversData.filter(driver => {
+      const expiryDates = [
+        driver.iqama_expiry,
+        driver.license_expiry,
+        driver.passport_expiry,
+        driver.medical_expiry
+      ].filter(date => date);
+
+      return expiryDates.some(date => {
+        const expiryDate = new Date(date);
+        return expiryDate <= thirtyDaysFromNow;
+      });
+    }).length;
+
+    // New drivers this month
+    const newThisMonth = driversData.filter(driver => {
+      const joinDate = new Date(driver.created_at);
+      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+    }).length;
+
+    // Age calculation
+    const ages = driversData
+      .filter(driver => driver.dob)
+      .map(driver => {
+        const birthDate = new Date(driver.dob);
+        const age = now.getFullYear() - birthDate.getFullYear();
+        const monthDiff = now.getMonth() - birthDate.getMonth();
+        return monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate()) ? age - 1 : age;
+      });
+
+    const averageAge = ages.length > 0 ? Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length) : 0;
+
+    return {
+      total: driversData.length,
+      active: driversData.filter(d => d.status === 'active').length,
+      pending: driversData.filter(d => d.status === 'pending').length,
+      suspended: driversData.filter(d => d.status === 'suspended').length,
+      approved: driversData.filter(d => d.status === 'approved').length,
+      rejected: driversData.filter(d => d.status === 'rejected').length,
+      documentsExpiring,
+      newThisMonth,
+      averageAge,
+      maleDrivers: driversData.filter(d => d.gender === 'male').length,
+      femaleDrivers: driversData.filter(d => d.gender === 'female').length,
+      withVehicles: driversData.filter(d => d.vehicle && d.vehicle.id).length,
+      withoutVehicles: driversData.filter(d => !d.vehicle || !d.vehicle.id).length
+    };
+  };
+
+  // Toggle driver status function
+  const handleToggleStatus = async (driver) => {
+    try {
+      const newStatus = driver.status === 'active' ? 'suspended' : 'active';
+      const updatedDrivers = drivers.map(d =>
+        d.id === driver.id ? { ...d, status: newStatus } : d
+      );
+
+      setDrivers(updatedDrivers);
+      setFilteredDrivers(updatedDrivers);
+      setDriverStats(calculateEnhancedStats(updatedDrivers));
+
+      toast.success(`Driver ${newStatus === 'active' ? 'activated' : 'suspended'} successfully`);
+    } catch (error) {
+      console.error('Error toggling driver status:', error);
+      toast.error('Failed to update driver status');
+    }
+  };
+
+  // Bulk operations handler
+  const handleBulkOperation = async (operation) => {
+    try {
+      let updatedDrivers = [...drivers];
+
+      switch (operation) {
+        case 'activate':
+          updatedDrivers = drivers.map(d =>
+            selectedDrivers.includes(d.id) ? { ...d, status: 'active' } : d
+          );
+          break;
+        case 'suspend':
+          updatedDrivers = drivers.map(d =>
+            selectedDrivers.includes(d.id) ? { ...d, status: 'suspended' } : d
+          );
+          break;
+        case 'delete':
+          updatedDrivers = drivers.filter(d => !selectedDrivers.includes(d.id));
+          break;
+        default:
+          return;
+      }
+
+      setDrivers(updatedDrivers);
+      setFilteredDrivers(updatedDrivers);
+      setDriverStats(calculateEnhancedStats(updatedDrivers));
+      setSelectedDrivers([]);
+      setShowBulkActions(false);
+
+      toast.success(`Bulk ${operation} completed successfully`);
+    } catch (error) {
+      console.error('Error performing bulk operation:', error);
+      toast.error('Failed to perform bulk operation');
+    }
   };
 
   // useCallback to memoize the fetchDrivers function, preventing unnecessary re-renders
@@ -234,14 +574,8 @@ const DriverManagement = () => {
       setDrivers(actualDriverData); // Update the main drivers state
       setFilteredDrivers(actualDriverData); // Initialize filtered drivers with all data
 
-      // Calculate and update driver statistics based on fetched data
-      const stats = {
-        total: actualDriverData.length,
-        active: actualDriverData.filter(d => d.status === 'active').length,
-        pending: actualDriverData.filter(d => d.status === 'pending').length,
-        suspended: actualDriverData.filter(d => d.status === 'suspended').length,
-        approved: actualDriverData.filter(d => d.status === 'approved').length
-      };
+      // Calculate and update comprehensive driver statistics based on fetched data
+      const stats = calculateEnhancedStats(actualDriverData);
       setDriverStats(stats);
 
       toast.success("✅ Driver data loaded from database"); // Success notification
@@ -351,14 +685,7 @@ const DriverManagement = () => {
         setFilteredDrivers(updatedDrivers); // Also update filtered list
 
         // Recalculate and update statistics
-        const stats = {
-          total: updatedDrivers.length,
-          active: updatedDrivers.filter(d => d.status === 'active').length,
-          pending: updatedDrivers.filter(d => d.status === 'pending').length,
-          suspended: updatedDrivers.filter(d => d.status === 'suspended').length,
-          approved: updatedDrivers.filter(d => d.status === 'approved').length
-        };
-        setDriverStats(stats);
+        setDriverStats(calculateEnhancedStats(updatedDrivers));
 
         toast.success("✅ Driver deleted successfully (Simulated)"); // Success notification
       } catch (error) {
@@ -368,26 +695,14 @@ const DriverManagement = () => {
     }
   };
 
-  // Handler for initiating the edit process for a driver
+  // Handler for navigating to the edit page for a driver
   const handleEditDriver = (driver) => {
-    setSelectedDriver(driver); // Set the driver to be edited
-    // Populate the form state with the selected driver's data
-    // Ensure date fields are formatted correctly for input type="date" (YYYY-MM-DD)
-    setNewDriver({
-      ...driver,
-      vehicle: driver.vehicle?.id || '', // Use ID for select input
-      company: driver.company?.id || '', // Use ID for select input
-      dob: driver.dob ? new Date(driver.dob).toISOString().split('T')[0] : '',
-      iqama_expiry: driver.iqama_expiry ? new Date(driver.iqama_expiry).toISOString().split('T')[0] : '',
-      passport_expiry: driver.passport_expiry ? new Date(driver.passport_expiry).toISOString().split('T')[0] : '',
-      license_expiry: driver.license_expiry ? new Date(driver.license_expiry).toISOString().split('T')[0] : '',
-      visa_expiry: driver.visa_expiry ? new Date(driver.visa_expiry).toISOString().split('T')[0] : '',
-      medical_expiry: driver.medical_expiry ? new Date(driver.medical_expiry).toISOString().split('T')[0] : '',
-      insurance_paid_by: driver.insurance_paid_by || '',
-      accommodation_paid_by: driver.accommodation_paid_by || '',
-      phone_bill_paid_by: driver.phone_bill_paid_by || ''
-    });
-    setShowEditModal(true); // Show the edit modal
+    navigate(`/profileedit/${driver.id}`);
+  };
+
+  // Handler for navigating to the view page for a driver
+  const handleViewDriver = (driver) => {
+    navigate(`/driver-profile/${driver.id}`);
   };
 
   // Handler for saving a driver (either adding new or updating existing)
@@ -403,23 +718,8 @@ const DriverManagement = () => {
       const vehicleObj = vehicles.find(v => v.id == newDriver.vehicle);
       const companyObj = companies.find(c => c.id == newDriver.company);
 
-      if (selectedDriver) {
-        // Logic for editing an existing driver
-        const updatedDrivers = drivers.map(driver =>
-          driver.id === selectedDriver.id
-            ? {
-                ...driver, // Keep existing driver properties
-                ...newDriver, // Overlay with new form data
-                vehicle: vehicleObj || driver.vehicle, // Use found object or existing if not changed
-                company: companyObj || driver.company, // Use found object or existing if not changed
-                updated_at: new Date().toISOString() // Update timestamp
-              }
-            : driver // Keep other drivers as they are
-        );
-        setDrivers(updatedDrivers);
-        setFilteredDrivers(updatedDrivers);
-        toast.success("✅ Driver updated successfully (Simulated)");
-      } else {
+      // Logic for adding a new driver (editing is now handled by separate page)
+      {
         // Logic for adding a new driver
         const newDriverData = {
           ...newDriver, // New driver data from form
@@ -433,14 +733,7 @@ const DriverManagement = () => {
         setFilteredDrivers(updatedDrivers);
 
         // Recalculate and update statistics after adding a driver
-        const stats = {
-          total: updatedDrivers.length,
-          active: updatedDrivers.filter(d => d.status === 'active').length,
-          pending: updatedDrivers.filter(d => d.status === 'pending').length,
-          suspended: updatedDrivers.filter(d => d.status === 'suspended').length,
-          approved: updatedDrivers.filter(d => d.status === 'approved').length
-        };
-        setDriverStats(stats);
+        setDriverStats(calculateEnhancedStats(updatedDrivers));
 
         toast.success("✅ Driver added successfully (Simulated)");
       }
@@ -453,9 +746,7 @@ const DriverManagement = () => {
         visa_expiry: '', medical_expiry: '', insurance_paid_by: '',
         accommodation_paid_by: '', phone_bill_paid_by: ''
       });
-      setSelectedDriver(null); // Clear selected driver
       setShowAddModal(false); // Close add modal
-      setShowEditModal(false); // Close edit modal
     } catch (error) {
       console.error('Error saving driver:', error);
       toast.error("Failed to save driver"); // Error notification
@@ -472,7 +763,7 @@ const DriverManagement = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto font-inter">
+    <div className="p-6 max-w-8xl mx-auto font-inter">
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -486,7 +777,7 @@ const DriverManagement = () => {
           {/* Button to open the Add New Driver modal */}
           <button
             onClick={() => {
-              setSelectedDriver(null); // Ensure no driver is selected when adding new
+              // Reset form for adding new driver
               setNewDriver({ // Reset form to default empty values
                 driver_name: '', gender: 'male', iqama: '', mobile: '', city: '',
                 nationality: '', dob: '', vehicle: '', company: '', status: 'pending',
@@ -504,58 +795,158 @@ const DriverManagement = () => {
         </div>
       </div>
 
-      {/* Statistics Cards Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Drivers</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.total}</p>
-            </div>
-            <Users className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
+      {/* Enhanced Statistics Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Total Drivers"
+          value={driverStats.total}
+          subtitle={`${driverStats.newThisMonth} new this month`}
+          icon={Users}
+          color="bg-blue-500"
+          change={driverStats.newThisMonth > 0 ? `+${driverStats.newThisMonth}` : null}
+          changeType="increase"
+        />
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.approved}</p>
-            </div>
-            <CheckCircle className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
+        <StatCard
+          title="Active Drivers"
+          value={driverStats.active}
+          subtitle={`${Math.round((driverStats.active / driverStats.total) * 100)}% of total`}
+          icon={CheckCircle}
+          color="bg-green-500"
+        />
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.active}</p>
-            </div>
-            <CheckCircle className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
+        <StatCard
+          title="Pending Approval"
+          value={driverStats.pending}
+          subtitle="Awaiting review"
+          icon={Clock}
+          color="bg-yellow-500"
+        />
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.pending}</p>
-            </div>
-            <Clock className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Suspended</p>
-              <p className="text-2xl font-bold text-gray-900">{driverStats.suspended}</p>
-            </div>
-            <XCircle className="h-8 w-8 text-red-500" />
-          </div>
-        </div>
+        <StatCard
+          title="Documents Expiring"
+          value={driverStats.documentsExpiring}
+          subtitle="Within 30 days"
+          icon={AlertTriangle}
+          color="bg-red-500"
+        />
       </div>
+
+      {/* Secondary Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="With Vehicles"
+          value={driverStats.withVehicles}
+          subtitle={`${driverStats.withoutVehicles} without vehicles`}
+          icon={Car}
+          color="bg-purple-500"
+        />
+
+        <StatCard
+          title="Average Age"
+          value={`${driverStats.averageAge} years`}
+          subtitle="Driver average"
+          icon={Users}
+          color="bg-indigo-500"
+        />
+
+        <StatCard
+          title="Suspended"
+          value={driverStats.suspended}
+          subtitle="Temporarily inactive"
+          icon={UserX}
+          color="bg-red-500"
+        />
+
+        <StatCard
+          title="Gender Split"
+          value={`${driverStats.maleDrivers}M / ${driverStats.femaleDrivers}F`}
+          subtitle="Male / Female"
+          icon={Users}
+          color="bg-gray-500"
+        />
+      </div>
+
+      {/* Action Bar */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}
+              className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              {viewMode === 'cards' ? <BarChart3 className="w-4 h-4 mr-2" /> : <Users className="w-4 h-4 mr-2" />}
+              {viewMode === 'cards' ? 'Table View' : 'Card View'}
+            </button>
+
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Advanced Filters
+            </button>
+
+            {selectedDrivers.length > 0 && (
+              <button
+                onClick={() => setShowBulkActions(!showBulkActions)}
+                className="flex items-center px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Bulk Actions ({selectedDrivers.length})
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </button>
+
+            <button className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <Upload className="w-4 h-4 mr-2" />
+              Import
+            </button>
+
+            <button
+              onClick={fetchDrivers}
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Bulk Actions Panel */}
+        {showBulkActions && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Bulk Actions</h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleBulkOperation('activate')}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+              >
+                Activate Selected
+              </button>
+              <button
+                onClick={() => handleBulkOperation('suspend')}
+                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
+              >
+                Suspend Selected
+              </button>
+              <button
+                onClick={() => handleBulkOperation('delete')}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+              >
+                Delete Selected
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
 
       {/* Search and Filter Bar Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -596,35 +987,78 @@ const DriverManagement = () => {
         </div>
       </div>
 
-      {/* Drivers Table Section */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Driver Info
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vehicle
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+      {/* Drivers Display Section - Cards or Table View */}
+      {viewMode === 'cards' ? (
+        /* Card View */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredDrivers.map((driver) => (
+            <DriverCard
+              key={driver.id}
+              driver={driver}
+              onView={handleViewDriver}
+              onEdit={handleEditDriver}
+              onDelete={handleDeleteDriver}
+              onToggleStatus={handleToggleStatus}
+            />
+          ))}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDrivers(filteredDrivers.map(d => d.id));
+                        } else {
+                          setSelectedDrivers([]);
+                        }
+                      }}
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Driver Info
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vehicle
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Joined Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
               {filteredDrivers.map((driver) => (
                 <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={selectedDrivers.includes(driver.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDrivers([...selectedDrivers, driver.id]);
+                        } else {
+                          setSelectedDrivers(selectedDrivers.filter(id => id !== driver.id));
+                        }
+                      }}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-12 w-12">
@@ -673,10 +1107,7 @@ const DriverManagement = () => {
                     <div className="flex items-center space-x-2">
                       {/* View Details Button */}
                       <button
-                        onClick={() => {
-                          setSelectedDriver(driver); // Set the driver for viewing
-                          setShowViewModal(true); // Open the view modal
-                        }}
+                        onClick={() => handleViewDriver(driver)}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
                         title="View Details"
                       >
@@ -684,7 +1115,7 @@ const DriverManagement = () => {
                       </button>
                       {/* Edit Driver Button */}
                       <button
-                        onClick={() => handleEditDriver(driver)} // Call handler to prepare and open edit modal
+                        onClick={() => handleEditDriver(driver)}
                         className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
                         title="Edit Driver"
                       >
@@ -719,7 +1150,22 @@ const DriverManagement = () => {
             </p>
           </div>
         )}
-      </div>
+        </div>
+      )}
+
+      {/* Empty State for Card View */}
+      {viewMode === 'cards' && filteredDrivers.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <Users className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No drivers found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchTerm || statusFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
+              : 'Get started by adding your first driver.'
+            }
+          </p>
+        </div>
+      )}
 
       {/* Add New Driver Modal */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Driver">
@@ -944,259 +1390,8 @@ const DriverManagement = () => {
         </form>
       </Modal>
 
-      {/* Edit Driver Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Driver">
-        <form onSubmit={handleSaveDriver} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Driver Name */}
-          <div className="col-span-2">
-            <label htmlFor="driver_name" className="block text-sm font-medium text-gray-700">Driver Name</label>
-            <input
-              type="text"
-              name="driver_name"
-              id="driver_name"
-              value={newDriver.driver_name}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              required
-            />
-          </div>
 
-          {/* Gender */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Gender</label>
-            <select
-              name="gender"
-              id="gender"
-              value={newDriver.gender}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
-          </div>
 
-          {/* IQAMA */}
-          <div>
-            <label htmlFor="iqama" className="block text-sm font-medium text-gray-700">IQAMA</label>
-            <input
-              type="text"
-              name="iqama"
-              id="iqama"
-              value={newDriver.iqama}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              required
-            />
-          </div>
-
-          {/* Mobile */}
-          <div>
-            <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">Mobile</label>
-            <input
-              type="text"
-              name="mobile"
-              id="mobile"
-              value={newDriver.mobile}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-              required
-            />
-          </div>
-
-          {/* City */}
-          <div>
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
-            <input
-              type="text"
-              name="city"
-              id="city"
-              value={newDriver.city}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            />
-          </div>
-
-          {/* Nationality */}
-          <div>
-            <label htmlFor="nationality" className="block text-sm font-medium text-gray-700">Nationality</label>
-            <input
-              type="text"
-              name="nationality"
-              id="nationality"
-              value={newDriver.nationality}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            />
-          </div>
-
-          {/* Date of Birth */}
-          <div>
-            <label htmlFor="dob" className="block text-sm font-medium text-gray-700">Date of Birth</label>
-            <input
-              type="date"
-              name="dob"
-              id="dob"
-              value={newDriver.dob}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            />
-          </div>
-
-          {/* Vehicle Dropdown */}
-          <div>
-            <label htmlFor="vehicle" className="block text-sm font-medium text-gray-700">Vehicle</label>
-            <select
-              name="vehicle"
-              id="vehicle"
-              value={newDriver.vehicle}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            >
-              <option value="">Select Vehicle</option>
-              {vehicles.map(vehicle => (
-                <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicle_name} ({vehicle.vehicle_number})</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Company Dropdown */}
-          <div>
-            <label htmlFor="company" className="block text-sm font-medium text-gray-700">Company</label>
-            <select
-              name="company"
-              id="company"
-              value={newDriver.company}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            >
-              <option value="">Select Company</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>{company.company_name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status Dropdown */}
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
-            <select
-              name="status"
-              id="status"
-              value={newDriver.status}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-
-          {/* Remarks Textarea */}
-          <div className="col-span-2">
-            <label htmlFor="remarks" className="block text-sm font-medium text-gray-700">Remarks</label>
-            <textarea
-              name="remarks"
-              id="remarks"
-              value={newDriver.remarks}
-              onChange={handleInputChange}
-              rows="3"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-            ></textarea>
-          </div>
-
-          {/* Expiry Dates Section */}
-          <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 mt-4">
-            <div>
-              <label htmlFor="iqama_expiry" className="block text-sm font-medium text-gray-700">IQAMA Expiry</label>
-              <input type="date" name="iqama_expiry" id="iqama_expiry" value={newDriver.iqama_expiry} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="passport_expiry" className="block text-sm font-medium text-gray-700">Passport Expiry</label>
-              <input type="date" name="passport_expiry" id="passport_expiry" value={newDriver.passport_expiry} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="license_expiry" className="block text-sm font-medium text-gray-700">License Expiry</label>
-              <input type="date" name="license_expiry" id="license_expiry" value={newDriver.license_expiry} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="visa_expiry" className="block text-sm font-medium text-gray-700">Visa Expiry</label>
-              <input type="date" name="visa_expiry" id="visa_expiry" value={newDriver.visa_expiry} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="medical_expiry" className="block text-sm font-medium text-gray-700">Medical Expiry</label>
-              <input type="date" name="medical_expiry" id="medical_expiry" value={newDriver.medical_expiry} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-          </div>
-
-          {/* Paid By Fields Section */}
-          <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 mt-4">
-            <div>
-              <label htmlFor="insurance_paid_by" className="block text-sm font-medium text-gray-700">Insurance Paid By</label>
-              <input type="text" name="insurance_paid_by" id="insurance_paid_by" value={newDriver.insurance_paid_by} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="accommodation_paid_by" className="block text-sm font-medium text-gray-700">Accommodation Paid By</label>
-              <input type="text" name="accommodation_paid_by" id="accommodation_paid_by" value={newDriver.accommodation_paid_by} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-            <div>
-              <label htmlFor="phone_bill_paid_by" className="block text-sm font-medium text-gray-700">Phone Bill Paid By</label>
-              <input type="text" name="phone_bill_paid_by" id="phone_bill_paid_by" value={newDriver.phone_bill_paid_by} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
-            </div>
-          </div>
-
-          {/* Form Action Buttons */}
-          <div className="col-span-2 flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={() => setShowEditModal(false)}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* View Driver Modal */}
-      <Modal show={showViewModal} onClose={() => setShowViewModal(false)} title="Driver Details">
-        {selectedDriver && (
-          <div className="space-y-4 text-gray-700">
-            <p><strong>Driver Name:</strong> {selectedDriver.driver_name}</p>
-            <p><strong>Gender:</strong> {selectedDriver.gender}</p>
-            <p><strong>IQAMA:</strong> {selectedDriver.iqama}</p>
-            <p><strong>Mobile:</strong> {selectedDriver.mobile}</p>
-            <p><strong>City:</strong> {selectedDriver.city}</p>
-            <p><strong>Nationality:</strong> {selectedDriver.nationality}</p>
-            <p><strong>Date of Birth:</strong> {selectedDriver.dob ? new Date(selectedDriver.dob).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Vehicle:</strong> {selectedDriver.vehicle?.vehicle_name || 'N/A'} ({selectedDriver.vehicle?.vehicle_number || 'N/A'})</p>
-            <p><strong>Company:</strong> {selectedDriver.company?.company_name || 'N/A'}</p>
-            <p><strong>Status:</strong> <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedDriver.status)}`}>
-              {getStatusIcon(selectedDriver.status)}
-              <span className="ml-1 capitalize">{selectedDriver.status}</span>
-            </span></p>
-            <p><strong>Remarks:</strong> {selectedDriver.remarks || 'N/A'}</p>
-            <p><strong>IQAMA Expiry:</strong> {selectedDriver.iqama_expiry ? new Date(selectedDriver.iqama_expiry).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Passport Expiry:</strong> {selectedDriver.passport_expiry ? new Date(selectedDriver.passport_expiry).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>License Expiry:</strong> {selectedDriver.license_expiry ? new Date(selectedDriver.license_expiry).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Visa Expiry:</strong> {selectedDriver.visa_expiry ? new Date(selectedDriver.visa_expiry).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Medical Expiry:</strong> {selectedDriver.medical_expiry ? new Date(selectedDriver.medical_expiry).toLocaleDateString() : 'N/A'}</p>
-            <p><strong>Insurance Paid By:</strong> {selectedDriver.insurance_paid_by || 'N/A'}</p>
-            <p><strong>Accommodation Paid By:</strong> {selectedDriver.accommodation_paid_by || 'N/A'}</p>
-            <p><strong>Phone Bill Paid By:</strong> {selectedDriver.phone_bill_paid_by || 'N/A'}</p>
-            <p><strong>Joined Date:</strong> {selectedDriver.created_at ? new Date(selectedDriver.created_at).toLocaleDateString() : 'N/A'}</p>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

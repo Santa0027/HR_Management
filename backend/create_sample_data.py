@@ -7,26 +7,18 @@ Creates comprehensive test data for all models
 import os
 import sys
 import django
-from datetime import datetime, timedelta, date
-from decimal import Decimal
+from datetime import datetime
 
 # Setup Django environment
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from django.contrib.auth import get_user_model
 from company.models import Company
 from drivers.models import Driver, DriverAuth
 from vehicle.models import VehicleRegistration
-from hr.models import (
-    ShiftType, DriverShiftAssignment, LeaveType, LeaveRequest, 
-    Attendance, WarningLetter, Termination, ApartmentLocation, CheckinLocation
-)
-from accounting.models import (
-    AccountingCategory, Transaction, Income, Expense, 
-    PaymentMethod, BankAccount, DriverPayroll
-)
+from hr.models import ShiftType, LeaveType
+from accounting.models import AccountingCategory, PaymentMethod
 from usermanagement.models import CustomUser
 
 def create_sample_data():

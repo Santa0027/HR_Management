@@ -127,12 +127,22 @@ const LoginPage = () => {
             )}
           </button>
         </form>
-        <p className="mt-8 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
-            Sign up
-          </a>
-        </p>
+        <div className="mt-8 text-center space-y-2">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+              Sign up
+            </a>
+          </p>
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-sm text-gray-600">
+              Are you a driver?{' '}
+              <a href="/driver-login" className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200">
+                Driver Login →
+              </a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

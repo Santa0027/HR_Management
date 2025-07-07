@@ -320,7 +320,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     # Custom action to retrieve the current day's attendance for a driver
     # Accessible via GET /api/attendance/current-day/<driver_id>/
-    @action(detail=False, methods=['get'], url_path='current-day/(?P<driver_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'current-day/(?P<driver_id>\d+)')
     def retrieve_current_day_attendance(self, request, driver_id=None):
         """
         API view to get the current day's attendance record for a specific driver.
@@ -699,7 +699,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
         return queryset.select_related('driver', 'checked_in_location').order_by('-date', '-login_time')
 
-    @action(detail=False, methods=['get'], url_path='driver-status/(?P<driver_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'driver-status/(?P<driver_id>\d+)')
     def get_driver_status(self, request, driver_id=None):
         """
         Get current attendance status for a specific driver
@@ -760,7 +760,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 "message": f"Driver with ID {driver_id} not found"
             }, status=status.HTTP_404_NOT_FOUND)
 
-    @action(detail=False, methods=['get'], url_path='locations/(?P<driver_id>\d+)')
+    @action(detail=False, methods=['get'], url_path=r'locations/(?P<driver_id>\d+)')
     def get_driver_locations(self, request, driver_id=None):
         """
         Get all authorized check-in locations for a specific driver
@@ -1292,11 +1292,7 @@ class LeaveBalanceViewSet(viewsets.ModelViewSet):
             'leave_types_count': leave_types.count()
         })
 
-<<<<<<< HEAD
     @action(detail=False, methods=['get'], url_path=r'driver/(?P<driver_id>\d+)')
-=======
-    @action(detail=False, methods=['get'], url_path='driver/(?P<driver_id>\d+)')
->>>>>>> b085aaa0 ( internal commit)
     def driver_balances(self, request, driver_id=None):
         """Get all leave balances for a specific driver"""
         try:

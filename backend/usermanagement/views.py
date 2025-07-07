@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
-from django.utils import timezone
+
 from .serializers import (
     CustomUserSerializer,
     RegisterSerializer,

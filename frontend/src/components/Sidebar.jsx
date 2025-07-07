@@ -1,14 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MdDashboard, MdManageAccounts, MdAdminPanelSettings } from "react-icons/md";
 import { AiOutlineFileSearch } from "react-icons/ai";
-<<<<<<< HEAD
-import { FaDollarSign, FaUsers } from "react-icons/fa"; // Add accounting and users icons
-=======
-import { FaDollarSign } from "react-icons/fa"; // Add accounting icon
->>>>>>> e1d21cec (internal)
+import { FaDollarSign, FaCar } from "react-icons/fa"; // Add accounting and car icons
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Import Chevron icons
-import { useAuth } from '../context/AuthContext';
 import RoleBasedComponent from './RoleBasedComponent';
 
 // Sidebar Item Component
@@ -122,18 +117,6 @@ const Sidebar = () => {
             active={location.pathname === "/dashboard"}
           />
         </RoleBasedComponent>
-<<<<<<< HEAD
-
-        <RoleBasedComponent requiredPermissions={['can_view_drivers']}>
-          <SidebarItem
-            icon={<FaUsers />}
-            label="Driver Dashboard"
-            to="/driver-management-dashboard"
-            active={location.pathname === "/driver-management-dashboard"}
-          />
-        </RoleBasedComponent>
-=======
->>>>>>> e1d21cec (internal)
 
         {/* Registration Management Dropdown Item */}
         <RoleBasedComponent requiredRoles={['admin', 'hr']}>
@@ -190,28 +173,6 @@ const Sidebar = () => {
           </SidebarItem>
         </RoleBasedComponent>
 
-<<<<<<< HEAD
-        {/* Admin Management Dropdown Item */}
-        <RoleBasedComponent requiredRoles={['admin']}>
-          <SidebarItem
-            icon={<MdManageAccounts />}
-            label="Admin Management"
-            to="/admin"
-            active={location.pathname.startsWith("/admin")}
-          >
-            <SidebarItem
-              label="User Management"
-              to="/admin/users"
-              active={location.pathname === "/admin/users"}
-            />
-            <SidebarItem
-              label="Driver Authentication"
-              to="/admin/driver-auth"
-              active={location.pathname === "/admin/driver-auth"}
-            />
-          </SidebarItem>
-        </RoleBasedComponent>
-
         {/* Accounting Management Dropdown Item */}
         <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
           <SidebarItem
@@ -244,9 +205,14 @@ const Sidebar = () => {
                 active={location.pathname === "/accounting/expenses"}
               />
               <SidebarItem
-                label="Budgets"
+                label="Budget Management"
                 to="/accounting/budgets"
                 active={location.pathname === "/accounting/budgets"}
+              />
+              <SidebarItem
+                label="Bank Accounts"
+                to="/accounting/bank-accounts"
+                active={location.pathname === "/accounting/bank-accounts"}
               />
               <SidebarItem
                 label="Payroll"
@@ -254,44 +220,44 @@ const Sidebar = () => {
                 active={location.pathname === "/accounting/payroll"}
               />
               <SidebarItem
-                label="Bank Accounts"
-                to="/accounting/bank-accounts"
-                active={location.pathname === "/accounting/bank-accounts"}
+                label="Reports"
+                to="/accounting/reports"
+                active={location.pathname === "/accounting/reports"}
               />
             </RoleBasedComponent>
-=======
-        {/* Accounting Management Dropdown Item */}
-        <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
+          </SidebarItem>
+        </RoleBasedComponent>
+      </nav>
+
+      {/* Driver Portal - Driver role only */}
+      <nav className="space-y-2 text-sm font-medium mt-4">
+        <RoleBasedComponent requiredRoles={['driver']}>
           <SidebarItem
-            icon={<FaDollarSign />}
-            label="Accounting"
-            to="/accounting"
-            active={location.pathname.startsWith("/accounting")}
+            icon={<FaCar />}
+            label="Driver Portal"
+            to="/driver/dashboard"
+            active={location.pathname.startsWith("/driver")}
           >
             <SidebarItem
-              label="Dashboard"
-              to="/accounting"
-              active={location.pathname === "/accounting"}
+              label="My Dashboard"
+              to="/driver/dashboard"
+              active={location.pathname === "/driver/dashboard"}
             />
-            <RoleBasedComponent requiredPermissions={['can_view_accounting']}>
-              <SidebarItem
-                label="Transactions"
-                to="/accounting/transactions"
-                active={location.pathname === "/accounting/transactions"}
-              />
-            </RoleBasedComponent>
-            <RoleBasedComponent requiredPermissions={['can_manage_accounting']}>
-              <SidebarItem
-                label="Income"
-                to="/accounting/income"
-                active={location.pathname === "/accounting/income"}
-              />
-              <SidebarItem
-                label="Expenses"
-                to="/accounting/expenses"
-                active={location.pathname === "/accounting/expenses"}
-              />
-            </RoleBasedComponent>
+            <SidebarItem
+              label="My Trips"
+              to="/driver/trips"
+              active={location.pathname === "/driver/trips"}
+            />
+            <SidebarItem
+              label="My Earnings"
+              to="/driver/earnings"
+              active={location.pathname === "/driver/earnings"}
+            />
+            <SidebarItem
+              label="My Profile"
+              to="/driver/profile"
+              active={location.pathname === "/driver/profile"}
+            />
           </SidebarItem>
         </RoleBasedComponent>
       </nav>
@@ -315,7 +281,6 @@ const Sidebar = () => {
               to="/admin/driver-auth"
               active={location.pathname === "/admin/driver-auth"}
             />
->>>>>>> e1d21cec (internal)
           </SidebarItem>
         </RoleBasedComponent>
       </nav>

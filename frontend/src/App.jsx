@@ -1,5 +1,4 @@
 // src/App.jsx
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -29,13 +28,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
 // Dashboard
-import DriverManagement from './pages/Drivermanagement';
-import DriverManagementDashboard from './pages/DriverManagement';
+import DriverManagement from './pages/DriverManagement';
 
 // Registration Management
 import Reg_ma_new_request from './pages/Reg-ma_new_request';
 import Reg_ma_aprovel from './pages/Reg_ma_aprovel';
-import DriverProfile from './pages/Driverapproal';
+import DriverApproval from './pages/Driverapproal';
 import DriverProfileEditDelete from './pages/Reg_ma_driver_information';
 import Reg_ma_vehicle_registration from './pages/Reg_ma_vehicle_registration';
 import Reg_ma_vehicle_list from './pages/Reg_ma_vehicle_list';
@@ -54,7 +52,6 @@ import Driver_mange_logs from './pages/Driver_mange_logs';
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
 import VehicleEdit from './pages/VehicleEdit';
-import PendingApprovalTabContent from './pages/Reg_ma_vehicle_approval';
 
 // HR & Attendance
 import AttendanceDashboard from './pages/AttendanceDashboard';
@@ -70,6 +67,7 @@ import ExpenseManagement from './pages/ExpenseManagement';
 import BudgetManagement from './pages/BudgetManagement';
 import PayrollManagement from './pages/PayrollManagement';
 import BankAccountManagement from './pages/BankAccountManagement';
+import AccountingReports from './pages/AccountingReports';
 import AccountingSystemTest from './pages/AccountingSystemTest';
 import AccountingCRUDTest from './pages/AccountingCRUDTest';
 
@@ -77,6 +75,14 @@ import AccountingCRUDTest from './pages/AccountingCRUDTest';
 import AdminUserManagement from './pages/AdminUserManagement';
 import DriverAuthManagement from './pages/DriverAuthManagement';
 import DriverAuthentication from './pages/DriverAuthentication';
+
+// Driver Portal
+import DriverLayout from './components/DriverLayout';
+import DriverDashboard from './pages/DriverDashboard';
+import DriverEarnings from './pages/DriverEarnings';
+import DriverProfile from './pages/DriverProfile';
+import DriverTrips from './pages/DriverTrips';
+import DriverLogin from './pages/DriverLogin';
 
 function App() {
   return (
@@ -88,6 +94,7 @@ function App() {
 
         {/* Public route */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/driver-login" element={<DriverLogin />} />
         <Route path="/test-login" element={<TestLogin />} />
         <Route path="/driver-login-demo" element={<DriverLoginDemo />} />
         <Route path="/driver-auth-test" element={<DriverAuthTest />} />
@@ -116,12 +123,22 @@ function App() {
         >
           {/* Dashboard */}
           <Route path="/dashboard" element={<DriverManagement />} />
-          <Route path="/driver-management-dashboard" element={<DriverManagementDashboard />} />
+          <Route path="/driver-management-dashboard" element={<DriverManagement />} />
+
+          {/* Separate Driver Portal Dashboard - for onboarded drivers */}
+          <Route
+            path="/driver-portal"
+            element={
+              <ProtectedRoute requiredRoles={['driver']}>
+                <Navigate to="/driver/dashboard" />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Registration Management */}
           <Route path="/registration-management" element={<Reg_ma_new_request />} />
           <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
-          <Route path="/registration-management/aproval_status/driver/:id" element={<DriverProfile />} />
+          <Route path="/registration-management/aproval_status/driver/:id" element={<DriverApproval />} />
           <Route path="/profileedit/:driverId" element={<DriverProfileEditDelete />} />
           <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
           <Route path="/vehicle-registration/:id" element={<Reg_ma_vehicle_registration />} />
@@ -238,6 +255,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/accounting/reports"
+            element={
+              <ProtectedRoute>
+                <AccountingReports />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Management - Admin only */}
           <Route
@@ -266,6 +291,33 @@ function App() {
           />
 
         </Route>
+
+        {/* Driver Portal Routes */}
+        <Route
+          path="/driver"
+          element={
+            <ProtectedRoute requiredRoles={['driver']}>
+              <DriverLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<DriverDashboard />} />
+          <Route path="trips" element={<DriverTrips />} />
+          <Route path="trips/current" element={<DriverTrips />} />
+          <Route path="trips/history" element={<DriverTrips />} />
+          <Route path="trips/upcoming" element={<DriverTrips />} />
+          <Route path="earnings" element={<DriverEarnings />} />
+          <Route path="earnings/daily" element={<DriverEarnings />} />
+          <Route path="earnings/weekly" element={<DriverEarnings />} />
+          <Route path="earnings/payments" element={<DriverEarnings />} />
+          <Route path="profile" element={<DriverProfile />} />
+          <Route path="profile/personal" element={<DriverProfile />} />
+          <Route path="profile/documents" element={<DriverProfile />} />
+          <Route path="profile/performance" element={<DriverProfile />} />
+          {/* Redirect /driver to /driver/dashboard */}
+          <Route index element={<Navigate to="/driver/dashboard" />} />
+        </Route>
+
         </Routes>
       </BrowserRouter>
       <ToastContainer
