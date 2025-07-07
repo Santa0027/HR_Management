@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MdDashboard, MdManageAccounts, MdAdminPanelSettings } from "react-icons/md";
+import { MdDashboard, MdManageAccounts, MdAdminPanelSettings, MdBusiness } from "react-icons/md";
 import { AiOutlineFileSearch } from "react-icons/ai";
 import { FaDollarSign, FaCar } from "react-icons/fa"; // Add accounting and car icons
 import { Link, useLocation } from "react-router-dom";
@@ -165,6 +165,28 @@ const Sidebar = () => {
             />
           </SidebarItem>
         </RoleBasedComponent>
+
+        {/* Company Management Section */}
+        <RoleBasedComponent requiredRoles={['admin', 'hr']}>
+          <SidebarItem
+            icon={<MdBusiness />}
+            label="Company Management"
+            to="/company-management"
+            active={location.pathname.startsWith("/company")}
+          >
+            <SidebarItem
+              label="Company Overview"
+              to="/company-management"
+              active={location.pathname === "/company-management"}
+            />
+            <SidebarItem
+              label="Add Company"
+              to="/company-add"
+              active={location.pathname === "/company-add"}
+            />
+          </SidebarItem>
+        </RoleBasedComponent>
+
         <RoleBasedComponent requiredPermissions={['can_view_hr']}>
           <SidebarItem
             icon={<MdManageAccounts />}

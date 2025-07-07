@@ -39,8 +39,11 @@ import Reg_ma_vehicle_registration from './pages/Reg_ma_vehicle_registration';
 import Reg_ma_vehicle_list from './pages/Reg_ma_vehicle_list';
 import Reg_ma_platform_list from './pages/Reg_ma_platform_list';
 import CompanyRegistrationForm from './pages/Reg_ma_company_form';
-import CompanyProfile from './pages/Reg_ma_company_profile';
+import CompanyProfileOld from './pages/Reg_ma_company_profile';
 import EditCompany from './pages/EditCompany';
+import CompanyManagement from './pages/CompanyManagement';
+import CompanyAdd from './pages/CompanyAdd';
+import CompanyProfile from './pages/CompanyProfile';
 
 // Driver Management
 import AddDriverForm from './pages/Driver_manage_attachment'; // AddDriverForm is exported from Driver_manage_attachment
@@ -152,10 +155,16 @@ function App() {
           <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
           <Route path="/platform-list" element={<Reg_ma_platform_list />} />
           <Route path="/company-list" element={<Reg_ma_platform_list />} />
-          <Route path="/company-profile/:id" element={<CompanyProfile />} />
+          <Route path="/company-profile-old/:id" element={<CompanyProfileOld />} />
           <Route path="/company-registration" element={<CompanyRegistrationForm />} />
           <Route path="/company-registration/:id" element={<CompanyRegistrationForm />} />
           <Route path="/company/:id/edit" element={<EditCompany />} />
+
+          {/* Enhanced Company Management */}
+          <Route path="/company-management" element={<CompanyManagement />} />
+          <Route path="/company-add" element={<CompanyAdd />} />
+          <Route path="/company-profile/:id" element={<CompanyProfile />} />
+          <Route path="/company-edit/:id" element={<EditCompany />} />
 
           {/* Driver Management */}
           <Route path="/driver-management/Driver_profile/:id" element={<Driver_mange_DrProfile />} />
