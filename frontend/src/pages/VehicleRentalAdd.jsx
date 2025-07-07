@@ -34,6 +34,7 @@ const VehicleRentalAdd = () => {
     vehicle: vehicleId || '',
     lessee_name: '',
     lessee_contact: '',
+    lessee_email: '',
     lessee_license: '',
     lessee_address: '',
 
@@ -50,19 +51,31 @@ const VehicleRentalAdd = () => {
     discount: '0',
     total_amount: '',
 
+    // Payment Terms
+    payment_frequency: 'MONTHLY',
+    payment_method: 'BANK_TRANSFER',
+    late_fee_percentage: '5',
+
     // Vehicle Condition
     pickup_odometer: '',
     pickup_fuel_level: 'FULL',
     pickup_notes: '',
 
+    // Lease Terms
+    mileage_limit: '',
+    maintenance_responsibility: 'LESSEE',
+    insurance_responsibility: 'LESSEE',
+
     // Status
-    lease_status: 'ACTIVE',
+    lease_status: 'PENDING',
     payment_status: 'PENDING',
     lease_type: 'BUSINESS',
 
     // Documents
     lease_agreement: null,
-    pickup_inspection_report: null
+    pickup_inspection_report: null,
+    business_license_document: null,
+    insurance_certificate: null
   });
 
   useEffect(() => {
@@ -185,7 +198,7 @@ const VehicleRentalAdd = () => {
       {type === 'select' ? (
         <select
           name={name}
-          value={rental[name]}
+          value={lease[name]}
           onChange={handleChange}
           required={required}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -200,7 +213,7 @@ const VehicleRentalAdd = () => {
       ) : type === 'textarea' ? (
         <textarea
           name={name}
-          value={rental[name]}
+          value={lease[name]}
           onChange={handleChange}
           required={required}
           placeholder={placeholder}
@@ -219,7 +232,7 @@ const VehicleRentalAdd = () => {
         <input
           type={type}
           name={name}
-          value={rental[name]}
+          value={lease[name]}
           onChange={handleChange}
           required={required}
           placeholder={placeholder}
@@ -283,6 +296,13 @@ const VehicleRentalAdd = () => {
                 onClick={setActiveTab}
               />
               <TabButton
+                id="terms"
+                label="Lease Terms"
+                icon={FileText}
+                isActive={activeTab === 'terms'}
+                onClick={setActiveTab}
+              />
+              <TabButton
                 id="vehicle"
                 label="Vehicle Condition"
                 icon={Car}
@@ -292,47 +312,66 @@ const VehicleRentalAdd = () => {
               <TabButton
                 id="documents"
                 label="Documents"
-                icon={FileText}
+                icon={Upload}
                 isActive={activeTab === 'documents'}
                 onClick={setActiveTab}
               />
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'renter' && (
+            {activeTab === 'lessee' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
-                  label="Renter Name"
-                  name="renter_name"
+                  label="Company/Lessee Name"
+                  name="lessee_name"
                   required
-                  placeholder="Full name of the renter"
+                  placeholder="Company or individual name"
                 />
                 <InputField
                   label="Contact Number"
-                  name="renter_contact"
+                  name="lessee_contact"
                   type="tel"
                   required
                   placeholder="+1-555-0123"
                 />
                 <InputField
-                  label="Driver's License"
-                  name="renter_license"
+                  label="Email Address"
+                  name="lessee_email"
+                  type="email"
                   required
-                  placeholder="License number"
+                  placeholder="contact@company.com"
+                />
+                <InputField
+                  label="Business License/ID"
+                  name="lessee_license"
+                  required
+                  placeholder="Business license or ID number"
+                />
+                <InputField
+                  label="Lease Type"
+                  name="lease_type"
+                  type="select"
+                  required
+                  options={[
+                    { value: 'BUSINESS', label: 'Business Lease' },
+                    { value: 'COMMERCIAL', label: 'Commercial Lease' },
+                    { value: 'PERSONAL', label: 'Personal Lease' },
+                    { value: 'CORPORATE', label: 'Corporate Lease' }
+                  ]}
                 />
                 <div className="md:col-span-2">
                   <InputField
                     label="Address"
-                    name="renter_address"
+                    name="lessee_address"
                     type="textarea"
                     required
-                    placeholder="Complete address of the renter"
+                    placeholder="Complete business/residential address"
                   />
                 </div>
               </div>
             )}
 
-            {activeTab === 'rental' && (
+            {activeTab === 'lease' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
                   label="Vehicle"
@@ -345,40 +384,42 @@ const VehicleRentalAdd = () => {
                   }))}
                 />
                 <InputField
-                  label="Daily Rate"
-                  name="daily_rate"
+                  label="Monthly Rate"
+                  name="monthly_rate"
                   type="number"
                   required
-                  placeholder="Rate per day"
+                  placeholder="Monthly lease amount"
+                  help="Amount charged per month"
                 />
                 <InputField
-                  label="Start Date"
-                  name="rental_start_date"
+                  label="Lease Start Date"
+                  name="lease_start_date"
                   type="date"
                   required
                 />
                 <InputField
-                  label="End Date"
-                  name="rental_end_date"
+                  label="Lease End Date"
+                  name="lease_end_date"
                   type="date"
                   required
                 />
                 <InputField
-                  label="Total Days"
-                  name="total_days"
+                  label="Total Months"
+                  name="total_months"
                   type="number"
                   placeholder="Auto-calculated"
                   help="Automatically calculated from dates"
                 />
                 <InputField
-                  label="Rental Status"
-                  name="rental_status"
+                  label="Lease Status"
+                  name="lease_status"
                   type="select"
                   required
                   options={[
                     { value: 'ACTIVE', label: 'Active' },
                     { value: 'COMPLETED', label: 'Completed' },
-                    { value: 'CANCELLED', label: 'Cancelled' }
+                    { value: 'CANCELLED', label: 'Cancelled' },
+                    { value: 'PENDING', label: 'Pending Approval' }
                   ]}
                 />
               </div>
@@ -436,38 +477,130 @@ const VehicleRentalAdd = () => {
                 </div>
                 
                 {/* Pricing Summary */}
-                {rental.base_amount && (
+                {lease.base_amount && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-start space-x-3">
                       <Calculator className="w-5 h-5 text-green-600 mt-0.5" />
                       <div>
-                        <h4 className="text-sm font-medium text-green-900">Pricing Summary</h4>
+                        <h4 className="text-sm font-medium text-green-900">Lease Pricing Summary</h4>
                         <div className="mt-2 text-sm text-green-700 space-y-1">
                           <div className="flex justify-between">
-                            <span>Base Amount ({rental.total_days} days × ${rental.daily_rate}):</span>
-                            <span>${rental.base_amount}</span>
+                            <span>Base Amount ({lease.total_months} months × ${lease.monthly_rate}):</span>
+                            <span>${lease.base_amount}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Security Deposit:</span>
-                            <span>${rental.security_deposit || '0.00'}</span>
+                            <span>${lease.security_deposit || '0.00'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Additional Charges:</span>
-                            <span>${rental.additional_charges || '0.00'}</span>
+                            <span>${lease.additional_charges || '0.00'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Discount:</span>
-                            <span>-${rental.discount || '0.00'}</span>
+                            <span>-${lease.discount || '0.00'}</span>
                           </div>
                           <div className="flex justify-between font-medium border-t border-green-300 pt-1">
-                            <span>Total Amount:</span>
-                            <span>${rental.total_amount}</span>
+                            <span>Total Lease Amount:</span>
+                            <span>${lease.total_amount}</span>
+                          </div>
+                          <div className="flex justify-between text-xs text-green-600 mt-2">
+                            <span>Monthly Payment:</span>
+                            <span>${lease.monthly_rate}/month</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'terms' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InputField
+                  label="Payment Frequency"
+                  name="payment_frequency"
+                  type="select"
+                  required
+                  options={[
+                    { value: 'MONTHLY', label: 'Monthly' },
+                    { value: 'QUARTERLY', label: 'Quarterly' },
+                    { value: 'SEMI_ANNUAL', label: 'Semi-Annual' },
+                    { value: 'ANNUAL', label: 'Annual' }
+                  ]}
+                />
+
+                <InputField
+                  label="Payment Method"
+                  name="payment_method"
+                  type="select"
+                  required
+                  options={[
+                    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                    { value: 'CHECK', label: 'Check' },
+                    { value: 'CREDIT_CARD', label: 'Credit Card' },
+                    { value: 'CASH', label: 'Cash' }
+                  ]}
+                />
+
+                <InputField
+                  label="Late Fee Percentage"
+                  name="late_fee_percentage"
+                  type="number"
+                  placeholder="5"
+                  help="Percentage charged for late payments"
+                />
+
+                <InputField
+                  label="Monthly Mileage Limit"
+                  name="mileage_limit"
+                  type="number"
+                  placeholder="2000"
+                  help="Maximum kilometers per month (optional)"
+                />
+
+                <InputField
+                  label="Maintenance Responsibility"
+                  name="maintenance_responsibility"
+                  type="select"
+                  required
+                  options={[
+                    { value: 'LESSEE', label: 'Lessee (Customer)' },
+                    { value: 'LESSOR', label: 'Lessor (Company)' },
+                    { value: 'SHARED', label: 'Shared Responsibility' }
+                  ]}
+                />
+
+                <InputField
+                  label="Insurance Responsibility"
+                  name="insurance_responsibility"
+                  type="select"
+                  required
+                  options={[
+                    { value: 'LESSEE', label: 'Lessee (Customer)' },
+                    { value: 'LESSOR', label: 'Lessor (Company)' },
+                    { value: 'SHARED', label: 'Shared Responsibility' }
+                  ]}
+                />
+
+                <div className="md:col-span-2">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <Info className="w-5 h-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-medium text-yellow-900">Lease Terms Information</h4>
+                        <ul className="mt-2 text-sm text-yellow-700 space-y-1">
+                          <li>• Payment frequency determines billing schedule</li>
+                          <li>• Late fees apply after grace period (typically 5-10 days)</li>
+                          <li>• Mileage limits help determine wear and tear charges</li>
+                          <li>• Maintenance responsibility affects monthly rates</li>
+                          <li>• Insurance requirements must meet minimum coverage</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -508,26 +641,40 @@ const VehicleRentalAdd = () => {
             {activeTab === 'documents' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
-                  label="Rental Agreement"
-                  name="rental_agreement"
+                  label="Lease Agreement"
+                  name="lease_agreement"
                   type="file"
-                  help="Upload signed rental agreement (PDF, DOC)"
+                  help="Upload signed lease agreement (PDF, DOC)"
                 />
                 <InputField
-                  label="Pickup Inspection Report"
+                  label="Vehicle Handover Report"
                   name="pickup_inspection_report"
                   type="file"
-                  help="Upload vehicle inspection report (PDF, DOC)"
+                  help="Upload vehicle handover inspection report (PDF, DOC)"
+                />
+                <InputField
+                  label="Business License (if applicable)"
+                  name="business_license_document"
+                  type="file"
+                  help="Upload business license for corporate leases (PDF, DOC)"
+                />
+                <InputField
+                  label="Insurance Certificate"
+                  name="insurance_certificate"
+                  type="file"
+                  help="Upload insurance certificate (PDF, DOC)"
                 />
                 <div className="md:col-span-2">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       <Info className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
-                        <h4 className="text-sm font-medium text-blue-900">Document Guidelines</h4>
+                        <h4 className="text-sm font-medium text-blue-900">Lease Document Guidelines</h4>
                         <ul className="mt-2 text-sm text-blue-700 space-y-1">
-                          <li>• Ensure all documents are signed and dated</li>
-                          <li>• Include detailed vehicle condition photos</li>
+                          <li>• All lease agreements must be signed by both parties</li>
+                          <li>• Include detailed vehicle condition documentation</li>
+                          <li>• Business leases require valid business license</li>
+                          <li>• Insurance certificate must cover lease period</li>
                           <li>• Maximum file size: 10MB per document</li>
                           <li>• Accepted formats: PDF, DOC, DOCX</li>
                         </ul>
@@ -559,7 +706,7 @@ const VehicleRentalAdd = () => {
                 ) : (
                   <Save className="w-4 h-4 mr-2" />
                 )}
-                {loading ? 'Creating...' : 'Create Rental'}
+                {loading ? 'Creating...' : 'Create Lease'}
               </button>
             </div>
           </div>

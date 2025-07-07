@@ -247,7 +247,8 @@ class VehicleFuelRecord(models.Model):
 
 
 class VehicleRentalRecord(models.Model):
-    RENTAL_STATUS_CHOICES = [
+    LEASE_STATUS_CHOICES = [
+        ('PENDING', 'Pending Approval'),
         ('ACTIVE', 'Active'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
@@ -261,25 +262,68 @@ class VehicleRentalRecord(models.Model):
         ('OVERDUE', 'Overdue'),
     ]
 
-    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.CASCADE, related_name='rental_records')
-    renter_name = models.CharField(max_length=100)
-    renter_contact = models.CharField(max_length=20)
-    renter_license = models.CharField(max_length=50)
-    renter_address = models.TextField()
+    LEASE_TYPE_CHOICES = [
+        ('BUSINESS', 'Business Lease'),
+        ('COMMERCIAL', 'Commercial Lease'),
+        ('PERSONAL', 'Personal Lease'),
+        ('CORPORATE', 'Corporate Lease'),
+    ]
 
-    # Rental period
-    rental_start_date = models.DateTimeField()
-    rental_end_date = models.DateTimeField()
+    PAYMENT_FREQUENCY_CHOICES = [
+        ('MONTHLY', 'Monthly'),
+        ('QUARTERLY', 'Quarterly'),
+        ('SEMI_ANNUAL', 'Semi-Annual'),
+        ('ANNUAL', 'Annual'),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ('BANK_TRANSFER', 'Bank Transfer'),
+        ('CHECK', 'Check'),
+        ('CREDIT_CARD', 'Credit Card'),
+        ('CASH', 'Cash'),
+    ]
+
+    RESPONSIBILITY_CHOICES = [
+        ('LESSEE', 'Lessee (Customer)'),
+        ('LESSOR', 'Lessor (Company)'),
+        ('SHARED', 'Shared Responsibility'),
+    ]
+
+    vehicle = models.ForeignKey(VehicleRegistration, on_delete=models.CASCADE, related_name='rental_records')
+
+    # Lessee Information (updated for lease context)
+    lessee_name = models.CharField(max_length=100, help_text="Company or individual name")
+    lessee_contact = models.CharField(max_length=20)
+    lessee_email = models.EmailField(blank=True, null=True)
+    lessee_license = models.CharField(max_length=50, help_text="Business license or ID number")
+    lessee_address = models.TextField()
+
+    # Lease Type and Terms
+    lease_type = models.CharField(max_length=20, choices=LEASE_TYPE_CHOICES, default='BUSINESS')
+
+    # Lease period (renamed from rental)
+    lease_start_date = models.DateTimeField()
+    lease_end_date = models.DateTimeField()
     actual_return_date = models.DateTimeField(blank=True, null=True)
 
-    # Pricing
-    daily_rate = models.DecimalField(max_digits=8, decimal_places=2)
-    total_days = models.IntegerField()
+    # Pricing (updated for monthly rates)
+    monthly_rate = models.DecimalField(max_digits=8, decimal_places=2, help_text="Monthly lease amount")
+    total_months = models.IntegerField(help_text="Total lease duration in months")
     base_amount = models.DecimalField(max_digits=10, decimal_places=2)
     security_deposit = models.DecimalField(max_digits=10, decimal_places=2)
     additional_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Payment Terms
+    payment_frequency = models.CharField(max_length=20, choices=PAYMENT_FREQUENCY_CHOICES, default='MONTHLY')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='BANK_TRANSFER')
+    late_fee_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.0)
+
+    # Lease Terms
+    mileage_limit = models.IntegerField(blank=True, null=True, help_text="Monthly mileage limit in km")
+    maintenance_responsibility = models.CharField(max_length=20, choices=RESPONSIBILITY_CHOICES, default='LESSEE')
+    insurance_responsibility = models.CharField(max_length=20, choices=RESPONSIBILITY_CHOICES, default='LESSEE')
 
     # Vehicle condition
     pickup_odometer = models.IntegerField()
@@ -287,14 +331,16 @@ class VehicleRentalRecord(models.Model):
     pickup_fuel_level = models.CharField(max_length=10, default='FULL')
     return_fuel_level = models.CharField(max_length=10, blank=True, null=True)
 
-    # Status
-    rental_status = models.CharField(max_length=20, choices=RENTAL_STATUS_CHOICES, default='ACTIVE')
+    # Status (updated for lease)
+    lease_status = models.CharField(max_length=20, choices=LEASE_STATUS_CHOICES, default='PENDING')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING')
 
-    # Documents
-    rental_agreement = models.FileField(upload_to='vehicles/rental_agreements/', blank=True, null=True)
+    # Documents (updated for lease)
+    lease_agreement = models.FileField(upload_to='vehicles/lease_agreements/', blank=True, null=True)
     pickup_inspection_report = models.FileField(upload_to='vehicles/inspection_reports/', blank=True, null=True)
     return_inspection_report = models.FileField(upload_to='vehicles/inspection_reports/', blank=True, null=True)
+    business_license_document = models.FileField(upload_to='vehicles/business_licenses/', blank=True, null=True)
+    insurance_certificate = models.FileField(upload_to='vehicles/insurance_certificates/', blank=True, null=True)
 
     # Notes
     pickup_notes = models.TextField(blank=True, null=True)
