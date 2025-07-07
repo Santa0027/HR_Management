@@ -52,6 +52,12 @@ import Driver_mange_logs from './pages/Driver_mange_logs';
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
 import VehicleEdit from './pages/VehicleEdit';
+import VehicleAdd from './pages/VehicleAdd';
+import VehicleManagement from './pages/VehicleManagement';
+import VehicleServiceManagement from './pages/VehicleServiceManagement';
+import VehicleServiceAdd from './pages/VehicleServiceAdd';
+import VehicleFuelManagement from './pages/VehicleFuelManagement';
+import VehicleRentalManagement from './pages/VehicleRentalManagement';
 
 // HR & Attendance
 import AttendanceDashboard from './pages/AttendanceDashboard';
@@ -162,7 +168,16 @@ function App() {
           <Route path="/vehicles/:id" element={<VehicleProfile />} />
           <Route path="/vehicle-profile/:id" element={<VehicleProfile />} />
           <Route path="/vehicles/:id/edit" element={<VehicleEdit />} />
+          <Route path="/vehicle-edit/:id" element={<VehicleEdit />} />
           <Route path="/vehicleapprovel" element={<VehicleProfile />} />
+
+          {/* Enhanced Vehicle Management */}
+          <Route path="/vehicle-add" element={<VehicleAdd />} />
+          <Route path="/vehicle-management" element={<VehicleManagement />} />
+          <Route path="/vehicle-service-management" element={<VehicleServiceManagement />} />
+          <Route path="/vehicle-service-add" element={<VehicleServiceAdd />} />
+          <Route path="/vehicle-fuel-management" element={<VehicleFuelManagement />} />
+          <Route path="/vehicle-rental-management" element={<VehicleRentalManagement />} />
 
           {/* HR & Attendance - HR and Admin only */}
           <Route

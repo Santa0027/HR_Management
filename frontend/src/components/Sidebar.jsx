@@ -132,10 +132,37 @@ const Sidebar = () => {
               active={location.pathname === "/registration-management"}
             />
             <SidebarItem
-              label="Vehicle Registration"
-              to="/vehicle-list"
-              active={location.pathname === "/vehicle-list"}
-            />
+              icon={<FaCar />}
+              label="Vehicle Management"
+              to="/vehicle-management"
+              active={location.pathname.startsWith("/vehicle")}
+            >
+              <SidebarItem
+                label="Fleet Overview"
+                to="/vehicle-management"
+                active={location.pathname === "/vehicle-management"}
+              />
+              <SidebarItem
+                label="Vehicle Registration"
+                to="/vehicle-list"
+                active={location.pathname === "/vehicle-list"}
+              />
+              <SidebarItem
+                label="Service Management"
+                to="/vehicle-service-management"
+                active={location.pathname === "/vehicle-service-management"}
+              />
+              <SidebarItem
+                label="Fuel Management"
+                to="/vehicle-fuel-management"
+                active={location.pathname === "/vehicle-fuel-management"}
+              />
+              <SidebarItem
+                label="Rental Management"
+                to="/vehicle-rental-management"
+                active={location.pathname === "/vehicle-rental-management"}
+              />
+            </SidebarItem>
             <SidebarItem
               label="Company Registration"
               to="/platform-list"
