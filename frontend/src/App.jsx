@@ -57,7 +57,10 @@ import VehicleManagement from './pages/VehicleManagement';
 import VehicleServiceManagement from './pages/VehicleServiceManagement';
 import VehicleServiceAdd from './pages/VehicleServiceAdd';
 import VehicleFuelManagement from './pages/VehicleFuelManagement';
+import VehicleFuelAdd from './pages/VehicleFuelAdd';
+import VehicleFuelEdit from './pages/VehicleFuelEdit';
 import VehicleRentalManagement from './pages/VehicleRentalManagement';
+import VehicleRentalAdd from './pages/VehicleRentalAdd';
 
 // HR & Attendance
 import AttendanceDashboard from './pages/AttendanceDashboard';
@@ -177,7 +180,10 @@ function App() {
           <Route path="/vehicle-service-management" element={<VehicleServiceManagement />} />
           <Route path="/vehicle-service-add" element={<VehicleServiceAdd />} />
           <Route path="/vehicle-fuel-management" element={<VehicleFuelManagement />} />
+          <Route path="/vehicle-fuel-add" element={<VehicleFuelAdd />} />
+          <Route path="/vehicle-fuel-edit/:id" element={<VehicleFuelEdit />} />
           <Route path="/vehicle-rental-management" element={<VehicleRentalManagement />} />
+          <Route path="/vehicle-rental-add" element={<VehicleRentalAdd />} />
 
           {/* HR & Attendance - HR and Admin only */}
           <Route
