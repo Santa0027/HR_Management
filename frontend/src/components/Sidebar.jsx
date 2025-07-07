@@ -153,12 +153,7 @@ const Sidebar = () => {
                 active={location.pathname === "/vehicle-service-management"}
               />
               <SidebarItem
-                label="Fuel Management"
-                to="/vehicle-fuel-management"
-                active={location.pathname === "/vehicle-fuel-management"}
-              />
-              <SidebarItem
-                label="Rental Management"
+                label="Lease Management"
                 to="/vehicle-rental-management"
                 active={location.pathname === "/vehicle-rental-management"}
               />

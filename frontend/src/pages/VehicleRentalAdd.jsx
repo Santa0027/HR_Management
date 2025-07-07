@@ -24,43 +24,44 @@ const VehicleRentalAdd = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const vehicleId = searchParams.get('vehicle');
-  
+
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
-  const [activeTab, setActiveTab] = useState('renter');
-  
-  const [rental, setRental] = useState({
-    // Vehicle and Renter Info
+  const [activeTab, setActiveTab] = useState('lessee');
+
+  const [lease, setLease] = useState({
+    // Vehicle and Lessee Info
     vehicle: vehicleId || '',
-    renter_name: '',
-    renter_contact: '',
-    renter_license: '',
-    renter_address: '',
-    
-    // Rental Period
-    rental_start_date: '',
-    rental_end_date: '',
-    total_days: '',
-    
+    lessee_name: '',
+    lessee_contact: '',
+    lessee_license: '',
+    lessee_address: '',
+
+    // Lease Period
+    lease_start_date: '',
+    lease_end_date: '',
+    total_months: '',
+
     // Pricing
-    daily_rate: '',
+    monthly_rate: '',
     base_amount: '',
     security_deposit: '',
     additional_charges: '0',
     discount: '0',
     total_amount: '',
-    
+
     // Vehicle Condition
     pickup_odometer: '',
     pickup_fuel_level: 'FULL',
     pickup_notes: '',
-    
+
     // Status
-    rental_status: 'ACTIVE',
+    lease_status: 'ACTIVE',
     payment_status: 'PENDING',
-    
+    lease_type: 'BUSINESS',
+
     // Documents
-    rental_agreement: null,
+    lease_agreement: null,
     pickup_inspection_report: null
   });
 
@@ -69,32 +70,31 @@ const VehicleRentalAdd = () => {
   }, []);
 
   useEffect(() => {
-    // Calculate total days when dates change
-    if (rental.rental_start_date && rental.rental_end_date) {
-      const startDate = new Date(rental.rental_start_date);
-      const endDate = new Date(rental.rental_end_date);
-      const diffTime = Math.abs(endDate - startDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      setRental(prev => ({ ...prev, total_days: diffDays }));
+    // Calculate total months when dates change
+    if (lease.lease_start_date && lease.lease_end_date) {
+      const startDate = new Date(lease.lease_start_date);
+      const endDate = new Date(lease.lease_end_date);
+      const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+      setLease(prev => ({ ...prev, total_months: diffMonths }));
     }
-  }, [rental.rental_start_date, rental.rental_end_date]);
+  }, [lease.lease_start_date, lease.lease_end_date]);
 
   useEffect(() => {
     // Calculate amounts when relevant fields change
-    if (rental.daily_rate && rental.total_days) {
-      const baseAmount = parseFloat(rental.daily_rate) * parseInt(rental.total_days);
-      const additionalCharges = parseFloat(rental.additional_charges) || 0;
-      const discount = parseFloat(rental.discount) || 0;
-      const securityDeposit = parseFloat(rental.security_deposit) || 0;
+    if (lease.monthly_rate && lease.total_months) {
+      const baseAmount = parseFloat(lease.monthly_rate) * parseInt(lease.total_months);
+      const additionalCharges = parseFloat(lease.additional_charges) || 0;
+      const discount = parseFloat(lease.discount) || 0;
+      const securityDeposit = parseFloat(lease.security_deposit) || 0;
       const totalAmount = baseAmount + additionalCharges - discount + securityDeposit;
-      
-      setRental(prev => ({
+
+      setLease(prev => ({
         ...prev,
         base_amount: baseAmount.toFixed(2),
         total_amount: totalAmount.toFixed(2)
       }));
     }
-  }, [rental.daily_rate, rental.total_days, rental.additional_charges, rental.discount, rental.security_deposit]);
+  }, [lease.monthly_rate, lease.total_months, lease.additional_charges, lease.discount, lease.security_deposit]);
 
   const fetchVehicles = async () => {
     try {
@@ -112,11 +112,11 @@ const VehicleRentalAdd = () => {
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
+
     if (type === 'file') {
-      setRental(prev => ({ ...prev, [name]: files[0] }));
+      setLease(prev => ({ ...prev, [name]: files[0] }));
     } else {
-      setRental(prev => ({ ...prev, [name]: value }));
+      setLease(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -126,37 +126,37 @@ const VehicleRentalAdd = () => {
 
     try {
       const formData = new FormData();
-      
-      // Append all rental data
-      Object.keys(rental).forEach(key => {
-        if (rental[key] !== null && rental[key] !== undefined && rental[key] !== '') {
-          if (rental[key] instanceof File) {
-            formData.append(key, rental[key]);
+
+      // Append all lease data
+      Object.keys(lease).forEach(key => {
+        if (lease[key] !== null && lease[key] !== undefined && lease[key] !== '') {
+          if (lease[key] instanceof File) {
+            formData.append(key, lease[key]);
           } else {
-            formData.append(key, rental[key]);
+            formData.append(key, lease[key]);
           }
         }
       });
 
       // Convert dates to datetime format
-      if (rental.rental_start_date) {
-        const startDateTime = new Date(rental.rental_start_date + 'T09:00:00');
-        formData.set('rental_start_date', startDateTime.toISOString());
+      if (lease.lease_start_date) {
+        const startDateTime = new Date(lease.lease_start_date + 'T09:00:00');
+        formData.set('lease_start_date', startDateTime.toISOString());
       }
-      if (rental.rental_end_date) {
-        const endDateTime = new Date(rental.rental_end_date + 'T18:00:00');
-        formData.set('rental_end_date', endDateTime.toISOString());
+      if (lease.lease_end_date) {
+        const endDateTime = new Date(lease.lease_end_date + 'T18:00:00');
+        formData.set('lease_end_date', endDateTime.toISOString());
       }
 
       const response = await axiosInstance.post('/vehicle-rentals/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      toast.success('Rental record created successfully!');
+      toast.success('Lease record created successfully!');
       navigate('/vehicle-rental-management');
     } catch (error) {
-      console.error('Error creating rental:', error);
-      toast.error('Failed to create rental record');
+      console.error('Error creating lease:', error);
+      toast.error('Failed to create lease record');
     } finally {
       setLoading(false);
     }
@@ -242,8 +242,8 @@ const VehicleRentalAdd = () => {
                 <Car className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Create Vehicle Rental</h1>
-                <p className="text-gray-600">Set up a new vehicle rental agreement</p>
+                <h1 className="text-2xl font-bold text-gray-900">Create Vehicle Lease</h1>
+                <p className="text-gray-600">Set up a new vehicle lease agreement</p>
               </div>
             </div>
             <button
@@ -262,17 +262,17 @@ const VehicleRentalAdd = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex flex-wrap gap-2 mb-6">
               <TabButton
-                id="renter"
-                label="Renter Info"
+                id="lessee"
+                label="Lessee Info"
                 icon={User}
-                isActive={activeTab === 'renter'}
+                isActive={activeTab === 'lessee'}
                 onClick={setActiveTab}
               />
               <TabButton
-                id="rental"
-                label="Rental Details"
+                id="lease"
+                label="Lease Details"
                 icon={Calendar}
-                isActive={activeTab === 'rental'}
+                isActive={activeTab === 'lease'}
                 onClick={setActiveTab}
               />
               <TabButton
