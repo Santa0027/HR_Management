@@ -169,16 +169,16 @@ class VehicleFuelRecordViewSet(viewsets.ModelViewSet):
         )
 
 class VehicleRentalRecordViewSet(viewsets.ModelViewSet):
-    queryset = VehicleRentalRecord.objects.all().order_by('-rental_start_date')
+    queryset = VehicleRentalRecord.objects.all().order_by('-lease_start_date')
     serializer_class = VehicleRentalRecordSerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        rental_record = serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
-        # Update vehicle status to indicate it's rented
-        vehicle = rental_record.vehicle
-        vehicle.vehicle_status = 'RENTAL'
+        lease_record = serializer.save(created_by=self.request.user if self.request.user.is_authenticated else None)
+        # Update vehicle status to indicate it's leased
+        vehicle = lease_record.vehicle
+        vehicle.vehicle_status = 'LEASE'
         vehicle.save()
 
 class VehicleExpenseViewSet(viewsets.ModelViewSet):

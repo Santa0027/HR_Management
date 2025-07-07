@@ -93,17 +93,17 @@ class VehicleRentalRecordSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_days_remaining(self, obj):
-        """Calculate days remaining for active rentals"""
-        if obj.rental_status == 'ACTIVE':
+        """Calculate days remaining for active leases"""
+        if obj.lease_status == 'ACTIVE':
             from datetime import date
-            return (obj.rental_end_date.date() - date.today()).days
+            return (obj.lease_end_date.date() - date.today()).days
         return None
 
     def get_is_overdue(self, obj):
-        """Check if rental is overdue"""
-        if obj.rental_status == 'ACTIVE':
+        """Check if lease is overdue"""
+        if obj.lease_status == 'ACTIVE':
             from datetime import date
-            return obj.rental_end_date.date() < date.today()
+            return obj.lease_end_date.date() < date.today()
         return False
 
 class VehicleExpenseSerializer(serializers.ModelSerializer):

@@ -351,10 +351,10 @@ class VehicleRentalRecord(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-rental_start_date']
+        ordering = ['-lease_start_date']
 
     def __str__(self):
-        return f"{self.vehicle.vehicle_number} - {self.renter_name} ({self.rental_start_date.date()})"
+        return f"{self.vehicle.vehicle_number} - {self.lessee_name} ({self.lease_start_date.date()})"
 
     @property
     def is_overdue(self):

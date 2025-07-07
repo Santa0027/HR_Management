@@ -278,7 +278,20 @@ const VehicleManagement = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/vehicles/');
-      const vehicleData = response.data || [];
+
+      // Ensure we have an array of vehicles
+      let vehicleData = [];
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          vehicleData = response.data;
+        } else if (response.data.results && Array.isArray(response.data.results)) {
+          // Handle paginated response
+          vehicleData = response.data.results;
+        } else if (typeof response.data === 'object') {
+          // Handle single object response
+          vehicleData = [response.data];
+        }
+      }
 
       setVehicles(vehicleData);
       setFilteredVehicles(vehicleData);
@@ -287,12 +300,37 @@ const VehicleManagement = () => {
     } catch (error) {
       console.error('Error fetching vehicles:', error);
       toast.error('Failed to load vehicles');
+      // Set empty arrays on error
+      setVehicles([]);
+      setFilteredVehicles([]);
+      setVehicleStats(calculateEnhancedStats([]));
       setLoading(false);
     }
   };
 
   // Enhanced statistics calculation function
   const calculateEnhancedStats = (vehiclesData) => {
+    // Ensure vehiclesData is an array
+    if (!Array.isArray(vehiclesData)) {
+      return {
+        total: 0,
+        active: 0,
+        inactive: 0,
+        maintenance: 0,
+        outOfService: 0,
+        owned: 0,
+        leased: 0,
+        rental: 0,
+        financed: 0,
+        documentsExpiring: 0,
+        servicesDue: 0,
+        assigned: 0,
+        unassigned: 0,
+        averageAge: 0,
+        totalValue: 0
+      };
+    }
+
     const now = new Date();
     const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -345,12 +383,18 @@ const VehicleManagement = () => {
 
   // Filter vehicles based on search and filters
   useEffect(() => {
+    // Ensure vehicles is an array before filtering
+    if (!Array.isArray(vehicles)) {
+      setFilteredVehicles([]);
+      return;
+    }
+
     let filtered = vehicles;
 
     if (searchTerm) {
       filtered = filtered.filter(vehicle =>
-        vehicle.vehicle_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.vehicle_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehicle.vehicle_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehicle.vehicle_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vehicle.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vehicle.model?.toLowerCase().includes(searchTerm.toLowerCase())
       );
