@@ -22,7 +22,7 @@ import {
   Eye,
   BarChart3
 } from 'lucide-react';
-// ✅ CLEARED: axiosInstance import removed (API calls cleared)
+import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

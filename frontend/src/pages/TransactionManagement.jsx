@@ -13,7 +13,7 @@ import {
   Eye,
   ArrowUpDown
 } from 'lucide-react';
-// ✅ CLEARED: axiosInstance import removed (API calls cleared)
+import axiosInstance from '../api/axiosInstance';
 import 'react-toastify/dist/ReactToastify.css';
 
 const TransactionManagement = () => {

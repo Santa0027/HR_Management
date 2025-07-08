@@ -20,9 +20,7 @@ import {
   Eye,
   Download
 } from 'lucide-react';
-// ✅ CLEARED: All API imports removed (API calls cleared)
-// import api from '../services/api';
-// import axiosInstance from '../api/axiosInstance';
+import axiosInstance from '../api/axiosInstance';
 
 const AccountingDashboard = () => {
   const navigate = useNavigate();
