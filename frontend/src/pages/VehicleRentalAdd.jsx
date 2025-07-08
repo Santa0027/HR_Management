@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 // Move InputField component outside to prevent re-creation on every render
-const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '', value, onChange, validationErrors = {} }) => (
+const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '', value, onChange, validationErrors = {}, readOnly = false }) => (
   <div className="space-y-2">
     <label className="block text-sm font-medium text-gray-700">
       {label} {required && <span className="text-red-500">*</span>}
@@ -32,9 +32,10 @@ const InputField = ({ label, name, type = 'text', required = false, options = nu
         value={value}
         onChange={onChange}
         required={required}
+        disabled={readOnly} // Added for consistency, though select is rarely readOnly
         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
           validationErrors[name] ? 'border-red-500' : 'border-gray-300'
-        }`}
+        } ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       >
         <option value="">Select {label}</option>
         {options?.map(option => (
@@ -51,9 +52,10 @@ const InputField = ({ label, name, type = 'text', required = false, options = nu
         required={required}
         placeholder={placeholder}
         rows={3}
+        readOnly={readOnly}
         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
           validationErrors[name] ? 'border-red-500' : 'border-gray-300'
-        }`}
+        } ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       />
     ) : type === 'file' ? (
       <input
@@ -61,9 +63,10 @@ const InputField = ({ label, name, type = 'text', required = false, options = nu
         name={name}
         onChange={onChange}
         accept=".pdf,.doc,.docx"
+        readOnly={readOnly}
         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
           validationErrors[name] ? 'border-red-500' : 'border-gray-300'
-        }`}
+        } ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       />
     ) : (
       <input
@@ -74,9 +77,10 @@ const InputField = ({ label, name, type = 'text', required = false, options = nu
         required={required}
         placeholder={placeholder}
         step={type === 'number' ? '0.01' : undefined}
+        readOnly={readOnly} // Added readOnly prop
         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
           validationErrors[name] ? 'border-red-500' : 'border-gray-300'
-        }`}
+        } ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       />
     )}
     {validationErrors[name] && (
@@ -154,26 +158,39 @@ const VehicleRentalAdd = () => {
     if (lease.lease_start_date && lease.lease_end_date) {
       const startDate = new Date(lease.lease_start_date);
       const endDate = new Date(lease.lease_end_date);
-      const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
-      setLease(prev => ({ ...prev, total_months: diffMonths }));
+      // Ensure endDate is strictly after startDate before calculating months
+      if (endDate > startDate) {
+        const diffMonths = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+        setLease(prev => ({ ...prev, total_months: diffMonths.toString() })); // Store as string for consistency with other inputs
+      } else {
+        setLease(prev => ({ ...prev, total_months: '' })); // Clear if dates are invalid
+      }
+    } else {
+      setLease(prev => ({ ...prev, total_months: '' })); // Clear if dates are incomplete
     }
   }, [lease.lease_start_date, lease.lease_end_date]);
 
   useEffect(() => {
     // Calculate amounts when relevant fields change
-    if (lease.monthly_rate && lease.total_months) {
-      const baseAmount = parseFloat(lease.monthly_rate) * parseInt(lease.total_months);
-      const additionalCharges = parseFloat(lease.additional_charges) || 0;
-      const discount = parseFloat(lease.discount) || 0;
-      const securityDeposit = parseFloat(lease.security_deposit) || 0;
-      const totalAmount = baseAmount + additionalCharges - discount + securityDeposit;
+    const monthlyRate = parseFloat(lease.monthly_rate) || 0;
+    const totalMonths = parseInt(lease.total_months) || 0;
+    const additionalCharges = parseFloat(lease.additional_charges) || 0;
+    const discount = parseFloat(lease.discount) || 0;
+    const securityDeposit = parseFloat(lease.security_deposit) || 0;
 
-      setLease(prev => ({
-        ...prev,
-        base_amount: baseAmount.toFixed(2),
-        total_amount: totalAmount.toFixed(2)
-      }));
-    }
+    let baseAmount = (monthlyRate * totalMonths);
+    if (isNaN(baseAmount) || !isFinite(baseAmount)) baseAmount = 0; // Handle NaN/Infinity
+
+    let totalAmount = baseAmount + additionalCharges - discount + securityDeposit;
+    if (isNaN(totalAmount) || !isFinite(totalAmount)) totalAmount = 0; // Handle NaN/Infinity
+
+
+    setLease(prev => ({
+      ...prev,
+      base_amount: baseAmount.toFixed(2),
+      total_amount: totalAmount.toFixed(2)
+    }));
+
   }, [lease.monthly_rate, lease.total_months, lease.additional_charges, lease.discount, lease.security_deposit]);
 
   const fetchVehicles = async () => {
@@ -193,7 +210,7 @@ const VehicleRentalAdd = () => {
 
       // Filter only available vehicles for lease
       const availableVehicles = vehiclesData.filter(vehicle =>
-        vehicle.vehicle_status === 'ACTIVE' && !vehicle.assigned_driver
+        vehicle.vehicle_status === 'ACTIVE' && !vehicle.assigned_driver // Assuming 'assigned_driver' implies it's not available for new lease
       );
 
       console.log('✅ Available vehicles for lease:', availableVehicles.length);
@@ -220,6 +237,15 @@ const VehicleRentalAdd = () => {
     if (!lease.monthly_rate) errors.monthly_rate = 'Monthly rate is required';
     if (!lease.security_deposit) errors.security_deposit = 'Security deposit is required';
     if (!lease.pickup_odometer) errors.pickup_odometer = 'Pickup odometer reading is required';
+    if (!lease.lease_type) errors.lease_type = 'Lease type is required';
+    if (!lease.payment_frequency) errors.payment_frequency = 'Payment frequency is required';
+    if (!lease.payment_method) errors.payment_method = 'Payment method is required';
+    if (!lease.maintenance_responsibility) errors.maintenance_responsibility = 'Maintenance responsibility is required';
+    if (!lease.insurance_responsibility) errors.insurance_responsibility = 'Insurance responsibility is required';
+    if (!lease.pickup_fuel_level) errors.pickup_fuel_level = 'Pickup fuel level is required';
+    if (!lease.lease_status) errors.lease_status = 'Lease status is required';
+    if (!lease.payment_status) errors.payment_status = 'Payment status is required';
+
 
     // Email validation
     if (lease.lessee_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lease.lessee_email)) {
@@ -236,12 +262,28 @@ const VehicleRentalAdd = () => {
     }
 
     // Numeric validation
-    if (lease.monthly_rate && parseFloat(lease.monthly_rate) <= 0) {
-      errors.monthly_rate = 'Monthly rate must be greater than 0';
+    if (lease.monthly_rate && (isNaN(parseFloat(lease.monthly_rate)) || parseFloat(lease.monthly_rate) <= 0)) {
+      errors.monthly_rate = 'Monthly rate must be a positive number';
     }
-    if (lease.security_deposit && parseFloat(lease.security_deposit) < 0) {
+    if (lease.security_deposit && (isNaN(parseFloat(lease.security_deposit)) || parseFloat(lease.security_deposit) < 0)) {
       errors.security_deposit = 'Security deposit cannot be negative';
     }
+    if (lease.additional_charges && isNaN(parseFloat(lease.additional_charges))) {
+      errors.additional_charges = 'Additional charges must be a number';
+    }
+    if (lease.discount && isNaN(parseFloat(lease.discount))) {
+      errors.discount = 'Discount must be a number';
+    }
+    if (lease.late_fee_percentage && (isNaN(parseFloat(lease.late_fee_percentage)) || parseFloat(lease.late_fee_percentage) < 0)) {
+        errors.late_fee_percentage = 'Late fee percentage must be a non-negative number';
+    }
+    if (lease.mileage_limit && (isNaN(parseFloat(lease.mileage_limit)) || parseFloat(lease.mileage_limit) < 0)) {
+        errors.mileage_limit = 'Mileage limit must be a non-negative number';
+    }
+    if (lease.pickup_odometer && (isNaN(parseFloat(lease.pickup_odometer)) || parseFloat(lease.pickup_odometer) < 0)) {
+      errors.pickup_odometer = 'Odometer reading must be a non-negative number';
+    }
+
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -268,6 +310,24 @@ const VehicleRentalAdd = () => {
     // Validate form before submission
     if (!validateForm()) {
       toast.error('Please fix the validation errors before submitting');
+      // If validation fails, stay on the first tab with an error
+      const firstErrorField = Object.keys(validationErrors)[0];
+      if (firstErrorField) {
+        // Map field names to tab IDs (you might need a more robust mapping for a large form)
+        if (['lessee_name', 'lessee_contact', 'lessee_email', 'lessee_license', 'lessee_address', 'lease_type'].includes(firstErrorField)) {
+          setActiveTab('lessee');
+        } else if (['vehicle', 'monthly_rate', 'lease_start_date', 'lease_end_date', 'total_months', 'lease_status'].includes(firstErrorField)) {
+          setActiveTab('lease');
+        } else if (['base_amount', 'security_deposit', 'additional_charges', 'discount', 'payment_status', 'total_amount'].includes(firstErrorField)) {
+          setActiveTab('pricing');
+        } else if (['payment_frequency', 'payment_method', 'late_fee_percentage', 'mileage_limit', 'maintenance_responsibility', 'insurance_responsibility'].includes(firstErrorField)) {
+          setActiveTab('terms');
+        } else if (['pickup_odometer', 'pickup_fuel_level', 'pickup_notes'].includes(firstErrorField)) {
+          setActiveTab('vehicle');
+        } else if (['lease_agreement', 'pickup_inspection_report', 'business_license_document', 'insurance_certificate'].includes(firstErrorField)) {
+            setActiveTab('documents');
+        }
+      }
       return;
     }
 
@@ -282,20 +342,28 @@ const VehicleRentalAdd = () => {
           if (lease[key] instanceof File) {
             formData.append(key, lease[key]);
           } else {
-            formData.append(key, lease[key]);
+            // Special handling for number fields that might be stored as strings but need to be sent as numbers
+            if (['monthly_rate', 'base_amount', 'security_deposit', 'additional_charges', 'discount', 'total_amount', 'total_months', 'late_fee_percentage', 'mileage_limit', 'pickup_odometer'].includes(key)) {
+                formData.append(key, parseFloat(lease[key]));
+            } else {
+                formData.append(key, lease[key]);
+            }
           }
         }
       });
 
-      // Convert dates to datetime format
+      // Convert dates to datetime format (ensure they are in ISO string format for Django DRF DateTimeField)
       if (lease.lease_start_date) {
-        const startDateTime = new Date(lease.lease_start_date + 'T09:00:00');
+        // Append a time part to ensure it's treated as a full datetime, e.g., 00:00:00 or 09:00:00
+        const startDateTime = new Date(lease.lease_start_date + 'T00:00:00'); // Assuming start of day
         formData.set('lease_start_date', startDateTime.toISOString());
       }
       if (lease.lease_end_date) {
-        const endDateTime = new Date(lease.lease_end_date + 'T18:00:00');
+        // Append a time part, e.g., 23:59:59 or 18:00:00
+        const endDateTime = new Date(lease.lease_end_date + 'T23:59:59'); // Assuming end of day
         formData.set('lease_end_date', endDateTime.toISOString());
       }
+
 
       const response = await axiosInstance.post('/vehicle-rentals/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -305,7 +373,27 @@ const VehicleRentalAdd = () => {
       navigate('/vehicle-rental-management');
     } catch (error) {
       console.error('Error creating lease:', error);
-      toast.error('Failed to create lease record');
+      // More detailed error handling for API response
+      if (error.response && error.response.data) {
+        // Assuming backend returns validation errors in a structured way
+        const apiErrors = error.response.data;
+        let errorMessages = [];
+        for (const key in apiErrors) {
+          if (Array.isArray(apiErrors[key])) {
+            errorMessages.push(`${key}: ${apiErrors[key].join(', ')}`);
+          } else if (typeof apiErrors[key] === 'string') {
+            errorMessages.push(`${key}: ${apiErrors[key]}`);
+          }
+        }
+        if (errorMessages.length > 0) {
+            toast.error(`Failed to create lease record: ${errorMessages.join('; ')}`);
+        } else {
+            toast.error('Failed to create lease record. Please check your input and try again.');
+        }
+        setValidationErrors(apiErrors); // Update validation errors with backend response
+      } else {
+        toast.error('Failed to create lease record. Network error or unknown issue.');
+      }
     } finally {
       setLoading(false);
     }
@@ -325,8 +413,6 @@ const VehicleRentalAdd = () => {
       {label}
     </button>
   );
-
-
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -448,6 +534,9 @@ const VehicleRentalAdd = () => {
                   name="lease_type"
                   type="select"
                   required
+                  value={lease.lease_type} // Added value
+                  onChange={handleChange}  // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'BUSINESS', label: 'Business Lease' },
                     { value: 'COMMERCIAL', label: 'Commercial Lease' },
@@ -462,6 +551,9 @@ const VehicleRentalAdd = () => {
                     type="textarea"
                     required
                     placeholder="Complete business/residential address"
+                    value={lease.lessee_address} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                   />
                 </div>
               </div>
@@ -489,18 +581,27 @@ const VehicleRentalAdd = () => {
                   required
                   placeholder="Monthly lease amount"
                   help="Amount charged per month"
+                  value={lease.monthly_rate} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Lease Start Date"
                   name="lease_start_date"
                   type="date"
                   required
+                  value={lease.lease_start_date} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Lease End Date"
                   name="lease_end_date"
                   type="date"
                   required
+                  value={lease.lease_end_date} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Total Months"
@@ -508,12 +609,18 @@ const VehicleRentalAdd = () => {
                   type="number"
                   placeholder="Auto-calculated"
                   help="Automatically calculated from dates"
+                  value={lease.total_months} // Added value
+                  readOnly // Made readOnly
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Lease Status"
                   name="lease_status"
                   type="select"
                   required
+                  value={lease.lease_status} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'ACTIVE', label: 'Active' },
                     { value: 'COMPLETED', label: 'Completed' },
@@ -532,7 +639,10 @@ const VehicleRentalAdd = () => {
                     name="base_amount"
                     type="number"
                     placeholder="Auto-calculated"
-                    help="Daily rate × Total days"
+                    help="Monthly rate × Total months" // Corrected help text
+                    value={lease.base_amount} // Added value
+                    readOnly // Made readOnly
+                    validationErrors={validationErrors}
                   />
                   <InputField
                     label="Security Deposit"
@@ -540,6 +650,9 @@ const VehicleRentalAdd = () => {
                     type="number"
                     required
                     placeholder="Security deposit amount"
+                    value={lease.security_deposit} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                   />
                   <InputField
                     label="Additional Charges"
@@ -547,6 +660,9 @@ const VehicleRentalAdd = () => {
                     type="number"
                     placeholder="0.00"
                     help="Extra charges (fuel, cleaning, etc.)"
+                    value={lease.additional_charges} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                   />
                   <InputField
                     label="Discount"
@@ -554,12 +670,18 @@ const VehicleRentalAdd = () => {
                     type="number"
                     placeholder="0.00"
                     help="Discount amount"
+                    value={lease.discount} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                   />
                   <InputField
                     label="Payment Status"
                     name="payment_status"
                     type="select"
                     required
+                    value={lease.payment_status} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                     options={[
                       { value: 'PENDING', label: 'Pending' },
                       { value: 'PARTIAL', label: 'Partial' },
@@ -572,9 +694,12 @@ const VehicleRentalAdd = () => {
                     type="number"
                     placeholder="Auto-calculated"
                     help="Base + Security + Additional - Discount"
+                    value={lease.total_amount} // Added value
+                    readOnly // Made readOnly
+                    validationErrors={validationErrors}
                   />
                 </div>
-                
+
                 {/* Pricing Summary */}
                 {lease.base_amount && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -584,20 +709,20 @@ const VehicleRentalAdd = () => {
                         <h4 className="text-sm font-medium text-green-900">Lease Pricing Summary</h4>
                         <div className="mt-2 text-sm text-green-700 space-y-1">
                           <div className="flex justify-between">
-                            <span>Base Amount ({lease.total_months} months × ${lease.monthly_rate}):</span>
+                            <span>Base Amount ({lease.total_months || 0} months × ${parseFloat(lease.monthly_rate) || 0}/month):</span>
                             <span>${lease.base_amount}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Security Deposit:</span>
-                            <span>${lease.security_deposit || '0.00'}</span>
+                            <span>${parseFloat(lease.security_deposit || '0').toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Additional Charges:</span>
-                            <span>${lease.additional_charges || '0.00'}</span>
+                            <span>${parseFloat(lease.additional_charges || '0').toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Discount:</span>
-                            <span>-${lease.discount || '0.00'}</span>
+                            <span>-${parseFloat(lease.discount || '0').toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between font-medium border-t border-green-300 pt-1">
                             <span>Total Lease Amount:</span>
@@ -605,7 +730,7 @@ const VehicleRentalAdd = () => {
                           </div>
                           <div className="flex justify-between text-xs text-green-600 mt-2">
                             <span>Monthly Payment:</span>
-                            <span>${lease.monthly_rate}/month</span>
+                            <span>${parseFloat(lease.monthly_rate || '0').toFixed(2)}/month</span>
                           </div>
                         </div>
                       </div>
@@ -622,6 +747,9 @@ const VehicleRentalAdd = () => {
                   name="payment_frequency"
                   type="select"
                   required
+                  value={lease.payment_frequency} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'MONTHLY', label: 'Monthly' },
                     { value: 'QUARTERLY', label: 'Quarterly' },
@@ -635,6 +763,9 @@ const VehicleRentalAdd = () => {
                   name="payment_method"
                   type="select"
                   required
+                  value={lease.payment_method} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
                     { value: 'CHECK', label: 'Check' },
@@ -649,6 +780,9 @@ const VehicleRentalAdd = () => {
                   type="number"
                   placeholder="5"
                   help="Percentage charged for late payments"
+                  value={lease.late_fee_percentage} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
 
                 <InputField
@@ -657,6 +791,9 @@ const VehicleRentalAdd = () => {
                   type="number"
                   placeholder="2000"
                   help="Maximum kilometers per month (optional)"
+                  value={lease.mileage_limit} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
 
                 <InputField
@@ -664,6 +801,9 @@ const VehicleRentalAdd = () => {
                   name="maintenance_responsibility"
                   type="select"
                   required
+                  value={lease.maintenance_responsibility} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'LESSEE', label: 'Lessee (Customer)' },
                     { value: 'LESSOR', label: 'Lessor (Company)' },
@@ -676,6 +816,9 @@ const VehicleRentalAdd = () => {
                   name="insurance_responsibility"
                   type="select"
                   required
+                  value={lease.insurance_responsibility} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'LESSEE', label: 'Lessee (Customer)' },
                     { value: 'LESSOR', label: 'Lessor (Company)' },
@@ -711,12 +854,18 @@ const VehicleRentalAdd = () => {
                   type="number"
                   required
                   placeholder="Current odometer reading"
+                  value={lease.pickup_odometer} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Pickup Fuel Level"
                   name="pickup_fuel_level"
                   type="select"
                   required
+                  value={lease.pickup_fuel_level} // Added value
+                  onChange={handleChange}    // Added onChange
+                  validationErrors={validationErrors}
                   options={[
                     { value: 'FULL', label: 'Full' },
                     { value: 'THREE_QUARTER', label: '3/4' },
@@ -732,6 +881,9 @@ const VehicleRentalAdd = () => {
                     type="textarea"
                     placeholder="Vehicle condition notes at pickup..."
                     help="Document any existing damage or issues"
+                    value={lease.pickup_notes} // Added value
+                    onChange={handleChange}    // Added onChange
+                    validationErrors={validationErrors}
                   />
                 </div>
               </div>
@@ -744,24 +896,32 @@ const VehicleRentalAdd = () => {
                   name="lease_agreement"
                   type="file"
                   help="Upload signed lease agreement (PDF, DOC)"
+                  onChange={handleChange} // onChange for file input
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Vehicle Handover Report"
                   name="pickup_inspection_report"
                   type="file"
                   help="Upload vehicle handover inspection report (PDF, DOC)"
+                  onChange={handleChange} // onChange for file input
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Business License (if applicable)"
                   name="business_license_document"
                   type="file"
                   help="Upload business license for corporate leases (PDF, DOC)"
+                  onChange={handleChange} // onChange for file input
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Insurance Certificate"
                   name="insurance_certificate"
                   type="file"
                   help="Upload insurance certificate (PDF, DOC)"
+                  onChange={handleChange} // onChange for file input
+                  validationErrors={validationErrors}
                 />
                 <div className="md:col-span-2">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

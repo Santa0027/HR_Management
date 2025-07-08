@@ -77,6 +77,7 @@ import BudgetManagement from './pages/BudgetManagement';
 import PayrollManagement from './pages/PayrollManagement';
 import BankAccountManagement from './pages/BankAccountManagement';
 import AccountingReports from './pages/AccountingReports';
+import CashSalesReport from './pages/CashSalesReport';
 import AccountingSystemTest from './pages/AccountingSystemTest';
 import AccountingCRUDTest from './pages/AccountingCRUDTest';
 
@@ -297,6 +298,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AccountingReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/accounting/cash-sales-report"
+            element={
+              <ProtectedRoute>
+                <CashSalesReport />
               </ProtectedRoute>
             }
           />

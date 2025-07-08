@@ -398,6 +398,36 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if not all([driver_id, login_time_str]):
             return Response({"detail": "Missing required login data (driver, login_time)."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 🚨 MANDATORY VALIDATION: Photo is required for check-in
+        if not login_photo_file and not login_photo_base64:
+            return Response({
+                "success": False,
+                "error": "PHOTO_REQUIRED",
+                "message": "📸 Photo is mandatory for check-in. Please capture a photo to proceed.",
+                "details": {
+                    "requirement": "photo_mandatory",
+                    "provided_file": bool(login_photo_file),
+                    "provided_base64": bool(login_photo_base64),
+                    "instruction": "Use camera to capture your photo for attendance verification"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 🚨 MANDATORY VALIDATION: Location is required for check-in
+        if not login_lat or not login_lon:
+            return Response({
+                "success": False,
+                "error": "LOCATION_REQUIRED",
+                "message": "📍 Location coordinates are mandatory for check-in. Please enable GPS and share your location.",
+                "details": {
+                    "requirement": "location_mandatory",
+                    "provided_latitude": bool(login_lat),
+                    "provided_longitude": bool(login_lon),
+                    "latitude_value": login_lat,
+                    "longitude_value": login_lon,
+                    "instruction": "Enable GPS location services and allow location access"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             driver = Driver.objects.get(id=driver_id)
             login_time = timezone.datetime.strptime(login_time_str, '%H:%M:%S').time()
@@ -538,6 +568,36 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 "error": "MISSING_LOGOUT_TIME",
                 "message": "Logout time is required",
                 "details": {"logout_time_provided": bool(logout_time_str)}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 🚨 MANDATORY VALIDATION: Photo is required for check-out
+        if not logout_photo_file and not logout_photo_base64:
+            return Response({
+                "success": False,
+                "error": "PHOTO_REQUIRED",
+                "message": "📸 Photo is mandatory for check-out. Please capture a photo to proceed.",
+                "details": {
+                    "requirement": "photo_mandatory",
+                    "provided_file": bool(logout_photo_file),
+                    "provided_base64": bool(logout_photo_base64),
+                    "instruction": "Use camera to capture your photo for attendance verification"
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 🚨 MANDATORY VALIDATION: Location is required for check-out
+        if not logout_lat or not logout_lon:
+            return Response({
+                "success": False,
+                "error": "LOCATION_REQUIRED",
+                "message": "📍 Location coordinates are mandatory for check-out. Please enable GPS and share your location.",
+                "details": {
+                    "requirement": "location_mandatory",
+                    "provided_latitude": bool(logout_lat),
+                    "provided_longitude": bool(logout_lon),
+                    "latitude_value": logout_lat,
+                    "longitude_value": logout_lon,
+                    "instruction": "Enable GPS location services and allow location access"
+                }
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate attendance record and time format
@@ -1105,6 +1165,24 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(start_date__month=month)
 
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Create a leave request and return full serialized data"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Calculate total days if not provided
+        start_date = serializer.validated_data['start_date']
+        end_date = serializer.validated_data['end_date']
+        total_days = (end_date - start_date).days + 1
+
+        # Save the leave request
+        leave_request = serializer.save(total_days=total_days)
+
+        # Return full serialized data using the read serializer
+        read_serializer = LeaveRequestSerializer(leave_request)
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=['post'], url_path='approve')
     def approve_request(self, request, pk=None):

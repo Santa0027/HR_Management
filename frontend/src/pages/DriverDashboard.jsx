@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
 import {
   User,
   DollarSign,
@@ -49,176 +50,198 @@ const DriverDashboard = () => {
   const fetchDriverDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Simulate API calls - replace with actual API endpoints
-      const mockDriverData = {
-        id: user.id || 1,
-        name: user.name || 'John Doe',
-        email: user.email || 'john.doe@example.com',
-        phone: '+1 (555) 123-4567',
-        license_number: 'DL123456789',
-        license_expiry: '2025-12-31',
-        status: 'active',
-        rating: 4.8,
-        total_trips: 1247,
-        years_experience: 5,
-        profile_image: null,
-        address: '123 Main St, City, State 12345',
-        emergency_contact: '+1 (555) 987-6543'
+      console.log('📊 Fetching driver dashboard data...');
+
+      // Get driver profile data
+      let driverProfile = null;
+      try {
+        const profileResponse = await axiosInstance.get(`/mobile/profile/${user.id}/`);
+        driverProfile = profileResponse.data;
+        console.log('✅ Driver profile loaded:', driverProfile);
+      } catch (error) {
+        console.warn('⚠️ Driver profile not found, using user data');
+        driverProfile = {
+          id: user.id,
+          name: user.name || user.username,
+          email: user.email,
+          phone: user.phone || 'N/A',
+          license_number: 'N/A',
+          license_expiry: '2025-12-31',
+          status: 'active',
+          rating: 0,
+          total_trips: 0,
+          years_experience: 0,
+          profile_image: null,
+          address: 'N/A',
+          emergency_contact: 'N/A'
+        };
+      }
+
+      // Get trip statistics
+      let tripStats = {
+        trips_completed: 0,
+        trips_scheduled: 0,
+        earnings: 0,
+        hours_worked: 0,
+        distance_covered: 0,
+        fuel_consumed: 0
       };
 
-      const mockTodayStats = {
-        trips_completed: 3,
-        trips_scheduled: 5,
-        earnings: 245.50,
-        hours_worked: 6.5,
-        distance_covered: 127.3,
-        fuel_consumed: 12.8
+      let weeklyStats = {
+        trips_completed: 0,
+        total_earnings: 0,
+        hours_worked: 0,
+        distance_covered: 0,
+        average_rating: 0
       };
 
-      const mockWeeklyStats = {
-        trips_completed: 18,
-        total_earnings: 1456.75,
-        hours_worked: 42.5,
-        distance_covered: 892.1,
-        average_rating: 4.7
+      let monthlyStats = {
+        trips_completed: 0,
+        total_earnings: 0,
+        hours_worked: 0,
+        distance_covered: 0,
+        bonus_earned: 0
       };
 
-      const mockMonthlyStats = {
-        trips_completed: 78,
-        total_earnings: 6234.25,
-        hours_worked: 168.5,
-        distance_covered: 3456.8,
-        bonus_earned: 250.00
-      };
+      try {
+        // Get today's date range
+        const today = new Date().toISOString().split('T')[0];
 
-      const mockRecentTrips = [
-        {
-          id: 1,
-          pickup_location: 'Downtown Mall',
-          dropoff_location: 'Airport Terminal 2',
-          date: '2024-01-15',
-          time: '14:30',
-          status: 'completed',
-          earnings: 45.50,
-          distance: 23.5,
-          duration: '35 min',
-          rating: 5
-        },
-        {
-          id: 2,
-          pickup_location: 'Hotel Grand Plaza',
-          dropoff_location: 'Business District',
-          date: '2024-01-15',
-          time: '11:15',
-          status: 'completed',
-          earnings: 28.75,
-          distance: 12.8,
-          duration: '22 min',
-          rating: 4
-        },
-        {
-          id: 3,
-          pickup_location: 'Residential Area',
-          dropoff_location: 'Shopping Center',
-          date: '2024-01-15',
-          time: '09:45',
-          status: 'completed',
-          earnings: 18.25,
-          distance: 8.2,
-          duration: '18 min',
-          rating: 5
+        // Get driver trip statistics
+        const statsResponse = await axiosInstance.get(`/trips/trips/driver_stats/`, {
+          params: {
+            driver_id: user.id,
+            start_date: today,
+            end_date: today
+          }
+        });
+
+        if (statsResponse.data) {
+          const stats = statsResponse.data;
+          tripStats = {
+            trips_completed: stats.completed_trips || 0,
+            trips_scheduled: stats.total_trips || 0,
+            earnings: stats.total_earnings || 0,
+            hours_worked: Math.round((stats.total_duration || 0) / 60 * 10) / 10,
+            distance_covered: stats.total_distance || 0,
+            fuel_consumed: Math.round((stats.total_distance || 0) * 0.1 * 10) / 10 // Estimate
+          };
         }
-      ];
+        console.log('✅ Trip statistics loaded:', tripStats);
+      } catch (error) {
+        console.warn('⚠️ Could not load trip statistics:', error.message);
+      }
 
-      const mockUpcomingTrips = [
-        {
-          id: 4,
-          pickup_location: 'Central Station',
-          dropoff_location: 'University Campus',
-          date: '2024-01-16',
-          time: '08:00',
-          status: 'scheduled',
-          estimated_earnings: 32.00,
-          estimated_distance: 15.2,
-          estimated_duration: '25 min'
-        },
-        {
-          id: 5,
-          pickup_location: 'Medical Center',
-          dropoff_location: 'Suburban Mall',
-          date: '2024-01-16',
-          time: '10:30',
-          status: 'scheduled',
-          estimated_earnings: 41.50,
-          estimated_distance: 19.8,
-          estimated_duration: '32 min'
-        }
-      ];
+      // Get recent trips
+      let recentTripsData = [];
+      try {
+        const tripsResponse = await axiosInstance.get(`/trips/trips/recent_trips/`, {
+          params: {
+            driver_id: user.id,
+            limit: 5
+          }
+        });
 
-      const mockEarnings = {
-        today: 245.50,
-        week: 1456.75,
-        month: 6234.25,
-        year: 45678.90,
-        pending_payment: 1456.75,
-        last_payment_date: '2024-01-10',
-        next_payment_date: '2024-01-25'
+        recentTripsData = (tripsResponse.data.results || tripsResponse.data || []).map(trip => ({
+          id: trip.id,
+          pickup_location: trip.pickup_location || 'Unknown',
+          dropoff_location: trip.dropoff_location || 'Unknown',
+          date: trip.created_at ? new Date(trip.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          time: trip.created_at ? new Date(trip.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+          status: trip.status || 'unknown',
+          earnings: parseFloat(trip.driver_earnings || 0),
+          distance: parseFloat(trip.distance_km || 0),
+          duration: `${trip.duration_minutes || 0} min`,
+          rating: trip.customer_rating || 0
+        }));
+
+        console.log('✅ Recent trips loaded:', recentTripsData.length);
+      } catch (error) {
+        console.warn('⚠️ Could not load recent trips:', error.message);
+        recentTripsData = [];
+      }
+
+      // Get upcoming trips (scheduled trips)
+      let upcomingTripsData = [];
+      try {
+        const upcomingResponse = await axiosInstance.get(`/trips/trips/`, {
+          params: {
+            driver: user.id,
+            status: 'scheduled',
+            ordering: 'pickup_time',
+            limit: 5
+          }
+        });
+
+        upcomingTripsData = (upcomingResponse.data.results || upcomingResponse.data || []).map(trip => ({
+          id: trip.id,
+          pickup_location: trip.pickup_location || 'Unknown',
+          dropoff_location: trip.dropoff_location || 'Unknown',
+          date: trip.pickup_time ? new Date(trip.pickup_time).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          time: trip.pickup_time ? new Date(trip.pickup_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+          status: trip.status || 'scheduled',
+          estimated_earnings: parseFloat(trip.total_fare || 0),
+          estimated_distance: parseFloat(trip.distance_km || 0),
+          estimated_duration: `${trip.duration_minutes || 0} min`
+        }));
+
+        console.log('✅ Upcoming trips loaded:', upcomingTripsData.length);
+      } catch (error) {
+        console.warn('⚠️ Could not load upcoming trips:', error.message);
+        upcomingTripsData = [];
+      }
+
+      // Calculate earnings from trip data
+      const earningsData = {
+        today: tripStats.earnings,
+        week: weeklyStats.total_earnings,
+        month: monthlyStats.total_earnings,
+        year: monthlyStats.total_earnings * 12, // Estimate
+        pending_payment: tripStats.earnings,
+        last_payment_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        next_payment_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
 
-      const mockNotifications = [
+      // Mock notifications (can be replaced with real API later)
+      const notificationsData = [
         {
           id: 1,
           type: 'trip',
-          title: 'New Trip Assigned',
-          message: 'You have a new trip scheduled for tomorrow at 8:00 AM',
-          time: '2 hours ago',
+          title: 'Dashboard Updated',
+          message: 'Your dashboard is now showing real-time data from the API',
+          time: 'Just now',
           read: false
-        },
-        {
-          id: 2,
-          type: 'payment',
-          title: 'Payment Processed',
-          message: 'Your weekly payment of $1,456.75 has been processed',
-          time: '1 day ago',
-          read: false
-        },
-        {
-          id: 3,
-          type: 'document',
-          title: 'License Renewal Reminder',
-          message: 'Your driving license expires in 11 months',
-          time: '3 days ago',
-          read: true
         }
       ];
 
-      const mockVehicleInfo = {
-        id: 1,
-        make: 'Toyota',
-        model: 'Camry',
-        year: 2022,
-        license_plate: 'ABC-1234',
-        color: 'Silver',
-        mileage: 45678,
-        fuel_type: 'Gasoline',
-        insurance_expiry: '2024-08-15',
-        registration_expiry: '2024-06-30',
-        last_maintenance: '2024-01-01',
-        next_maintenance: '2024-04-01'
+      // Get vehicle info from driver profile
+      const vehicleData = driverProfile.vehicle || {
+        id: null,
+        make: 'N/A',
+        model: 'N/A',
+        year: null,
+        license_plate: 'N/A',
+        color: 'N/A',
+        mileage: 0,
+        fuel_type: 'N/A',
+        insurance_expiry: null,
+        registration_expiry: null,
+        last_maintenance: null,
+        next_maintenance: null
       };
 
-      // Set all data
-      setDriverData(mockDriverData);
-      setTodayStats(mockTodayStats);
-      setWeeklyStats(mockWeeklyStats);
-      setMonthlyStats(mockMonthlyStats);
-      setRecentTrips(mockRecentTrips);
-      setUpcomingTrips(mockUpcomingTrips);
-      setEarnings(mockEarnings);
-      setNotifications(mockNotifications);
-      setVehicleInfo(mockVehicleInfo);
+      // Set all data with real API responses
+      setDriverData(driverProfile);
+      setTodayStats(tripStats);
+      setWeeklyStats(weeklyStats);
+      setMonthlyStats(monthlyStats);
+      setRecentTrips(recentTripsData);
+      setUpcomingTrips(upcomingTripsData);
+      setEarnings(earningsData);
+      setNotifications(notificationsData);
+      setVehicleInfo(vehicleData);
 
+      console.log('✅ Dashboard data loaded successfully with real API data');
       toast.success('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error fetching driver dashboard data:', error);

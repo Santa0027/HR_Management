@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
+import axiosInstance from '../api/axiosInstance';
 import {
   MapPin,
   Clock,
@@ -28,6 +30,7 @@ import {
 } from 'lucide-react';
 
 const DriverTrips = () => {
+  const { user } = useAuth();
   const [trips, setTrips] = useState([]);
   const [currentTrip, setCurrentTrip] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,92 +45,116 @@ const DriverTrips = () => {
   }, [activeTab, filters]);
 
   const fetchTrips = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      
-      // Mock trip data
-      const mockCurrentTrip = {
-        id: 1,
-        pickup_location: 'Downtown Mall, 123 Main St',
-        pickup_coordinates: { lat: 40.7128, lng: -74.0060 },
-        dropoff_location: 'Airport Terminal 2, JFK Airport',
-        dropoff_coordinates: { lat: 40.6413, lng: -73.7781 },
-        passenger_name: 'Sarah Johnson',
-        passenger_phone: '+1 (555) 123-4567',
-        scheduled_time: '2024-01-15T14:30:00Z',
-        estimated_duration: 35,
-        estimated_distance: 23.5,
-        estimated_fare: 45.50,
-        status: 'in_progress',
-        trip_type: 'standard',
-        special_instructions: 'Please call when you arrive',
-        started_at: '2024-01-15T14:25:00Z'
-      };
+      console.log('🚗 Fetching trips for driver:', user.id);
 
-      const mockTrips = [
-        {
-          id: 2,
-          pickup_location: 'Hotel Grand Plaza',
-          dropoff_location: 'Business District',
-          passenger_name: 'Michael Chen',
-          passenger_phone: '+1 (555) 987-6543',
-          scheduled_time: '2024-01-15T16:00:00Z',
-          estimated_duration: 22,
-          estimated_distance: 12.8,
-          estimated_fare: 28.75,
-          status: 'scheduled',
-          trip_type: 'premium'
-        },
-        {
-          id: 3,
-          pickup_location: 'Central Station',
-          dropoff_location: 'University Campus',
-          passenger_name: 'Emily Davis',
-          passenger_phone: '+1 (555) 456-7890',
-          scheduled_time: '2024-01-15T18:30:00Z',
-          estimated_duration: 25,
-          estimated_distance: 15.2,
-          estimated_fare: 32.00,
-          status: 'scheduled',
-          trip_type: 'standard'
-        },
-        {
-          id: 4,
-          pickup_location: 'Residential Area',
-          dropoff_location: 'Shopping Center',
-          passenger_name: 'David Wilson',
-          passenger_phone: '+1 (555) 321-0987',
-          scheduled_time: '2024-01-14T11:15:00Z',
-          actual_duration: 18,
-          actual_distance: 8.2,
-          actual_fare: 18.25,
-          status: 'completed',
-          trip_type: 'standard',
-          rating: 5,
-          tip: 3.00,
-          completed_at: '2024-01-14T11:33:00Z'
-        },
-        {
-          id: 5,
-          pickup_location: 'Medical Center',
-          dropoff_location: 'Suburban Mall',
-          passenger_name: 'Lisa Anderson',
-          passenger_phone: '+1 (555) 654-3210',
-          scheduled_time: '2024-01-14T09:45:00Z',
-          actual_duration: 32,
-          actual_distance: 19.8,
-          actual_fare: 41.50,
-          status: 'completed',
-          trip_type: 'premium',
-          rating: 4,
-          tip: 5.00,
-          completed_at: '2024-01-14T10:17:00Z'
+      // Get current trip (in progress)
+      let currentTripData = null;
+      try {
+        const currentTripResponse = await axiosInstance.get('/trips/trips/', {
+          params: {
+            driver: user.id,
+            status: 'in_progress',
+            limit: 1
+          }
+        });
+
+        const currentTrips = currentTripResponse.data.results || currentTripResponse.data || [];
+        if (currentTrips.length > 0) {
+          const trip = currentTrips[0];
+          currentTripData = {
+            id: trip.id,
+            pickup_location: trip.pickup_location || 'Unknown',
+            pickup_coordinates: {
+              lat: trip.pickup_latitude || 0,
+              lng: trip.pickup_longitude || 0
+            },
+            dropoff_location: trip.dropoff_location || 'Unknown',
+            dropoff_coordinates: {
+              lat: trip.dropoff_latitude || 0,
+              lng: trip.dropoff_longitude || 0
+            },
+            passenger_name: trip.customer_name || 'Unknown',
+            passenger_phone: trip.customer_phone || 'N/A',
+            scheduled_time: trip.pickup_time || trip.created_at,
+            estimated_duration: trip.duration_minutes || 0,
+            estimated_distance: parseFloat(trip.distance_km || 0),
+            estimated_fare: parseFloat(trip.total_fare || 0),
+            status: trip.status,
+            trip_type: trip.trip_type || 'standard',
+            special_instructions: trip.notes || '',
+            started_at: trip.started_at || trip.created_at
+          };
         }
-      ];
+        console.log('✅ Current trip loaded:', currentTripData);
+      } catch (error) {
+        console.warn('⚠️ No current trip found:', error.message);
+      }
 
-      setCurrentTrip(mockCurrentTrip);
-      setTrips(mockTrips);
-      
+      // Get all trips based on filters
+      let tripsData = [];
+      try {
+        const params = {
+          driver: user.id,
+          ordering: '-created_at'
+        };
+
+        // Apply status filter
+        if (filters.status !== 'all') {
+          params.status = filters.status;
+        }
+
+        // Apply date range filter
+        if (filters.date_range === 'today') {
+          const today = new Date().toISOString().split('T')[0];
+          params.start_date = today;
+          params.end_date = today;
+        } else if (filters.date_range === 'week') {
+          const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          params.start_date = weekAgo;
+        } else if (filters.date_range === 'month') {
+          const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          params.start_date = monthAgo;
+        }
+
+        const tripsResponse = await axiosInstance.get('/trips/trips/', { params });
+        const rawTrips = tripsResponse.data.results || tripsResponse.data || [];
+
+        tripsData = rawTrips.map(trip => ({
+          id: trip.id,
+          pickup_location: trip.pickup_location || 'Unknown',
+          dropoff_location: trip.dropoff_location || 'Unknown',
+          passenger_name: trip.customer_name || 'Unknown',
+          passenger_phone: trip.customer_phone || 'N/A',
+          scheduled_time: trip.pickup_time || trip.created_at,
+          estimated_duration: trip.duration_minutes || 0,
+          estimated_distance: parseFloat(trip.distance_km || 0),
+          estimated_fare: parseFloat(trip.total_fare || 0),
+          actual_duration: trip.duration_minutes || 0,
+          actual_distance: parseFloat(trip.distance_km || 0),
+          actual_fare: parseFloat(trip.driver_earnings || 0),
+          status: trip.status || 'unknown',
+          trip_type: trip.trip_type || 'standard',
+          rating: trip.customer_rating || 0,
+          tip: parseFloat(trip.tip_amount || 0),
+          completed_at: trip.completed_at || trip.updated_at,
+          payment_method: trip.payment_method || 'unknown'
+        }));
+
+        console.log('✅ Trips loaded:', tripsData.length);
+      } catch (error) {
+        console.warn('⚠️ Could not load trips:', error.message);
+        tripsData = [];
+      }
+
+      // Set state with real API data
+      setCurrentTrip(currentTripData);
+      setTrips(tripsData);
+
+      console.log('✅ All trips data loaded successfully');
       toast.success('Trips loaded successfully');
     } catch (error) {
       console.error('Error fetching trips:', error);
@@ -139,30 +166,56 @@ const DriverTrips = () => {
 
   const handleTripAction = async (tripId, action) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      console.log(`🚗 Performing trip action: ${action} for trip ${tripId}`);
+
+      let updateData = {};
+      switch (action) {
+        case 'start':
+          updateData = {
+            status: 'in_progress',
+            started_at: new Date().toISOString()
+          };
+          break;
+        case 'complete':
+          updateData = {
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          };
+          break;
+        case 'cancel':
+          updateData = {
+            status: 'cancelled',
+            cancelled_at: new Date().toISOString()
+          };
+          break;
+        default:
+          return;
+      }
+
+      // Update trip via API
+      await axiosInstance.patch(`/trips/trips/${tripId}/`, updateData);
+
+      // Update local state
       switch (action) {
         case 'start':
           setCurrentTrip(prev => ({ ...prev, status: 'in_progress', started_at: new Date().toISOString() }));
-          toast.success('Trip started');
+          toast.success('✅ Trip started successfully');
           break;
         case 'complete':
           setCurrentTrip(null);
-          toast.success('Trip completed');
+          toast.success('✅ Trip completed successfully');
           break;
         case 'cancel':
           setCurrentTrip(null);
-          toast.success('Trip cancelled');
-          break;
-        default:
+          toast.success('✅ Trip cancelled successfully');
           break;
       }
-      
+
+      // Refresh trips data
       fetchTrips();
     } catch (error) {
-      console.error('Error updating trip:', error);
-      toast.error('Failed to update trip');
+      console.error('❌ Error updating trip:', error);
+      toast.error(`Failed to ${action} trip: ${error.response?.data?.message || error.message}`);
     }
   };
 

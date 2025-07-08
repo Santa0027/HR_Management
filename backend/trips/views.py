@@ -152,10 +152,14 @@ class TripViewSet(viewsets.ModelViewSet):
             digital_earnings=Sum('driver_earnings', filter=Q(payment_method__in=['digital', 'card', 'wallet']))
         )
         
-        # Handle None values
+        # Handle None values and format decimals
+        from decimal import Decimal, ROUND_HALF_UP
         for key, value in stats.items():
             if value is None:
                 stats[key] = 0
+            elif isinstance(value, Decimal):
+                # Round to 2 decimal places to avoid precision issues
+                stats[key] = value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
         # Calculate averages
         completed_trips = stats['completed_trips']

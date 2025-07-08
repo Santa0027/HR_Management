@@ -1,5 +1,5 @@
 from django.db import models
-from django.conf import settings 
+from django.conf import settings
 from django.utils import timezone
 from company.models import Company
 from drivers.models import Driver
@@ -46,18 +46,18 @@ class Attendance(models.Model):
     date = models.DateField(default=timezone.localdate) # Date of attendance
     assigned_time = models.TimeField(null=True, blank=True) # E.g., scheduled start time
 
-    # Login (Check-in) details
+    # Login (Check-in) details - Photo and Location are MANDATORY (enforced in views)
     login_time = models.TimeField(null=True, blank=True)
-    login_photo = models.ImageField(upload_to='login_photos/', null=True, blank=True) # <<< IMPORTANT: null=True, blank=True
-    login_latitude = models.CharField(max_length=20, null=True, blank=True)
-    login_longitude = models.CharField(max_length=20, null=True, blank=True)
+    login_photo = models.ImageField(upload_to='login_photos/', null=True, blank=True, help_text="Photo is required for check-in")
+    login_latitude = models.CharField(max_length=20, null=True, blank=True, help_text="Location latitude is required for check-in")
+    login_longitude = models.CharField(max_length=20, null=True, blank=True, help_text="Location longitude is required for check-in")
     checked_in_location = models.ForeignKey(CheckinLocation, on_delete=models.SET_NULL, null=True, blank=True)
 
-    # Logout (Check-out) details
+    # Logout (Check-out) details - Photo and Location are MANDATORY (enforced in views)
     logout_time = models.TimeField(null=True, blank=True)
-    logout_photo = models.ImageField(upload_to='logout_photos/', null=True, blank=True) # <<< IMPORTANT: null=True, blank=True
-    logout_latitude = models.CharField(max_length=20, null=True, blank=True)
-    logout_longitude = models.CharField(max_length=20, null=True, blank=True)
+    logout_photo = models.ImageField(upload_to='logout_photos/', null=True, blank=True, help_text="Photo is required for check-out")
+    logout_latitude = models.CharField(max_length=20, null=True, blank=True, help_text="Location latitude is required for check-out")
+    logout_longitude = models.CharField(max_length=20, null=True, blank=True, help_text="Location longitude is required for check-out")
 
     # Status and deduction
     STATUS_CHOICES = [
@@ -316,15 +316,22 @@ class DriverShiftAssignment(models.Model):
 
 # ==================== LEAVE MANAGEMENT MODELS ====================
 
+# Leave models removed as per user request
+
+
+
+
+
 class LeaveType(models.Model):
-    """Define different types of leaves available"""
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
+    """Define different types of leave (Annual, Sick, Emergency, etc.)"""
+    name = models.CharField(max_length=100, unique=True, help_text="Leave type name (e.g., Annual Leave)")
+    description = models.TextField(blank=True, null=True, help_text="Description of the leave type")
     max_days_per_year = models.IntegerField(default=30, help_text="Maximum days allowed per year")
-    is_paid = models.BooleanField(default=True, help_text="Is this a paid leave?")
-    requires_approval = models.BooleanField(default=True, help_text="Does this leave require approval?")
-    advance_notice_days = models.IntegerField(default=1, help_text="Minimum advance notice required in days")
-    is_active = models.BooleanField(default=True)
+    max_consecutive_days = models.IntegerField(default=30, help_text="Maximum consecutive days allowed")
+    requires_approval = models.BooleanField(default=True, help_text="Whether this leave type requires approval")
+    requires_document = models.BooleanField(default=False, help_text="Whether supporting document is required")
+    advance_notice_days = models.IntegerField(default=7, help_text="Minimum advance notice required in days")
+    is_active = models.BooleanField(default=True, help_text="Whether this leave type is currently active")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -351,47 +358,45 @@ class LeaveRequest(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='leave_requests')
     leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='requests')
 
-    # Leave dates
-    start_date = models.DateField()
-    end_date = models.DateField()
+    # Leave details
+    start_date = models.DateField(help_text="Leave start date")
+    end_date = models.DateField(help_text="Leave end date")
     total_days = models.IntegerField(help_text="Total number of leave days")
-
-    # Request details
     reason = models.TextField(help_text="Reason for leave")
-    emergency_contact = models.CharField(max_length=20, blank=True, null=True)
-    supporting_document = models.FileField(upload_to='leave_documents/', blank=True, null=True)
+    emergency_contact = models.CharField(max_length=20, blank=True, null=True, help_text="Emergency contact number")
+    supporting_document = models.FileField(upload_to='leave_documents/', blank=True, null=True, help_text="Supporting document if required")
 
-    # Status and approval
+    # Status and review
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    applied_date = models.DateTimeField(auto_now_add=True)
-
-    # Approval details
-    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leaves')
-    reviewed_date = models.DateTimeField(null=True, blank=True)
-    admin_comments = models.TextField(blank=True, null=True, help_text="Comments from admin/HR")
+    applied_date = models.DateTimeField(auto_now_add=True, help_text="When the request was submitted")
+    reviewed_by = models.ForeignKey('usermanagement.CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_leave_requests')
+    reviewed_date = models.DateTimeField(null=True, blank=True, help_text="When the request was reviewed")
+    admin_comments = models.TextField(blank=True, null=True, help_text="Admin comments on the request")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-applied_date', 'driver__driver_name']
+        ordering = ['-applied_date']
         verbose_name = "Leave Request"
         verbose_name_plural = "Leave Requests"
 
     def __str__(self):
         return f"{self.driver.driver_name} - {self.leave_type.name} ({self.start_date} to {self.end_date})"
 
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.end_date < self.start_date:
-            raise ValidationError("End date cannot be before start date")
-
     def save(self, *args, **kwargs):
-        # Calculate total days
-        if self.start_date and self.end_date:
+        # Calculate total days if not set
+        if not self.total_days and self.start_date and self.end_date:
             self.total_days = (self.end_date - self.start_date).days + 1
         super().save(*args, **kwargs)
+
+    @property
+    def duration_text(self):
+        """Human readable duration"""
+        if self.total_days == 1:
+            return "1 day"
+        return f"{self.total_days} days"
 
 
 class LeaveBalance(models.Model):

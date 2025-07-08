@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 // Modern UI Components with Professional Styling
 const Card = ({ children, className = '', onClick }) => (
   <div
-    className={`bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}`}
+    className={`bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-300 ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}`}
     onClick={onClick}
   >
     {children}
@@ -752,7 +752,7 @@ const AttendanceReport = () => {
       </header>
 
       <div className="p-8">
-        <div className="max-w-8xl mx-auto space-y-8">
+        <div className="max-w-8xl h-20 mx-auto space-y-8">
           {/* Enhanced Summary Cards with Dynamic Data */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
             <MetricCard
@@ -1003,14 +1003,14 @@ const AttendanceReport = () => {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </TableCell>
-                  <TableCell>{d.driver_name}</TableCell>
+                  <TableCell>{d.driver.driver_name}</TableCell>
                   <TableCell>{d.date}</TableCell>
                   <TableCell>{d.assigned_time}</TableCell>
                   <TableCell>{d.login_time || 'N/A'}</TableCell> {/* Use N/A or '-' for absent */}
                   <TableCell>{d.logout_time || 'N/A'}</TableCell>
                   <TableCell>
-                    {d.photo_url ? (
-                      <img src={d.photo_url} alt="driver" className="w-8 h-8 rounded-full object-cover"
+                    {d.login_photo ? (
+                      <img src={d.login_photo} alt="driver" className="w-8 h-8 rounded-full object-cover"
                         onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/32x32/cccccc/000000?text=No+Photo'; e.target.classList.add('p-1'); }} /> // Fallback placeholder
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs">No Photo</div> // Fallback if no URL
@@ -1024,7 +1024,7 @@ const AttendanceReport = () => {
                       {d.status}
                     </span>
                   </TableCell>
-                  <TableCell>{d.duration || '-'}</TableCell>
+                  <TableCell>{d.active_time_hours || '-'}</TableCell>
                   <TableCell>{d.platform || '-'}</TableCell>
                   <TableCell>{d.reason_for_deduction || '-'}</TableCell>
                   <TableCell>₹{Number(d.deduct_amount || 0).toFixed(2)}</TableCell>

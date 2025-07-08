@@ -310,8 +310,8 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveType
         fields = [
-            'id', 'name', 'description', 'max_days_per_year', 'is_paid',
-            'requires_approval', 'advance_notice_days', 'is_active',
+            'id', 'name', 'description', 'max_days_per_year', 'max_consecutive_days',
+            'requires_approval', 'requires_document', 'advance_notice_days', 'is_active',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
