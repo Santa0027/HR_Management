@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
 import {
   Wrench,
   Plus,
@@ -164,63 +165,59 @@ const VehicleServiceManagement = () => {
     overdue: 0
   });
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockServices = [
-      {
-        id: 1,
-        vehicle: { vehicle_name: 'Toyota Camry', vehicle_number: 'ABC-123' },
-        service_type: 'ROUTINE',
-        service_date: '2024-01-15',
-        service_provider: 'AutoCare Center',
-        service_description: 'Regular maintenance service including oil change, filter replacement, and general inspection.',
-        cost: 150.00,
-        odometer_reading: 45000,
-        status: 'SCHEDULED'
-      },
-      {
-        id: 2,
-        vehicle: { vehicle_name: 'Honda Civic', vehicle_number: 'XYZ-789' },
-        service_type: 'REPAIR',
-        service_date: '2024-01-10',
-        service_provider: 'Quick Fix Garage',
-        service_description: 'Brake pad replacement and brake fluid change.',
-        cost: 280.00,
-        odometer_reading: 32000,
-        status: 'COMPLETED'
-      },
-      {
-        id: 3,
-        vehicle: { vehicle_name: 'Ford Transit', vehicle_number: 'DEF-456' },
-        service_type: 'MAINTENANCE',
-        service_date: '2024-01-20',
-        service_provider: 'Fleet Services Ltd',
-        service_description: 'Comprehensive maintenance check including engine diagnostics.',
-        cost: 350.00,
-        odometer_reading: 78000,
-        status: 'IN_PROGRESS'
-      }
-    ];
+  // Fetch services from API
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      console.log('🔧 Fetching vehicle services from API...');
 
-    setServices(mockServices);
-    setFilteredServices(mockServices);
-    
-    // Calculate stats
+      const response = await axiosInstance.get('/vehicle-services/');
+      let servicesData = [];
+
+      if (Array.isArray(response.data)) {
+        servicesData = response.data;
+      } else if (response.data && Array.isArray(response.data.results)) {
+        servicesData = response.data.results;
+      }
+
+      setServices(servicesData);
+      setFilteredServices(servicesData);
+      console.log('✅ Loaded services from API:', servicesData.length);
+
+    } catch (error) {
+      console.error('❌ Error fetching services:', error);
+      toast.error('Failed to load vehicle services');
+      setServices([]);
+      setFilteredServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats from services data
+  const calculateStats = (servicesData) => {
     const stats = {
-      total: mockServices.length,
-      scheduled: mockServices.filter(s => s.status === 'SCHEDULED').length,
-      inProgress: mockServices.filter(s => s.status === 'IN_PROGRESS').length,
-      completed: mockServices.filter(s => s.status === 'COMPLETED').length,
-      cancelled: mockServices.filter(s => s.status === 'CANCELLED').length,
-      totalCost: mockServices.reduce((sum, s) => sum + s.cost, 0),
-      avgCost: mockServices.reduce((sum, s) => sum + s.cost, 0) / mockServices.length,
-      thisMonth: mockServices.filter(s => new Date(s.service_date).getMonth() === new Date().getMonth()).length,
+      total: servicesData.length,
+      scheduled: servicesData.filter(s => s.status === 'SCHEDULED').length,
+      inProgress: servicesData.filter(s => s.status === 'IN_PROGRESS').length,
+      completed: servicesData.filter(s => s.status === 'COMPLETED').length,
+      cancelled: servicesData.filter(s => s.status === 'CANCELLED').length,
+      totalCost: servicesData.reduce((sum, s) => sum + (parseFloat(s.cost) || 0), 0),
+      avgCost: servicesData.length > 0 ? servicesData.reduce((sum, s) => sum + (parseFloat(s.cost) || 0), 0) / servicesData.length : 0,
+      thisMonth: servicesData.filter(s => new Date(s.service_date).getMonth() === new Date().getMonth()).length,
       overdue: 0
     };
-    
     setServiceStats(stats);
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchServices();
   }, []);
+
+  // Update stats when services change
+  useEffect(() => {
+    calculateStats(services);
+  }, [services]);
 
   // Filter services based on search and filters
   useEffect(() => {

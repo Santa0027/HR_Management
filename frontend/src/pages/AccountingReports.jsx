@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axiosInstance from '../api/axiosInstance';
 import {
   FileText,
   Download,
@@ -111,45 +112,17 @@ const AccountingReports = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      // Simulate API call - replace with actual API
-      const mockReports = [
-        {
-          id: 1,
-          name: 'Monthly P&L - December 2024',
-          type: 'profit_loss',
-          period: '2024-12',
-          status: 'completed',
-          generated_at: '2024-12-01T10:00:00Z',
-          file_size: '2.3 MB',
-          format: 'pdf'
-        },
-        {
-          id: 2,
-          name: 'Payroll Summary - November 2024',
-          type: 'payroll_summary',
-          period: '2024-11',
-          status: 'completed',
-          generated_at: '2024-11-30T15:30:00Z',
-          file_size: '1.8 MB',
-          format: 'excel'
-        },
-        {
-          id: 3,
-          name: 'Budget Variance Q4 2024',
-          type: 'budget_variance',
-          period: 'Q4-2024',
-          status: 'generating',
-          generated_at: null,
-          file_size: null,
-          format: 'pdf'
-        }
-      ];
+      console.log('📊 Loading accounting reports from API...');
 
-      setReports(mockReports);
-      toast.success('Reports loaded successfully');
+      const response = await axiosInstance.get('/accounting/reports/');
+      const reportsData = Array.isArray(response.data) ? response.data : [];
+      setReports(reportsData);
+
+      console.log('✅ Reports loaded from API:', reportsData.length);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast.error('Failed to load reports');
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -157,38 +130,37 @@ const AccountingReports = () => {
 
   const fetchSummary = async () => {
     try {
-      // Simulate API call
-      const mockSummary = {
-        total_reports: 25,
-        generated_this_month: 8,
-        pending_reports: 2,
-        scheduled_reports: 5
-      };
-      setSummary(mockSummary);
+      console.log('📈 Loading reports summary from API...');
+      const response = await axiosInstance.get('/accounting/reports/summary/');
+      setSummary(response.data);
     } catch (error) {
       console.error('Error fetching summary:', error);
+      setSummary({
+        total_reports: 0,
+        generated_this_month: 0,
+        pending_reports: 0,
+        scheduled_reports: 0
+      });
     }
   };
 
   const generateReport = async (reportType) => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newReport = {
-        id: Date.now(),
-        name: `${reportTypes.find(r => r.id === reportType)?.name} - ${new Date().toLocaleDateString()}`,
+      console.log('📊 Generating report via API...');
+
+      const reportData = {
         type: reportType,
         period: filters.period,
-        status: 'completed',
-        generated_at: new Date().toISOString(),
-        file_size: '1.5 MB',
-        format: filters.format
+        format: 'pdf'
       };
 
-      setReports(prev => [newReport, ...prev]);
-      toast.success('Report generated successfully');
+      const response = await axiosInstance.post('/accounting/reports/generate/', reportData);
+
+      toast.success('Report generation started successfully!');
+
+      // Refresh reports list to show the new report
+      await fetchReports();
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report');

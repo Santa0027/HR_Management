@@ -332,10 +332,26 @@ const DriverManagement = () => {
     phone_bill_paid_by: ''
   });
 
+  // State for form validation errors
+  const [formErrors, setFormErrors] = useState({});
+
   // Handler for input changes in the add/edit driver form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewDriver(prev => ({ ...prev, [name]: value }));
+
+    // Debug logging for company and vehicle selection
+    if (name === 'company') {
+      console.log('🏢 Company selected:', value, 'Company name:', companies.find(c => c.id == value)?.company_name);
+    }
+    if (name === 'vehicle') {
+      console.log('🚗 Vehicle selected:', value, 'Vehicle name:', vehicles.find(v => v.id == value)?.vehicle_name);
+    }
+
+    // Clear validation error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   // Enhanced statistics calculation function
@@ -468,132 +484,8 @@ const DriverManagement = () => {
 
       console.log('✅ Loaded drivers from API:', driversData.length);
 
-      // If no real data is available, fall back to simulated data for demo purposes
-      if (driversData.length === 0) {
-        console.log('📝 No real data found, using simulated data for demo');
-        const actualDriverData = [
-        {
-          id: 3,
-          driver_name: "Omar Al-Rashid",
-          gender: "male",
-          iqama: "IQ003",
-          mobile: "+965-9876-5434",
-          city: "Kuwait City",
-          nationality: "Kuwait",
-          dob: "1985-03-15", // Added a sample DOB
-          status: "approved",
-          remarks: "Excellent record",
-          vehicle: {
-            id: 3,
-            vehicle_name: "Mercedes Sprinter",
-            vehicle_number: "KWT-003",
-            vehicle_type: "BUS"
-          },
-          company: {
-            id: 1,
-            company_name: "Kuwait Transport Company"
-          },
-          driver_profile_img: null,
-          iqama_document: null,
-          iqama_expiry: "2026-12-31",
-          passport_document: null,
-          passport_expiry: "2028-05-20",
-          license_document: null,
-          license_expiry: "2027-01-10",
-          visa_document: null,
-          visa_expiry: null,
-          medical_document: null,
-          medical_expiry: "2026-07-01",
-          insurance_paid_by: "Company",
-          accommodation_paid_by: "Driver",
-          phone_bill_paid_by: "Company",
-          created_at: "2025-07-06T09:41:30.751591Z"
-        },
-        {
-          id: 2,
-          driver_name: "Ahmed Hassan",
-          gender: "male",
-          iqama: "IQ002",
-          mobile: "+965-9876-5433",
-          city: "Kuwait City",
-          nationality: "Kuwait",
-          dob: "1990-08-22",
-          status: "active", // Changed to active for testing stats
-          remarks: "New driver, good performance",
-          vehicle: {
-            id: 2,
-            vehicle_name: "Nissan Urvan",
-            vehicle_number: "KWT-002",
-            vehicle_type: "BUS"
-          },
-          company: {
-            id: 1,
-            company_name: "Kuwait Transport Company"
-          },
-          driver_profile_img: null,
-          iqama_document: null,
-          iqama_expiry: "2027-06-15",
-          passport_document: null,
-          passport_expiry: "2029-03-01",
-          license_document: null,
-          license_expiry: "2028-02-28",
-          visa_document: null,
-          visa_expiry: null,
-          medical_document: null,
-          medical_expiry: "2027-09-10",
-          insurance_paid_by: "Driver",
-          accommodation_paid_by: "Company",
-          phone_bill_paid_by: "Driver",
-          created_at: "2025-07-06T09:41:30.747301Z"
-        },
-        {
-          id: 1,
-          driver_name: "Mohammed Al-Ahmad",
-          gender: "male",
-          iqama: "IQ001",
-          mobile: "+965-9876-5432",
-          city: "Kuwait City",
-          nationality: "Kuwait",
-          dob: "1978-11-01",
-          status: "pending", // Changed to pending for testing stats
-          remarks: "Awaiting final documents",
-          vehicle: {
-            id: 1,
-            vehicle_name: "Toyota Hiace",
-            vehicle_number: "KWT-001",
-            vehicle_type: "BUS"
-          },
-          company: {
-            id: 1,
-            company_name: "Kuwait Transport Company"
-          },
-          driver_profile_img: null,
-          iqama_document: null,
-          iqama_expiry: "2026-01-01",
-          passport_document: null,
-          passport_expiry: "2027-04-05",
-          license_document: null,
-          license_expiry: "2026-08-12",
-          visa_document: null,
-          visa_expiry: null,
-          medical_document: null,
-          medical_expiry: "2025-11-30",
-          insurance_paid_by: "Company",
-          accommodation_paid_by: "Company",
-          phone_bill_paid_by: "Company",
-          created_at: "2025-07-06T09:41:30.741675Z"
-        }
-      ];
-
-        setDrivers(actualDriverData); // Update the main drivers state
-        setFilteredDrivers(actualDriverData); // Initialize filtered drivers with all data
-
-        // Calculate and update comprehensive driver statistics based on fetched data
-        const stats = calculateEnhancedStats(actualDriverData);
-        setDriverStats(stats);
-
-        toast.success("✅ Using simulated data for demo"); // Success notification
-      }
+      // Use only real API data - no fallback mock data
+      console.log('✅ Loaded drivers from API:', driversData.length);
     } catch (error) {
       console.error('Error loading drivers:', error);
       toast.error("Failed to load driver data"); // Error notification
@@ -605,20 +497,7 @@ const DriverManagement = () => {
   // useCallback to memoize the fetchDependencies function
   const fetchDependencies = useCallback(async () => {
     try {
-      // Simulated API call to fetch companies
-      setCompanies([
-        { id: 1, company_name: "Kuwait Transport Company" },
-        { id: 2, company_name: "Gulf Logistics Inc." },
-        { id: 3, company_name: "Desert Express Services" }
-      ]);
-
-      // Simulated API call to fetch vehicles
-      setVehicles([
-        { id: 1, vehicle_name: "Toyota Hiace", vehicle_number: "KWT-001", vehicle_type: "BUS" },
-        { id: 2, vehicle_name: "Nissan Urvan", vehicle_number: "KWT-002", vehicle_type: "BUS" },
-        { id: 3, vehicle_name: "Mercedes Sprinter", vehicle_number: "KWT-003", vehicle_type: "BUS" },
-        { id: 4, vehicle_name: "Ford Transit", vehicle_number: "KWT-004", vehicle_type: "VAN" }
-      ]);
+      console.log('🔄 Loading companies and vehicles...');
 
       // Fetch companies and vehicles from API
       const [companiesResponse, vehiclesResponse] = await Promise.allSettled([
@@ -632,6 +511,9 @@ const DriverManagement = () => {
         companiesData = Array.isArray(companiesResponse.value.data)
           ? companiesResponse.value.data
           : (companiesResponse.value.data.results || []);
+        console.log('✅ Fetched companies from API:', companiesData.length);
+      } else {
+        console.error('❌ Failed to fetch companies:', companiesResponse.reason);
       }
 
       // Process vehicles data
@@ -640,24 +522,18 @@ const DriverManagement = () => {
         vehiclesData = Array.isArray(vehiclesResponse.value.data)
           ? vehiclesResponse.value.data
           : (vehiclesResponse.value.data.results || []);
+        console.log('✅ Fetched vehicles from API:', vehiclesData.length);
+      } else {
+        console.error('❌ Failed to fetch vehicles:', vehiclesResponse.reason);
       }
 
-      // Set the data or use fallback
-      setCompanies(companiesData.length > 0 ? companiesData : [
-        { id: 1, company_name: "Kuwait Transport Company" },
-        { id: 2, company_name: "Gulf Logistics Inc." },
-        { id: 3, company_name: "Desert Express Services" }
-      ]);
+      // Set companies data from API only
+      setCompanies(companiesData);
+      console.log('📋 Loaded companies from API:', companiesData.length);
 
-      setVehicles(vehiclesData.length > 0 ? vehiclesData : [
-        { id: 1, vehicle_name: "Toyota Hiace", vehicle_number: "KWT-001", vehicle_type: "BUS" },
-        { id: 2, vehicle_name: "Nissan Urvan", vehicle_number: "KWT-002", vehicle_type: "BUS" },
-        { id: 3, vehicle_name: "Mercedes Sprinter", vehicle_number: "KWT-003", vehicle_type: "BUS" },
-        { id: 4, vehicle_name: "Ford Transit", vehicle_number: "KWT-004", vehicle_type: "VAN" }
-      ]);
-
-      console.log('✅ Loaded companies:', companiesData.length || 'using fallback');
-      console.log('✅ Loaded vehicles:', vehiclesData.length || 'using fallback');
+      // Set vehicles data from API only
+      setVehicles(vehiclesData);
+      console.log('🚗 Loaded vehicles from API:', vehiclesData.length);
     } catch (error) {
       console.error('Error loading dependencies:', error);
       toast.error("Failed to load form options"); // Error notification
@@ -757,9 +633,76 @@ const DriverManagement = () => {
     navigate(`/driver-profile/${driver.id}`);
   };
 
+  // Form validation function
+  const validateDriverForm = () => {
+    const errors = {};
+
+    if (!newDriver.driver_name?.trim()) {
+      errors.driver_name = 'Driver name is required';
+    }
+
+    if (!newDriver.iqama?.trim()) {
+      errors.iqama = 'IQAMA number is required';
+    }
+
+    if (!newDriver.city?.trim()) {
+      errors.city = 'City is required';
+    }
+
+    setFormErrors(errors);
+    return errors;
+  };
+
+  // Function to reset form to initial state
+  const resetDriverForm = () => {
+    setNewDriver({
+      driver_name: '',
+      gender: 'male',
+      iqama: '',
+      mobile: '',
+      city: '',
+      nationality: '',
+      dob: '',
+      vehicle: '',
+      company: '',
+      status: 'pending',
+      remarks: '',
+      iqama_expiry: '',
+      passport_expiry: '',
+      license_expiry: '',
+      visa_expiry: '',
+      medical_expiry: '',
+      insurance_paid_by: '',
+      accommodation_paid_by: '',
+      phone_bill_paid_by: ''
+    });
+    setFormErrors({});
+  };
+
   // Handler for saving a driver (either adding new or updating existing)
   const handleSaveDriver = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
+
+    // Validate form before submission
+    const validationErrors = validateDriverForm();
+    if (Object.keys(validationErrors).length > 0) {
+      // Show validation errors
+      Object.values(validationErrors).forEach(error => {
+        toast.error(error);
+      });
+      return;
+    }
+
+    // Debug: Check form state before processing
+    console.log('🔍 Form state before processing:', {
+      company: newDriver.company,
+      vehicle: newDriver.vehicle,
+      companyType: typeof newDriver.company,
+      vehicleType: typeof newDriver.vehicle,
+      companyEmpty: newDriver.company === '',
+      vehicleEmpty: newDriver.vehicle === ''
+    });
+
     try {
       console.log('💾 Creating new driver via API');
 
@@ -785,14 +728,24 @@ const DriverManagement = () => {
       };
 
       // Add vehicle_id and Company_id only if they are selected
+      console.log('🔍 Form data before processing:', {
+        vehicle: newDriver.vehicle,
+        company: newDriver.company,
+        vehicleType: typeof newDriver.vehicle,
+        companyType: typeof newDriver.company
+      });
+
       if (newDriver.vehicle && newDriver.vehicle !== '') {
         driverData.vehicle_id = parseInt(newDriver.vehicle);
+        console.log('✅ Added vehicle_id:', driverData.vehicle_id);
       }
       if (newDriver.company && newDriver.company !== '') {
         driverData.Company_id = parseInt(newDriver.company);
+        console.log('✅ Added Company_id:', driverData.Company_id);
       }
 
-      console.log('Submitting driver data:', driverData);
+      console.log('📤 Submitting driver data:', driverData);
+      console.log('📤 Raw form data for comparison:', newDriver);
 
       // Make API call to create driver
       const response = await axiosInstance.post('/Register/drivers/', driverData);
@@ -801,16 +754,10 @@ const DriverManagement = () => {
       toast.success("✅ Driver added successfully!");
 
       // Refresh the drivers list
-      await loadDrivers();
+      await fetchDrivers();
 
       // Reset form fields and close modals after successful save
-      setNewDriver({
-        driver_name: '', gender: 'male', iqama: '', mobile: '', city: '',
-        nationality: '', dob: '', vehicle: '', company: '', status: 'pending',
-        remarks: '', iqama_expiry: '', passport_expiry: '', license_expiry: '',
-        visa_expiry: '', medical_expiry: '', insurance_paid_by: '',
-        accommodation_paid_by: '', phone_bill_paid_by: ''
-      });
+      resetDriverForm();
       setShowAddModal(false); // Close add modal
     } catch (error) {
       console.error('Error saving driver:', error);
@@ -843,13 +790,7 @@ const DriverManagement = () => {
           <button
             onClick={() => {
               // Reset form for adding new driver
-              setNewDriver({ // Reset form to default empty values
-                driver_name: '', gender: 'male', iqama: '', mobile: '', city: '',
-                nationality: '', dob: '', vehicle: '', company: '', status: 'pending',
-                remarks: '', iqama_expiry: '', passport_expiry: '', license_expiry: '',
-                visa_expiry: '', medical_expiry: '', insurance_paid_by: '',
-                accommodation_paid_by: '', phone_bill_paid_by: ''
-              });
+              resetDriverForm();
               setShowAddModal(true); // Show the add modal
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors shadow-md"
@@ -1237,16 +1178,23 @@ const DriverManagement = () => {
         <form onSubmit={handleSaveDriver} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Driver Name */}
           <div className="col-span-2">
-            <label htmlFor="driver_name" className="block text-sm font-medium text-gray-700">Driver Name</label>
+            <label htmlFor="driver_name" className="block text-sm font-medium text-gray-700">
+              Driver Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="driver_name"
               id="driver_name"
               value={newDriver.driver_name}
               onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                formErrors.driver_name ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {formErrors.driver_name && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.driver_name}</p>
+            )}
           </div>
 
           {/* Gender */}
@@ -1266,16 +1214,23 @@ const DriverManagement = () => {
 
           {/* IQAMA */}
           <div>
-            <label htmlFor="iqama" className="block text-sm font-medium text-gray-700">IQAMA</label>
+            <label htmlFor="iqama" className="block text-sm font-medium text-gray-700">
+              IQAMA <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="iqama"
               id="iqama"
               value={newDriver.iqama}
               onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                formErrors.iqama ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {formErrors.iqama && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.iqama}</p>
+            )}
           </div>
 
           {/* Mobile */}
@@ -1294,15 +1249,22 @@ const DriverManagement = () => {
 
           {/* City */}
           <div>
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
+            <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+              City <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="city"
               id="city"
               value={newDriver.city}
               onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                formErrors.city ? 'border-red-500' : 'border-gray-300'
+              }`}
             />
+            {formErrors.city && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.city}</p>
+            )}
           </div>
 
           {/* Nationality */}
@@ -1360,9 +1322,31 @@ const DriverManagement = () => {
             >
               <option value="">Select Company</option>
               {companies.map(company => (
-                <option key={company.id} value={company.id}>{company.company_name}</option>
+                <option key={company.id} value={company.id}>
+                  {company.company_name || company.name || `Company ${company.id}`}
+                </option>
               ))}
             </select>
+            {companies.length === 0 && (
+              <p className="mt-1 text-sm text-gray-500">Loading companies...</p>
+            )}
+            {companies.length > 0 && (
+              <div className="mt-1">
+                <p className="text-sm text-gray-500">{companies.length} companies available</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log('🔍 Debug - Available companies:', companies);
+                    console.log('🔍 Debug - Current selection:', newDriver.company);
+                    console.log('🔍 Debug - Available vehicles:', vehicles);
+                    console.log('🔍 Debug - Current vehicle selection:', newDriver.vehicle);
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Debug: Log companies & vehicles
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Status Dropdown */}

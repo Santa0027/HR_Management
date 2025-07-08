@@ -17,6 +17,71 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
+// Move InputField component outside to prevent re-creation on every render
+const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '', value, onChange, validationErrors = {} }) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {type === 'select' ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ) : type === 'textarea' ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        rows={4}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    ) : type === 'file' ? (
+      <input
+        type="file"
+        name={name}
+        onChange={onChange}
+        accept={name.includes('image') ? 'image/*' : '.pdf,.doc,.docx'}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    )}
+    {validationErrors[name] && (
+      <p className="text-sm text-red-600">{validationErrors[name]}</p>
+    )}
+    {help && <p className="text-xs text-gray-500">{help}</p>}
+  </div>
+);
+
 const VehicleServiceAdd = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -24,6 +89,8 @@ const VehicleServiceAdd = () => {
   
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
+  const [vehiclesLoading, setVehiclesLoading] = useState(true);
+  const [validationErrors, setValidationErrors] = useState({});
   
   const [service, setService] = useState({
     vehicle: vehicleId || '',
@@ -46,27 +113,100 @@ const VehicleServiceAdd = () => {
   }, []);
 
   const fetchVehicles = async () => {
+    setVehiclesLoading(true);
     try {
+      console.log('🚗 Fetching vehicles for service form...');
       const response = await axiosInstance.get('/vehicles/');
-      setVehicles(response.data || []);
+
+      // Handle different response formats
+      let vehiclesData = [];
+      if (Array.isArray(response.data)) {
+        vehiclesData = response.data;
+      } else if (response.data && Array.isArray(response.data.results)) {
+        vehiclesData = response.data.results;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        vehiclesData = response.data.data;
+      }
+
+      console.log('✅ Fetched vehicles:', vehiclesData.length);
+      setVehicles(vehiclesData);
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
+      console.error('❌ Error fetching vehicles:', error);
       toast.error('Failed to load vehicles');
+      setVehicles([]); // Ensure vehicles is always an array
+    } finally {
+      setVehiclesLoading(false);
     }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Required fields validation
+    if (!service.vehicle) errors.vehicle = 'Vehicle selection is required';
+    if (!service.service_type) errors.service_type = 'Service type is required';
+    if (!service.service_date) errors.service_date = 'Service date is required';
+    if (!service.service_provider.trim()) errors.service_provider = 'Service provider is required';
+    if (!service.service_description.trim()) errors.service_description = 'Service description is required';
+    if (!service.cost) errors.cost = 'Cost is required';
+    if (!service.odometer_reading) errors.odometer_reading = 'Odometer reading is required';
+    if (!service.status) errors.status = 'Status is required';
+
+    // Date validation
+    if (service.service_date) {
+      const serviceDate = new Date(service.service_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (serviceDate > today) {
+        // Allow future dates for scheduled services
+        if (service.status === 'COMPLETED' && serviceDate > today) {
+          errors.service_date = 'Completed services cannot have future dates';
+        }
+      }
+    }
+
+    // Numeric validation
+    if (service.cost && parseFloat(service.cost) < 0) {
+      errors.cost = 'Cost cannot be negative';
+    }
+    if (service.odometer_reading && parseInt(service.odometer_reading) < 0) {
+      errors.odometer_reading = 'Odometer reading cannot be negative';
+    }
+    if (service.warranty_period_days && parseInt(service.warranty_period_days) < 0) {
+      errors.warranty_period_days = 'Warranty period cannot be negative';
+    }
+    if (service.next_service_km && parseInt(service.next_service_km) < 0) {
+      errors.next_service_km = 'Next service km cannot be negative';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-    
+
     if (type === 'file') {
       setService(prev => ({ ...prev, [name]: files[0] }));
     } else {
       setService(prev => ({ ...prev, [name]: value }));
+
+      // Clear validation error for this field
+      if (validationErrors[name]) {
+        setValidationErrors(prev => ({ ...prev, [name]: '' }));
+      }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before submitting');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -97,58 +237,7 @@ const VehicleServiceAdd = () => {
     }
   };
 
-  const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '' }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {type === 'select' ? (
-        <select
-          name={name}
-          value={service[name]}
-          onChange={handleChange}
-          required={required}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">Select {label}</option>
-          {options?.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : type === 'textarea' ? (
-        <textarea
-          name={name}
-          value={service[name]}
-          onChange={handleChange}
-          required={required}
-          placeholder={placeholder}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      ) : type === 'file' ? (
-        <input
-          type="file"
-          name={name}
-          onChange={handleChange}
-          accept={name.includes('image') ? 'image/*' : '.pdf,.doc,.docx'}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      ) : (
-        <input
-          type={type}
-          name={name}
-          value={service[name]}
-          onChange={handleChange}
-          required={required}
-          placeholder={placeholder}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      )}
-      {help && <p className="text-xs text-gray-500">{help}</p>}
-    </div>
-  );
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -181,22 +270,45 @@ const VehicleServiceAdd = () => {
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Service Details</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputField
-                label="Vehicle"
-                name="vehicle"
-                type="select"
-                required
-                options={vehicles.map(vehicle => ({
-                  value: vehicle.id,
-                  label: `${vehicle.vehicle_name} (${vehicle.vehicle_number})`
-                }))}
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Vehicle <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="vehicle"
+                  value={service.vehicle}
+                  onChange={handleChange}
+                  required
+                  disabled={vehiclesLoading}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.vehicle ? 'border-red-500' : 'border-gray-300'
+                  } ${vehiclesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <option value="">
+                    {vehiclesLoading ? 'Loading vehicles...' : 'Select Vehicle'}
+                  </option>
+                  {Array.isArray(vehicles) && vehicles.map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.vehicle_name} ({vehicle.vehicle_number})
+                    </option>
+                  ))}
+                </select>
+                {validationErrors.vehicle && (
+                  <p className="text-sm text-red-600">{validationErrors.vehicle}</p>
+                )}
+                {!vehiclesLoading && vehicles.length === 0 && (
+                  <p className="text-sm text-yellow-600">No vehicles available</p>
+                )}
+              </div>
               
               <InputField
                 label="Service Type"
                 name="service_type"
                 type="select"
                 required
+                value={service.service_type}
+                onChange={handleChange}
+                validationErrors={validationErrors}
                 options={[
                   { value: 'ROUTINE', label: 'Routine Service' },
                   { value: 'REPAIR', label: 'Repair' },
@@ -206,21 +318,27 @@ const VehicleServiceAdd = () => {
                   { value: 'ACCIDENT_REPAIR', label: 'Accident Repair' }
                 ]}
               />
-              
+
               <InputField
                 label="Service Date"
                 name="service_date"
                 type="date"
                 required
+                value={service.service_date}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Service Provider"
                 name="service_provider"
                 required
                 placeholder="e.g., ABC Auto Service"
+                value={service.service_provider}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Cost"
                 name="cost"
@@ -228,8 +346,11 @@ const VehicleServiceAdd = () => {
                 step="0.01"
                 required
                 placeholder="Service cost"
+                value={service.cost}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Odometer Reading"
                 name="odometer_reading"
@@ -237,13 +358,19 @@ const VehicleServiceAdd = () => {
                 required
                 placeholder="Current odometer reading"
                 help="Odometer reading at the time of service"
+                value={service.odometer_reading}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Status"
                 name="status"
                 type="select"
                 required
+                value={service.status}
+                onChange={handleChange}
+                validationErrors={validationErrors}
                 options={[
                   { value: 'SCHEDULED', label: 'Scheduled' },
                   { value: 'IN_PROGRESS', label: 'In Progress' },
@@ -251,21 +378,27 @@ const VehicleServiceAdd = () => {
                   { value: 'CANCELLED', label: 'Cancelled' }
                 ]}
               />
-              
+
               <InputField
                 label="Warranty Period (Days)"
                 name="warranty_period_days"
                 type="number"
                 placeholder="e.g., 90"
                 help="Warranty period for the service"
+                value={service.warranty_period_days}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Next Service KM"
                 name="next_service_km"
                 type="number"
                 placeholder="e.g., 15000"
                 help="Odometer reading for next service"
+                value={service.next_service_km}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
             </div>
             
@@ -276,31 +409,43 @@ const VehicleServiceAdd = () => {
                 type="textarea"
                 required
                 placeholder="Describe the service work performed..."
+                value={service.service_description}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
             </div>
-            
+
             <div className="mt-6">
               <InputField
                 label="Parts Replaced"
                 name="parts_replaced"
                 type="textarea"
                 placeholder="List of parts replaced during service..."
+                value={service.parts_replaced}
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
               <InputField
                 label="Invoice Document"
                 name="invoice_document"
                 type="file"
                 help="Upload service invoice (PDF, DOC)"
+                value=""
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
-              
+
               <InputField
                 label="Service Report"
                 name="service_report"
                 type="file"
                 help="Upload service report (PDF, DOC)"
+                value=""
+                onChange={handleChange}
+                validationErrors={validationErrors}
               />
             </div>
           </div>

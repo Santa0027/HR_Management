@@ -59,43 +59,20 @@ const BudgetManagement = () => {
     total_variance: 0
   });
 
-  // ✅ CLEARED: fetchBudgets API calls removed
+  // Fetch budgets from API
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('🧹 API CALLS CLEARED - Loading mock budgets');
+      console.log('💰 Loading budgets from API...');
 
-      // Mock budget data
-      const mockBudgets = [
-        {
-          id: 1,
-          name: "Monthly Operations Budget",
-          description: "Budget for monthly operational expenses",
-          budgeted_income: 25000,
-          budgeted_expense: 18000,
-          budget_period_start: "2025-07-01",
-          budget_period_end: "2025-07-31",
-          status: "active",
-          category: { id: 1, name: "Operations" }
-        },
-        {
-          id: 2,
-          name: "Fuel Budget Q1",
-          description: "Quarterly fuel budget allocation",
-          budgeted_income: 0,
-          budgeted_expense: 12000,
-          budget_period_start: "2025-01-01",
-          budget_period_end: "2025-03-31",
-          status: "completed",
-          category: { id: 2, name: "Fuel" }
-        }
-      ];
-
-      setBudgets(mockBudgets);
-      toast.success("✅ Budgets loaded (mock data - API cleared)");
+      const response = await axiosInstance.get('/budgets/');
+      const budgetsData = Array.isArray(response.data) ? response.data : [];
+      setBudgets(budgetsData);
+      console.log('✅ Budgets loaded from API:', budgetsData.length);
     } catch (error) {
       console.error('Error loading budgets:', error);
-      toast.error("Failed to load budgets (simulation)");
+      toast.error("Failed to load budgets");
+      setBudgets([]);
     } finally {
       setLoading(false);
     }
@@ -218,21 +195,22 @@ const BudgetManagement = () => {
         budgeted_expense: parseFloat(formData.budgeted_expense)
       };
 
-      // ✅ CLEARED: Budget save API calls removed
-      console.log('🧹 API CALLS CLEARED - Simulating budget save');
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('💾 Saving budget via API...');
 
       if (selectedBudget) {
-        toast.success("✅ Budget updated successfully! (Simulated - API cleared)");
+        // Update existing budget
+        await axiosInstance.put(`/budgets/${selectedBudget.id}/`, dataToSubmit);
+        toast.success("✅ Budget updated successfully!");
         setShowEditModal(false);
       } else {
-        toast.success("✅ Budget created successfully! (Simulated - API cleared)");
+        // Create new budget
+        await axiosInstance.post('/budgets/', dataToSubmit);
+        toast.success("✅ Budget created successfully!");
         setShowAddModal(false);
       }
 
-      // Don't refetch since API is cleared
+      // Refresh the budgets list
+      await fetchBudgets();
       resetForm();
     } catch (error) {
       console.error('Error saving budget:', error);

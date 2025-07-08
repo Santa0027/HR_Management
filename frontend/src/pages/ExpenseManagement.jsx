@@ -198,50 +198,63 @@ const ExpenseManagement = () => {
     }
   }, []);
 
-  // ✅ CLEARED: fetchFilterOptions API calls removed - Using real database data
+  // Fetch filter options from API
   const fetchFilterOptions = useCallback(async () => {
     try {
-      console.log('🧹 API CALLS CLEARED - Loading real filter options data');
+      console.log('💸 Loading expense filter options from API...');
 
-      // Actual database filter options
-      setCategories([
-        { id: 1, name: "Fuel", category_type: "expense" }
+      // Fetch all filter options concurrently
+      const [categoriesRes, paymentMethodsRes, companiesRes, driversRes] = await Promise.allSettled([
+        axiosInstance.get('/categories/'),
+        axiosInstance.get('/payment-methods/'),
+        axiosInstance.get('/companies/'),
+        axiosInstance.get('/Register/drivers/')
       ]);
 
-      setPaymentMethods([
-        { id: 5, name: "Debit Card" }
-      ]);
+      // Process categories
+      if (categoriesRes.status === 'fulfilled') {
+        const categoriesData = Array.isArray(categoriesRes.value.data) ? categoriesRes.value.data : [];
+        setCategories(categoriesData.filter(cat => cat.category_type === 'expense'));
+      }
 
-      setCompanies([
-        { id: 1, company_name: "Kuwait Transport Company" }
-      ]);
+      // Process payment methods
+      if (paymentMethodsRes.status === 'fulfilled') {
+        const paymentMethodsData = Array.isArray(paymentMethodsRes.value.data) ? paymentMethodsRes.value.data : [];
+        setPaymentMethods(paymentMethodsData);
+      }
 
-      setDrivers([
-        { id: 3, driver_name: "Driver Name" }
-      ]);
+      // Process companies
+      if (companiesRes.status === 'fulfilled') {
+        const companiesData = Array.isArray(companiesRes.value.data) ? companiesRes.value.data : [];
+        setCompanies(companiesData);
+      }
 
-      toast.success("✅ Filter options loaded with actual database data");
+      // Process drivers
+      if (driversRes.status === 'fulfilled') {
+        const driversData = Array.isArray(driversRes.value.data) ? driversRes.value.data : [];
+        setDrivers(driversData);
+      }
+
+      console.log('✅ Expense filter options loaded from API');
     } catch (error) {
       console.error('Error loading filter options:', error);
-      toast.error("Failed to load form options (simulation)");
+      toast.error("Failed to load form options");
     }
   }, []);
 
-  // ✅ CLEARED: fetchBankAccounts API calls removed - Using real database data
+  // Fetch bank accounts from API
   const fetchBankAccounts = useCallback(async () => {
     try {
-      console.log('🧹 API CALLS CLEARED - Loading real bank accounts data');
+      console.log('🏦 Loading bank accounts from API...');
 
-      // Real database bank accounts
-      setBankAccounts([
-        { id: 1, account_name: "Main Business Account", bank_name: "Saudi National Bank", current_balance: 45000.00 },
-        { id: 2, account_name: "Petty Cash Account", bank_name: "Al Rajhi Bank", current_balance: 5000.00 }
-      ]);
+      const response = await axiosInstance.get('/bank-accounts/');
+      const bankAccountsData = Array.isArray(response.data) ? response.data : [];
+      setBankAccounts(bankAccountsData);
 
-      toast.success("✅ Bank accounts loaded (real data - API cleared)");
+      console.log('✅ Bank accounts loaded from API:', bankAccountsData.length);
     } catch (error) {
       console.error('Error loading bank accounts:', error);
-      toast.error("Failed to load bank accounts (simulation)");
+      toast.error("Failed to load bank accounts");
     }
   }, []);
 

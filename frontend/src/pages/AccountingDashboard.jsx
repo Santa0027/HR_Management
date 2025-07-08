@@ -79,53 +79,66 @@ const AccountingDashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // ✅ CLEARED: All API calls removed - Using mock data
-      console.log('🧹 API CALLS CLEARED - Loading mock data');
+      console.log('📊 Loading accounting dashboard data from API...');
 
-      // Actual database summary data
-      setSummary({
-        total_income: 0.00,        // No income records in database
-        total_expense: 123223.00,  // From actual expense records (123123 + 100)
-        net_profit: -123223.00,    // Calculated: income - expense
-        transaction_count: 2       // Actual transaction count from database
-      });
-
-      setRecentTransactions([
-        {
-          id: 3,
-          description: "weqwe",
-          amount: 123123.00,
-          transaction_type: "expense",
-          transaction_date: "2025-07-07T00:00:00Z",
-          category: { name: "Fuel" },
-          status: "completed",
-          company: { company_name: "Kuwait Transport Company" },
-          driver: { driver_name: null },
-          transaction_id: "TXN-20250707-28BD50AB"
-        }
+      // Fetch dashboard data from API
+      const [summaryRes, transactionsRes, categoryRes, trendsRes, cashFlowRes, budgetRes] = await Promise.allSettled([
+        axiosInstance.get('/accounting/summary/', { params: dateRange }),
+        axiosInstance.get('/accounting/recent-transactions/', { params: { limit: 10, ...dateRange } }),
+        axiosInstance.get('/accounting/category-breakdown/', { params: dateRange }),
+        axiosInstance.get('/accounting/monthly-trends/', { params: dateRange }),
+        axiosInstance.get('/accounting/cash-flow/', { params: dateRange }),
+        axiosInstance.get('/accounting/budget-alerts/', { params: dateRange })
       ]);
 
-      setCategoryBreakdown([
-        { category: "Fuel", amount: 123123.00, percentage: 100, type: "expense" }
-      ]);
+      // Process summary data
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value.data);
+      } else {
+        setSummary({ total_income: 0, total_expense: 0, net_profit: 0, transaction_count: 0 });
+      }
 
-      setMonthlyTrends([
-        { month: "July", income: 0, expense: 123123, net: -123123 }
-      ]);
+      // Process recent transactions
+      if (transactionsRes.status === 'fulfilled') {
+        const transactionsData = Array.isArray(transactionsRes.value.data) ? transactionsRes.value.data : [];
+        setRecentTransactions(transactionsData);
+      } else {
+        setRecentTransactions([]);
+      }
 
-      setCashFlow([
-        { date: "2025-07-07", inflow: 0, outflow: 123123, net: -123123 }
-      ]);
+      // Process category breakdown
+      if (categoryRes.status === 'fulfilled') {
+        const categoryData = Array.isArray(categoryRes.value.data) ? categoryRes.value.data : [];
+        setCategoryBreakdown(categoryData);
+      } else {
+        setCategoryBreakdown([]);
+      }
 
-      setTopCategories([
-        { category: "Fuel", amount: 123123, count: 1 }
-      ]);
+      // Process monthly trends
+      if (trendsRes.status === 'fulfilled') {
+        const trendsData = Array.isArray(trendsRes.value.data) ? trendsRes.value.data : [];
+        setMonthlyTrends(trendsData);
+      } else {
+        setMonthlyTrends([]);
+      }
 
-      setBudgetAlerts([
-        // No budget alerts - no budget data in database
-      ]);
+      // Process cash flow
+      if (cashFlowRes.status === 'fulfilled') {
+        const cashFlowData = Array.isArray(cashFlowRes.value.data) ? cashFlowRes.value.data : [];
+        setCashFlow(cashFlowData);
+      } else {
+        setCashFlow([]);
+      }
 
-      toast.success("✅ Dashboard loaded with actual database data");
+      // Process budget alerts
+      if (budgetRes.status === 'fulfilled') {
+        const budgetData = Array.isArray(budgetRes.value.data) ? budgetRes.value.data : [];
+        setBudgetAlerts(budgetData);
+      } else {
+        setBudgetAlerts([]);
+      }
+
+      console.log('✅ Accounting dashboard data loaded from API');
     } catch (error) {
       console.error('Error loading dashboard:', error);
       toast.error('Failed to load dashboard data');

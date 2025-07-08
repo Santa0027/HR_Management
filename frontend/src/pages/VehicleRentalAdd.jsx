@@ -20,6 +20,72 @@ import {
   Calculator
 } from 'lucide-react';
 
+// Move InputField component outside to prevent re-creation on every render
+const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '', value, onChange, validationErrors = {} }) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {type === 'select' ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      >
+        <option value="">Select {label}</option>
+        {options?.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    ) : type === 'textarea' ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        rows={3}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    ) : type === 'file' ? (
+      <input
+        type="file"
+        name={name}
+        onChange={onChange}
+        accept=".pdf,.doc,.docx"
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        step={type === 'number' ? '0.01' : undefined}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          validationErrors[name] ? 'border-red-500' : 'border-gray-300'
+        }`}
+      />
+    )}
+    {validationErrors[name] && (
+      <p className="text-sm text-red-600">{validationErrors[name]}</p>
+    )}
+    {help && <p className="text-xs text-gray-500">{help}</p>}
+  </div>
+);
+
 const VehicleRentalAdd = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -28,6 +94,7 @@ const VehicleRentalAdd = () => {
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [activeTab, setActiveTab] = useState('lessee');
+  const [validationErrors, setValidationErrors] = useState({});
 
   const [lease, setLease] = useState({
     // Vehicle and Lessee Info
@@ -111,16 +178,73 @@ const VehicleRentalAdd = () => {
 
   const fetchVehicles = async () => {
     try {
+      console.log('🚗 Fetching vehicles for lease form...');
       const response = await axiosInstance.get('/vehicles/');
-      // Filter only available vehicles
-      const availableVehicles = (response.data || []).filter(vehicle => 
+
+      // Handle different response formats
+      let vehiclesData = [];
+      if (Array.isArray(response.data)) {
+        vehiclesData = response.data;
+      } else if (response.data && Array.isArray(response.data.results)) {
+        vehiclesData = response.data.results;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        vehiclesData = response.data.data;
+      }
+
+      // Filter only available vehicles for lease
+      const availableVehicles = vehiclesData.filter(vehicle =>
         vehicle.vehicle_status === 'ACTIVE' && !vehicle.assigned_driver
       );
+
+      console.log('✅ Available vehicles for lease:', availableVehicles.length);
       setVehicles(availableVehicles);
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
+      console.error('❌ Error fetching vehicles:', error);
       toast.error('Failed to load vehicles');
+      setVehicles([]); // Ensure vehicles is always an array
     }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Required fields validation
+    if (!lease.vehicle) errors.vehicle = 'Vehicle selection is required';
+    if (!lease.lessee_name.trim()) errors.lessee_name = 'Lessee name is required';
+    if (!lease.lessee_contact.trim()) errors.lessee_contact = 'Contact number is required';
+    if (!lease.lessee_email.trim()) errors.lessee_email = 'Email address is required';
+    if (!lease.lessee_license.trim()) errors.lessee_license = 'License/ID is required';
+    if (!lease.lessee_address.trim()) errors.lessee_address = 'Address is required';
+    if (!lease.lease_start_date) errors.lease_start_date = 'Start date is required';
+    if (!lease.lease_end_date) errors.lease_end_date = 'End date is required';
+    if (!lease.monthly_rate) errors.monthly_rate = 'Monthly rate is required';
+    if (!lease.security_deposit) errors.security_deposit = 'Security deposit is required';
+    if (!lease.pickup_odometer) errors.pickup_odometer = 'Pickup odometer reading is required';
+
+    // Email validation
+    if (lease.lessee_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lease.lessee_email)) {
+      errors.lessee_email = 'Please enter a valid email address';
+    }
+
+    // Date validation
+    if (lease.lease_start_date && lease.lease_end_date) {
+      const startDate = new Date(lease.lease_start_date);
+      const endDate = new Date(lease.lease_end_date);
+      if (endDate <= startDate) {
+        errors.lease_end_date = 'End date must be after start date';
+      }
+    }
+
+    // Numeric validation
+    if (lease.monthly_rate && parseFloat(lease.monthly_rate) <= 0) {
+      errors.monthly_rate = 'Monthly rate must be greater than 0';
+    }
+    if (lease.security_deposit && parseFloat(lease.security_deposit) < 0) {
+      errors.security_deposit = 'Security deposit cannot be negative';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleChange = (e) => {
@@ -130,11 +254,23 @@ const VehicleRentalAdd = () => {
       setLease(prev => ({ ...prev, [name]: files[0] }));
     } else {
       setLease(prev => ({ ...prev, [name]: value }));
+
+      // Clear validation error for this field
+      if (validationErrors[name]) {
+        setValidationErrors(prev => ({ ...prev, [name]: '' }));
+      }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors before submitting');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -190,59 +326,7 @@ const VehicleRentalAdd = () => {
     </button>
   );
 
-  const InputField = ({ label, name, type = 'text', required = false, options = null, placeholder = '', help = '' }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {type === 'select' ? (
-        <select
-          name={name}
-          value={lease[name]}
-          onChange={handleChange}
-          required={required}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">Select {label}</option>
-          {options?.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      ) : type === 'textarea' ? (
-        <textarea
-          name={name}
-          value={lease[name]}
-          onChange={handleChange}
-          required={required}
-          placeholder={placeholder}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      ) : type === 'file' ? (
-        <input
-          type="file"
-          name={name}
-          onChange={handleChange}
-          accept=".pdf,.doc,.docx"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      ) : (
-        <input
-          type={type}
-          name={name}
-          value={lease[name]}
-          onChange={handleChange}
-          required={required}
-          placeholder={placeholder}
-          step={type === 'number' ? '0.01' : undefined}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-      )}
-      {help && <p className="text-xs text-gray-500">{help}</p>}
-    </div>
-  );
+
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -326,6 +410,9 @@ const VehicleRentalAdd = () => {
                   name="lessee_name"
                   required
                   placeholder="Company or individual name"
+                  value={lease.lessee_name}
+                  onChange={handleChange}
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Contact Number"
@@ -333,6 +420,9 @@ const VehicleRentalAdd = () => {
                   type="tel"
                   required
                   placeholder="+1-555-0123"
+                  value={lease.lessee_contact}
+                  onChange={handleChange}
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Email Address"
@@ -340,12 +430,18 @@ const VehicleRentalAdd = () => {
                   type="email"
                   required
                   placeholder="contact@company.com"
+                  value={lease.lessee_email}
+                  onChange={handleChange}
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Business License/ID"
                   name="lessee_license"
                   required
                   placeholder="Business license or ID number"
+                  value={lease.lessee_license}
+                  onChange={handleChange}
+                  validationErrors={validationErrors}
                 />
                 <InputField
                   label="Lease Type"
@@ -378,10 +474,13 @@ const VehicleRentalAdd = () => {
                   name="vehicle"
                   type="select"
                   required
-                  options={vehicles.map(vehicle => ({
+                  value={lease.vehicle}
+                  onChange={handleChange}
+                  validationErrors={validationErrors}
+                  options={Array.isArray(vehicles) ? vehicles.map(vehicle => ({
                     value: vehicle.id,
                     label: `${vehicle.vehicle_name} (${vehicle.vehicle_number})`
-                  }))}
+                  })) : []}
                 />
                 <InputField
                   label="Monthly Rate"

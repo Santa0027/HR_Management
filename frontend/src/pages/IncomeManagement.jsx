@@ -545,43 +545,54 @@ const IncomeManagement = () => {
     }
   };
 
-  // ✅ CLEARED: fetchDependencies API calls removed
+  // Fetch dependencies from API
   const fetchDependencies = async () => {
     try {
-      console.log('🧹 API CALLS CLEARED - Loading mock dependencies');
+      console.log('💰 Loading income form dependencies from API...');
 
-      // Mock data for form dependencies
-      setCategories([
-        { id: 1, name: "Trip Revenue", category_type: "income" },
-        { id: 2, name: "Delivery Fees", category_type: "income" },
-        { id: 3, name: "Service Charges", category_type: "income" }
+      // Fetch all dependencies concurrently
+      const [categoriesRes, paymentMethodsRes, bankAccountsRes, companiesRes, driversRes] = await Promise.allSettled([
+        axiosInstance.get('/categories/'),
+        axiosInstance.get('/payment-methods/'),
+        axiosInstance.get('/bank-accounts/'),
+        axiosInstance.get('/companies/'),
+        axiosInstance.get('/Register/drivers/')
       ]);
 
-      setPaymentMethods([
-        { id: 1, name: "Cash" },
-        { id: 2, name: "Credit Card" },
-        { id: 3, name: "Bank Transfer" }
-      ]);
+      // Process categories
+      if (categoriesRes.status === 'fulfilled') {
+        const categoriesData = Array.isArray(categoriesRes.value.data) ? categoriesRes.value.data : [];
+        setCategories(categoriesData.filter(cat => cat.category_type === 'income'));
+      }
 
-      setBankAccounts([
-        { id: 1, account_name: "Main Business Account", bank_name: "Saudi National Bank" },
-        { id: 2, account_name: "Petty Cash Account", bank_name: "Al Rajhi Bank" }
-      ]);
+      // Process payment methods
+      if (paymentMethodsRes.status === 'fulfilled') {
+        const paymentMethodsData = Array.isArray(paymentMethodsRes.value.data) ? paymentMethodsRes.value.data : [];
+        setPaymentMethods(paymentMethodsData);
+      }
 
-      setCompanies([
-        { id: 1, company_name: "ABC Transport Co." },
-        { id: 2, company_name: "XYZ Logistics" }
-      ]);
+      // Process bank accounts
+      if (bankAccountsRes.status === 'fulfilled') {
+        const bankAccountsData = Array.isArray(bankAccountsRes.value.data) ? bankAccountsRes.value.data : [];
+        setBankAccounts(bankAccountsData);
+      }
 
-      setDrivers([
-        { id: 1, first_name: "Ahmed", last_name: "Ali" },
-        { id: 2, first_name: "Mohammed", last_name: "Hassan" }
-      ]);
+      // Process companies
+      if (companiesRes.status === 'fulfilled') {
+        const companiesData = Array.isArray(companiesRes.value.data) ? companiesRes.value.data : [];
+        setCompanies(companiesData);
+      }
 
-      toast.success("✅ Form dependencies loaded (mock data - API cleared)");
+      // Process drivers
+      if (driversRes.status === 'fulfilled') {
+        const driversData = Array.isArray(driversRes.value.data) ? driversRes.value.data : [];
+        setDrivers(driversData);
+      }
+
+      console.log('✅ Income form dependencies loaded from API');
     } catch (err) {
       console.error("Error loading dependencies:", err);
-      toast.error("Failed to load form data (simulation)");
+      toast.error("Failed to load form data");
     }
   };
 

@@ -68,47 +68,21 @@ const BankAccountManagement = () => {
     date_range: '30'
   });
 
-  // ✅ CLEARED: fetchBankAccounts API calls removed
+  // Fetch bank accounts from API
   const fetchBankAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('🧹 API CALLS CLEARED - Loading mock bank accounts');
+      console.log('🏦 Loading bank accounts from API...');
 
-      // Mock bank account data
-      const mockBankAccounts = [
-        {
-          id: 1,
-          account_name: "Main Business Account",
-          account_number: "1234567890",
-          bank_name: "Saudi National Bank",
-          account_type: "business",
-          current_balance: 45000.00,
-          currency: "SAR",
-          iban: "SA0380000000608010167519",
-          status: "active",
-          branch: "Riyadh Main Branch",
-          swift_code: "NCBKSARI"
-        },
-        {
-          id: 2,
-          account_name: "Petty Cash Account",
-          account_number: "0987654321",
-          bank_name: "Al Rajhi Bank",
-          account_type: "checking",
-          current_balance: 5000.00,
-          currency: "SAR",
-          iban: "SA0380000000608010167520",
-          status: "active",
-          branch: "Jeddah Branch",
-          swift_code: "RJHISARI"
-        }
-      ];
+      const response = await axiosInstance.get('/bank-accounts/');
+      const bankAccountsData = Array.isArray(response.data) ? response.data : [];
+      setBankAccounts(bankAccountsData);
 
-      setBankAccounts(mockBankAccounts);
-      toast.success("✅ Bank accounts loaded (mock data - API cleared)");
+      console.log('✅ Bank accounts loaded from API:', bankAccountsData.length);
     } catch (error) {
       console.error('Error loading bank accounts:', error);
-      toast.error("Failed to load bank accounts (simulation)");
+      toast.error("Failed to load bank accounts");
+      setBankAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -182,21 +156,22 @@ const BankAccountManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // ✅ CLEARED: Bank account save API calls removed
-      console.log('🧹 API CALLS CLEARED - Simulating bank account save');
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('💾 Saving bank account via API...');
 
       if (selectedAccount) {
-        toast.success("✅ Bank account updated successfully! (Simulated - API cleared)");
+        // Update existing account
+        await axiosInstance.put(`/bank-accounts/${selectedAccount.id}/`, formData);
+        toast.success("✅ Bank account updated successfully!");
         setShowEditModal(false);
       } else {
-        toast.success("✅ Bank account created successfully! (Simulated - API cleared)");
+        // Create new account
+        await axiosInstance.post('/bank-accounts/', formData);
+        toast.success("✅ Bank account created successfully!");
         setShowAddModal(false);
       }
 
-      // Don't refetch since API is cleared
+      // Refresh the bank accounts list
+      await fetchBankAccounts();
       resetForm();
     } catch (error) {
       console.error('Error saving bank account:', error);
