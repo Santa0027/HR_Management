@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ChevronDown, CircleUserRound, Edit, Trash2, Download, Upload, Eye,
-  Save, X, ArrowLeft, User, FileText, AlertTriangle, CheckCircle,
+  Save, X, ArrowLeft, User, FileText, AlertTriangle, CheckCircle, XCircle, Clock,
   Phone, Mail, MapPin, Calendar, Building, Car
 } from 'lucide-react';
 import axiosInstance from '../api/axiosInstance';
@@ -194,11 +194,7 @@ function DriverProfileEditDelete() {
       errors.iqama = 'Iqama must be 10 digits';
     }
 
-    if (!driverData.mobile?.trim()) {
-      errors.mobile = 'Mobile number is required';
-    } else if (!/^(\+966|966|0)?[5][0-9]{8}$/.test(driverData.mobile.replace(/\s/g, ''))) {
-      errors.mobile = 'Please enter a valid Saudi mobile number';
-    }
+    // Mobile number validation removed - no longer required
 
     if (driverData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(driverData.email)) {
       errors.email = 'Please enter a valid email address';
@@ -658,7 +654,7 @@ function DriverProfileEditDelete() {
                 {/* Mobile Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number <span className="text-red-500">*</span>
+                    Mobile Number
                   </label>
                   {isEditing ? (
                     <input

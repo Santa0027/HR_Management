@@ -34,7 +34,7 @@ class Driver(models.Model):
     driver_profile_img= models.FileField(upload_to='drivers/profileimg/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     iqama = models.CharField(max_length=100, unique=True)
-    mobile = models.CharField(max_length=20)
+    mobile = models.CharField(max_length=20, blank=True, null=True)
     city = models.CharField(max_length=100)
     nationality = models.CharField(max_length=100, blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
