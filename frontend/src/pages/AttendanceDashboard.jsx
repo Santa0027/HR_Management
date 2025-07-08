@@ -209,18 +209,24 @@ const AttendanceReport = () => {
 
         // Process daily data result
         if (results[0].status === 'fulfilled') {
-          dailyDataResult = results[0].value.data.results || results[0].value.data;
+          dailyDataResult = Array.isArray(results[0].value.data)
+            ? results[0].value.data
+            : (results[0].value.data.results || []);
           console.log('Daily Data Response (fulfilled):', dailyDataResult);
         } else {
           console.error('Failed to fetch daily data:', results[0].reason);
+          dailyDataResult = [];
         }
 
         // Process monthly data result
         if (results[1].status === 'fulfilled') {
-          monthlyDataResult = results[1].value.data.results || results[1].value.data;
+          monthlyDataResult = Array.isArray(results[1].value.data)
+            ? results[1].value.data
+            : (results[1].value.data.results || []);
           console.log('Monthly Data Response (fulfilled):', monthlyDataResult);
         } else {
           console.error('Failed to fetch monthly data:', results[1].reason);
+          monthlyDataResult = [];
         }
 
         // Process warning letters result

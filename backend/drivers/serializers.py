@@ -22,15 +22,19 @@ class DriverSerializer(serializers.ModelSerializer):
     vehicle_id = serializers.PrimaryKeyRelatedField(
         queryset=VehicleRegistration.objects.all(),
         source='vehicle',
-        write_only=True
+        write_only=True,
+        required=False,
+        allow_null=True
     )
 
     company = CompanySerializer(read_only=True)
 
-    Company_id= serializers.PrimaryKeyRelatedField(
+    Company_id = serializers.PrimaryKeyRelatedField(
         queryset=Company.objects.all(),
         source='company',
-        write_only=True
+        write_only=True,
+        required=False,
+        allow_null=True
     )
 
     class Meta:

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
 import {
   Users,
   Plus,
@@ -455,9 +456,22 @@ const DriverManagement = () => {
     try {
       console.log('🚗 Loading actual driver data from database');
 
-      // Simulated API call to fetch driver data
-      // In a real application, this would be an `axios.get` call to your backend.
-      const actualDriverData = [
+      // Real API call to fetch driver data
+      const response = await axiosInstance.get('/Register/drivers/');
+      const driversData = Array.isArray(response.data)
+        ? response.data
+        : (response.data.results || []);
+
+      setDrivers(driversData);
+      setFilteredDrivers(driversData);
+      setDriverStats(calculateEnhancedStats(driversData));
+
+      console.log('✅ Loaded drivers from API:', driversData.length);
+
+      // If no real data is available, fall back to simulated data for demo purposes
+      if (driversData.length === 0) {
+        console.log('📝 No real data found, using simulated data for demo');
+        const actualDriverData = [
         {
           id: 3,
           driver_name: "Omar Al-Rashid",
@@ -571,14 +585,15 @@ const DriverManagement = () => {
         }
       ];
 
-      setDrivers(actualDriverData); // Update the main drivers state
-      setFilteredDrivers(actualDriverData); // Initialize filtered drivers with all data
+        setDrivers(actualDriverData); // Update the main drivers state
+        setFilteredDrivers(actualDriverData); // Initialize filtered drivers with all data
 
-      // Calculate and update comprehensive driver statistics based on fetched data
-      const stats = calculateEnhancedStats(actualDriverData);
-      setDriverStats(stats);
+        // Calculate and update comprehensive driver statistics based on fetched data
+        const stats = calculateEnhancedStats(actualDriverData);
+        setDriverStats(stats);
 
-      toast.success("✅ Driver data loaded from database"); // Success notification
+        toast.success("✅ Using simulated data for demo"); // Success notification
+      }
     } catch (error) {
       console.error('Error loading drivers:', error);
       toast.error("Failed to load driver data"); // Error notification
@@ -605,7 +620,44 @@ const DriverManagement = () => {
         { id: 4, vehicle_name: "Ford Transit", vehicle_number: "KWT-004", vehicle_type: "VAN" }
       ]);
 
-      toast.success("✅ Dependencies loaded"); // Success notification
+      // Fetch companies and vehicles from API
+      const [companiesResponse, vehiclesResponse] = await Promise.allSettled([
+        axiosInstance.get('/companies/'),
+        axiosInstance.get('/vehicles/')
+      ]);
+
+      // Process companies data
+      let companiesData = [];
+      if (companiesResponse.status === 'fulfilled') {
+        companiesData = Array.isArray(companiesResponse.value.data)
+          ? companiesResponse.value.data
+          : (companiesResponse.value.data.results || []);
+      }
+
+      // Process vehicles data
+      let vehiclesData = [];
+      if (vehiclesResponse.status === 'fulfilled') {
+        vehiclesData = Array.isArray(vehiclesResponse.value.data)
+          ? vehiclesResponse.value.data
+          : (vehiclesResponse.value.data.results || []);
+      }
+
+      // Set the data or use fallback
+      setCompanies(companiesData.length > 0 ? companiesData : [
+        { id: 1, company_name: "Kuwait Transport Company" },
+        { id: 2, company_name: "Gulf Logistics Inc." },
+        { id: 3, company_name: "Desert Express Services" }
+      ]);
+
+      setVehicles(vehiclesData.length > 0 ? vehiclesData : [
+        { id: 1, vehicle_name: "Toyota Hiace", vehicle_number: "KWT-001", vehicle_type: "BUS" },
+        { id: 2, vehicle_name: "Nissan Urvan", vehicle_number: "KWT-002", vehicle_type: "BUS" },
+        { id: 3, vehicle_name: "Mercedes Sprinter", vehicle_number: "KWT-003", vehicle_type: "BUS" },
+        { id: 4, vehicle_name: "Ford Transit", vehicle_number: "KWT-004", vehicle_type: "VAN" }
+      ]);
+
+      console.log('✅ Loaded companies:', companiesData.length || 'using fallback');
+      console.log('✅ Loaded vehicles:', vehiclesData.length || 'using fallback');
     } catch (error) {
       console.error('Error loading dependencies:', error);
       toast.error("Failed to load form options"); // Error notification
@@ -709,34 +761,47 @@ const DriverManagement = () => {
   const handleSaveDriver = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
     try {
-      console.log('💾 Simulating driver save operation');
+      console.log('💾 Creating new driver via API');
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare the data for API submission
+      const driverData = {
+        driver_name: newDriver.driver_name,
+        gender: newDriver.gender,
+        iqama: newDriver.iqama,
+        mobile: newDriver.mobile,
+        city: newDriver.city,
+        nationality: newDriver.nationality,
+        dob: newDriver.dob || null,
+        status: newDriver.status,
+        remarks: newDriver.remarks || '',
+        iqama_expiry: newDriver.iqama_expiry || null,
+        passport_expiry: newDriver.passport_expiry || null,
+        license_expiry: newDriver.license_expiry || null,
+        visa_expiry: newDriver.visa_expiry || null,
+        medical_expiry: newDriver.medical_expiry || null,
+        insurance_paid_by: newDriver.insurance_paid_by || '',
+        accommodation_paid_by: newDriver.accommodation_paid_by || '',
+        phone_bill_paid_by: newDriver.phone_bill_paid_by || ''
+      };
 
-      // Find the full vehicle and company objects based on their IDs from dropdowns
-      const vehicleObj = vehicles.find(v => v.id == newDriver.vehicle);
-      const companyObj = companies.find(c => c.id == newDriver.company);
-
-      // Logic for adding a new driver (editing is now handled by separate page)
-      {
-        // Logic for adding a new driver
-        const newDriverData = {
-          ...newDriver, // New driver data from form
-          id: Math.max(...drivers.map(d => d.id)) + 1, // Generate a unique ID (for simulation)
-          created_at: new Date().toISOString(), // Set creation timestamp
-          vehicle: vehicleObj, // Assign full vehicle object
-          company: companyObj // Assign full company object
-        };
-        const updatedDrivers = [...drivers, newDriverData]; // Add new driver to the list
-        setDrivers(updatedDrivers);
-        setFilteredDrivers(updatedDrivers);
-
-        // Recalculate and update statistics after adding a driver
-        setDriverStats(calculateEnhancedStats(updatedDrivers));
-
-        toast.success("✅ Driver added successfully (Simulated)");
+      // Add vehicle_id and Company_id only if they are selected
+      if (newDriver.vehicle && newDriver.vehicle !== '') {
+        driverData.vehicle_id = parseInt(newDriver.vehicle);
       }
+      if (newDriver.company && newDriver.company !== '') {
+        driverData.Company_id = parseInt(newDriver.company);
+      }
+
+      console.log('Submitting driver data:', driverData);
+
+      // Make API call to create driver
+      const response = await axiosInstance.post('/Register/drivers/', driverData);
+
+      console.log('Driver created successfully:', response.data);
+      toast.success("✅ Driver added successfully!");
+
+      // Refresh the drivers list
+      await loadDrivers();
 
       // Reset form fields and close modals after successful save
       setNewDriver({
