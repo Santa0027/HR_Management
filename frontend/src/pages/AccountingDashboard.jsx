@@ -82,13 +82,20 @@ const AccountingDashboard = () => {
       console.log('📊 Loading accounting dashboard data from API...');
 
       // Fetch dashboard data from API using correct action endpoints
+      // Note: Some endpoints require authentication, handle gracefully
       const [summaryRes, transactionsRes, categoryRes, trendsRes, cashFlowRes, budgetRes] = await Promise.allSettled([
         axiosInstance.get('/accounting/transactions/summary/', { params: dateRange }),
-        axiosInstance.get('/accounting/transactions/', { params: { limit: 10, ...dateRange } }),
+        axiosInstance.get('/accounting/transactions/', { params: { limit: 10, ordering: '-transaction_date', ...dateRange } }),
         axiosInstance.get('/accounting/transactions/category_breakdown/', { params: dateRange }),
         axiosInstance.get('/accounting/transactions/monthly_trends/', { params: dateRange }),
-        axiosInstance.get('/accounting/reports/', { params: { report_type: 'cash_flow', ...dateRange } }),
-        axiosInstance.get('/accounting/budgets/', { params: dateRange })
+        axiosInstance.get('/accounting/reports/', { params: { report_type: 'cash_flow', ...dateRange } }).catch(err => {
+          console.warn('Reports endpoint requires authentication:', err.response?.status);
+          return { status: 'rejected', reason: err };
+        }),
+        axiosInstance.get('/accounting/budgets/', { params: dateRange }).catch(err => {
+          console.warn('Budgets endpoint requires authentication:', err.response?.status);
+          return { status: 'rejected', reason: err };
+        })
       ]);
 
       // Process summary data

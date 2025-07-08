@@ -130,11 +130,25 @@ const AccountingReports = () => {
 
   const fetchSummary = async () => {
     try {
-      console.log('📈 Loading reports summary from API...');
-      const response = await axiosInstance.get('/accounting/reports/summary/');
-      setSummary(response.data);
+      console.log('📈 Loading reports summary...');
+      // Calculate summary from reports data instead of calling non-existent endpoint
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      const summary = {
+        total_reports: reports.length,
+        generated_this_month: reports.filter(report => {
+          const reportDate = new Date(report.generated_at || report.created_at);
+          return reportDate.getMonth() === currentMonth && reportDate.getFullYear() === currentYear;
+        }).length,
+        pending_reports: reports.filter(report => report.status === 'generating' || report.status === 'pending').length,
+        scheduled_reports: reports.filter(report => report.status === 'scheduled').length
+      };
+
+      setSummary(summary);
+      console.log('✅ Reports summary calculated from data');
     } catch (error) {
-      console.error('Error fetching summary:', error);
+      console.error('Error calculating summary:', error);
       setSummary({
         total_reports: 0,
         generated_this_month: 0,
@@ -155,7 +169,15 @@ const AccountingReports = () => {
         format: 'pdf'
       };
 
-      const response = await axiosInstance.post('/accounting/reports/generate/', reportData);
+      // Use the correct endpoint based on report type
+      let endpoint = '/accounting/reports/';
+      if (reportType === 'profit_loss') {
+        endpoint = '/accounting/reports/generate_profit_loss/';
+      } else if (reportType === 'cash_flow') {
+        endpoint = '/accounting/reports/generate_cash_flow_statement/';
+      }
+
+      const response = await axiosInstance.post(endpoint, reportData);
 
       toast.success('Report generation started successfully!');
 
