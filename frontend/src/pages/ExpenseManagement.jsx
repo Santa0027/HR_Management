@@ -205,8 +205,8 @@ const ExpenseManagement = () => {
 
       // Fetch all filter options concurrently
       const [categoriesRes, paymentMethodsRes, companiesRes, driversRes] = await Promise.allSettled([
-        axiosInstance.get('/categories/'),
-        axiosInstance.get('/payment-methods/'),
+        axiosInstance.get('/accounting/categories/'),
+        axiosInstance.get('/accounting/payment-methods/'),
         axiosInstance.get('/companies/'),
         axiosInstance.get('/Register/drivers/')
       ]);
@@ -247,7 +247,7 @@ const ExpenseManagement = () => {
     try {
       console.log('🏦 Loading bank accounts from API...');
 
-      const response = await axiosInstance.get('/bank-accounts/');
+      const response = await axiosInstance.get('/accounting/bank-accounts/');
       const bankAccountsData = Array.isArray(response.data) ? response.data : [];
       setBankAccounts(bankAccountsData);
 

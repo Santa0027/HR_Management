@@ -4,7 +4,7 @@ import {
   ChevronDown, CircleUserRound, AlertTriangle,
   TrendingUp, Users, Clock, FileText, Calendar, Search, Filter, Download,
   RefreshCw, BarChart3, Activity, AlertCircle, TrendingDown, UserCheck, UserX,
-  Target
+  Target, Plus
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -178,6 +178,24 @@ const AttendanceReport = () => {
   const [atRiskDrivers, setAtRiskDrivers] = useState([]);
   const [showWarningModal, setShowWarningModal] = useState(false);
 
+  // Manual attendance entry states
+  const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+  const [manualEntryForm, setManualEntryForm] = useState({
+    driver_id: '',
+    date: new Date().toISOString().split('T')[0],
+    login_time: '',
+    logout_time: '',
+    status: 'present',
+    reason_for_deduction: '',
+    deduct_amount: '0',
+    platform: 'manual_entry'
+  });
+
+  // Bulk operations states
+  const [selectedRecords, setSelectedRecords] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkAction, setBulkAction] = useState('');
+
   const [warningForm, setWarningForm] = useState({
     driver_id: '',
     reason: '',
@@ -207,50 +225,69 @@ const AttendanceReport = () => {
         let terminationsResult = [];
         let driversResult = [];
 
-        // Process daily data result
+        // Process daily data result with enhanced error handling
         if (results[0].status === 'fulfilled') {
-          dailyDataResult = Array.isArray(results[0].value.data)
-            ? results[0].value.data
-            : (results[0].value.data.results || []);
-          console.log('Daily Data Response (fulfilled):', dailyDataResult);
+          const dailyResponse = results[0].value.data;
+          dailyDataResult = Array.isArray(dailyResponse)
+            ? dailyResponse
+            : (dailyResponse?.results || []);
+          console.log('✅ Daily attendance data loaded:', dailyDataResult.length, 'records');
         } else {
-          console.error('Failed to fetch daily data:', results[0].reason);
+          console.error('❌ Failed to fetch daily attendance data:', results[0].reason);
+          toast.error('Failed to load daily attendance data');
           dailyDataResult = [];
         }
 
-        // Process monthly data result
+        // Process monthly data result with enhanced error handling
         if (results[1].status === 'fulfilled') {
-          monthlyDataResult = Array.isArray(results[1].value.data)
-            ? results[1].value.data
-            : (results[1].value.data.results || []);
-          console.log('Monthly Data Response (fulfilled):', monthlyDataResult);
+          const monthlyResponse = results[1].value.data;
+          monthlyDataResult = Array.isArray(monthlyResponse)
+            ? monthlyResponse
+            : (monthlyResponse?.results || []);
+          console.log('✅ Monthly attendance summary loaded:', monthlyDataResult.length, 'records');
         } else {
-          console.error('Failed to fetch monthly data:', results[1].reason);
+          console.error('❌ Failed to fetch monthly attendance summary:', results[1].reason);
+          toast.error('Failed to load monthly attendance summary');
           monthlyDataResult = [];
         }
 
-        // Process warning letters result
+        // Process warning letters result with enhanced error handling
         if (results[2].status === 'fulfilled') {
-          warningLettersResult = results[2].value.data.results || results[2].value.data;
-          console.log('Warning Letters Response (fulfilled):', warningLettersResult);
+          const warningResponse = results[2].value.data;
+          warningLettersResult = Array.isArray(warningResponse)
+            ? warningResponse
+            : (warningResponse?.results || []);
+          console.log('✅ Warning letters loaded:', warningLettersResult.length, 'records');
         } else {
-          console.error('Failed to fetch warning letters:', results[2].reason);
+          console.error('❌ Failed to fetch warning letters:', results[2].reason);
+          toast.warn('Warning letters data unavailable');
+          warningLettersResult = [];
         }
 
-        // Process terminations result
+        // Process terminations result with enhanced error handling
         if (results[3].status === 'fulfilled') {
-          terminationsResult = results[3].value.data.results || results[3].value.data;
-          console.log('Terminations Response (fulfilled):', terminationsResult);
+          const terminationResponse = results[3].value.data;
+          terminationsResult = Array.isArray(terminationResponse)
+            ? terminationResponse
+            : (terminationResponse?.results || []);
+          console.log('✅ Terminations loaded:', terminationsResult.length, 'records');
         } else {
-          console.error('Failed to fetch terminations:', results[3].reason);
+          console.error('❌ Failed to fetch terminations:', results[3].reason);
+          toast.warn('Termination data unavailable');
+          terminationsResult = [];
         }
 
-        // Process drivers result
+        // Process drivers result with enhanced error handling
         if (results[4].status === 'fulfilled') {
-          driversResult = results[4].value.data.results || results[4].value.data;
-          console.log('Drivers Response (fulfilled):', driversResult);
+          const driversResponse = results[4].value.data;
+          driversResult = Array.isArray(driversResponse)
+            ? driversResponse
+            : (driversResponse?.results || []);
+          console.log('✅ Drivers loaded:', driversResult.length, 'records');
         } else {
-          console.error('Failed to fetch drivers:', results[4].reason);
+          console.error('❌ Failed to fetch drivers:', results[4].reason);
+          toast.error('Failed to load drivers data');
+          driversResult = [];
         }
 
         setDailyData(dailyDataResult); // Store daily data
@@ -287,48 +324,60 @@ const AttendanceReport = () => {
 
     if (currentViewType === 'daily') {
       data.forEach(item => {
-        const status = item.status?.toLowerCase(); // Get status, convert to lowercase for consistent comparison
+        const status = item.status?.toLowerCase().trim(); // Get status, convert to lowercase and trim whitespace
 
-        if (status === 'on-time') {
+        // More comprehensive status checking to handle various backend formats
+        if (status === 'on-time' || status === 'present' || status === 'on_time' || status === 'ontime') {
           present++;
-        } else if (status === 'late') {
+        } else if (status === 'late' || status === 'delayed') {
           present++; // Late counts as present, but also late
           late++;
+        } else if (status === 'absent' || status === 'not_present' || status === 'no_show' || !status) {
+          absent++; // Absent or missing status
         } else {
-          absent++; // Any other status is considered absent
+          // For any unknown status, log it and count as absent
+          console.warn('Unknown attendance status:', item.status, 'for driver:', item.driver_name);
+          absent++;
         }
 
-        totalDeductions += Number(item.deduct_amount || 0); // Sum up deduction amounts
+        // Handle deduction amounts more safely
+        const deductAmount = parseFloat(item.deduct_amount || item.deduction_amount || 0);
+        totalDeductions += isNaN(deductAmount) ? 0 : deductAmount;
       });
 
-      const totalWithStatus = present + absent; // Total records that have a status
-      // Calculate on-time percentage (present minus late, divided by total records with status)
-      const onTimePercent = totalWithStatus ? (((present - late) / totalWithStatus) * 100).toFixed(2) : 0;
+      const totalRecords = present + absent; // Total records processed
+      // Calculate on-time percentage (present minus late, divided by total records)
+      const onTimePercent = totalRecords > 0 ? (((present - late) / totalRecords) * 100).toFixed(2) : 0;
 
       return {
         present,
         late,
         absent,
         on_time_percent: onTimePercent,
-        total_deductions: totalDeductions,
+        total_deductions: totalDeductions.toFixed(2),
+        total_records: totalRecords
       };
     } else { // Monthly view summary
         // For monthly, data already contains aggregated counts from the backend
-        // So, we just sum up the existing monthly aggregates for a total monthly summary
         data.forEach(item => {
-            present += item.present || 0;
-            late += item.late || 0;
-            absent += item.absent || 0;
-            totalDeductions += item.total_deductions || 0; // Assuming monthly summary also provides total_deductions
+            present += parseInt(item.present_days || item.present || 0);
+            late += parseInt(item.late_days || item.late || 0);
+            absent += parseInt(item.absent_days || item.absent || 0);
+
+            const monthlyDeductions = parseFloat(item.total_deductions_amount || item.total_deductions || 0);
+            totalDeductions += isNaN(monthlyDeductions) ? 0 : monthlyDeductions;
         });
-        const totalEntries = present + absent; // Total entries across all drivers in the monthly summary
-        const onTimePercent = totalEntries ? (((present - late) / totalEntries) * 100).toFixed(2) : 0;
+
+        const totalEntries = present + absent;
+        const onTimePercent = totalEntries > 0 ? (((present - late) / totalEntries) * 100).toFixed(2) : 0;
+
         return {
             present,
             late,
             absent,
             on_time_percent: onTimePercent,
-            total_deductions: totalDeductions,
+            total_deductions: totalDeductions.toFixed(2),
+            total_records: totalEntries
         };
     }
   };
@@ -432,34 +481,226 @@ const AttendanceReport = () => {
     }
   };
 
-  // Handler for search input changes
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value); // Update search term state
+  // Handle manual attendance entry
+  const handleManualEntry = async () => {
+    if (!manualEntryForm.driver_id || !manualEntryForm.date) {
+      toast.error('Please fill all required fields');
+      return;
+    }
 
-    // Filter data based on the current viewType and search term
-    if (viewType === 'daily') {
-      const filtered = dailyData.filter(d =>
-        d.driver_name?.toLowerCase().includes(value.toLowerCase())
-      );
-      setFilteredData(filtered);
-      setSummary(calculateSummary(filtered, 'daily')); // Recalculate summary for filtered daily data
+    try {
+      const attendanceData = {
+        driver: parseInt(manualEntryForm.driver_id),
+        date: manualEntryForm.date,
+        login_time: manualEntryForm.login_time || null,
+        logout_time: manualEntryForm.logout_time || null,
+        status: manualEntryForm.status,
+        reason_for_deduction: manualEntryForm.reason_for_deduction || null,
+        deduct_amount: parseFloat(manualEntryForm.deduct_amount) || 0,
+        platform: 'manual_entry'
+      };
+
+      await axiosInstance.post('/hr/attendance/', attendanceData);
+      toast.success('Manual attendance entry created successfully');
+      setShowManualEntryModal(false);
+      setManualEntryForm({
+        driver_id: '',
+        date: new Date().toISOString().split('T')[0],
+        login_time: '',
+        logout_time: '',
+        status: 'present',
+        reason_for_deduction: '',
+        deduct_amount: '0',
+        platform: 'manual_entry'
+      });
+      // Refresh data
+      await handleRefresh();
+    } catch (error) {
+      console.error('Error creating manual attendance entry:', error);
+      toast.error('Failed to create attendance entry');
+    }
+  };
+
+  // Bulk operations handlers
+  const handleSelectRecord = (recordId) => {
+    setSelectedRecords(prev => {
+      if (prev.includes(recordId)) {
+        return prev.filter(id => id !== recordId);
+      } else {
+        return [...prev, recordId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRecords.length === filteredData.length) {
+      setSelectedRecords([]);
     } else {
-      const filtered = monthlyData.filter(d =>
-        d.driver_name?.toLowerCase().includes(value.toLowerCase())
-      );
+      setSelectedRecords(filteredData.map(record => record.id));
+    }
+  };
+
+  const handleBulkAction = async () => {
+    if (selectedRecords.length === 0) {
+      toast.error('Please select records to perform bulk action');
+      return;
+    }
+
+    if (!bulkAction) {
+      toast.error('Please select a bulk action');
+      return;
+    }
+
+    try {
+      switch (bulkAction) {
+        case 'mark_present':
+          await Promise.all(selectedRecords.map(id =>
+            axiosInstance.patch(`/hr/attendance/${id}/`, { status: 'present' })
+          ));
+          toast.success(`Marked ${selectedRecords.length} records as present`);
+          break;
+        case 'mark_absent':
+          await Promise.all(selectedRecords.map(id =>
+            axiosInstance.patch(`/hr/attendance/${id}/`, { status: 'absent' })
+          ));
+          toast.success(`Marked ${selectedRecords.length} records as absent`);
+          break;
+        case 'delete':
+          if (window.confirm(`Are you sure you want to delete ${selectedRecords.length} records?`)) {
+            await Promise.all(selectedRecords.map(id =>
+              axiosInstance.delete(`/hr/attendance/${id}/`)
+            ));
+            toast.success(`Deleted ${selectedRecords.length} records`);
+          }
+          break;
+        default:
+          toast.error('Invalid bulk action');
+          return;
+      }
+
+      // Reset selections and refresh data
+      setSelectedRecords([]);
+      setBulkAction('');
+      setShowBulkActions(false);
+      await handleRefresh();
+    } catch (error) {
+      console.error('Error performing bulk action:', error);
+      toast.error('Failed to perform bulk action');
+    }
+  };
+
+  // Enhanced handler for search input changes
+  const handleSearch = (e) => {
+    const value = e.target.value.trim();
+    setSearchTerm(value);
+
+    // Enhanced filtering with multiple search criteria
+    if (viewType === 'daily') {
+      const filtered = dailyData.filter(d => {
+        const searchLower = value.toLowerCase();
+        return (
+          d.driver_name?.toLowerCase().includes(searchLower) ||
+          d.driver?.driver_name?.toLowerCase().includes(searchLower) ||
+          d.status?.toLowerCase().includes(searchLower) ||
+          d.platform?.toLowerCase().includes(searchLower) ||
+          d.date?.includes(value)
+        );
+      });
       setFilteredData(filtered);
-      setSummary(calculateSummary(filtered, 'monthly')); // Recalculate summary for filtered monthly data
+      setSummary(calculateSummary(filtered, 'daily'));
+    } else {
+      const filtered = monthlyData.filter(d => {
+        const searchLower = value.toLowerCase();
+        return (
+          d.driver_name?.toLowerCase().includes(searchLower) ||
+          d.driver?.driver_name?.toLowerCase().includes(searchLower) ||
+          d.month?.toString().includes(value) ||
+          d.year?.toString().includes(value)
+        );
+      });
+      setFilteredData(filtered);
+      setSummary(calculateSummary(filtered, 'monthly'));
     }
   };
 
   // Handler for switching between daily and monthly report views
   const handleViewSwitch = (type) => {
-    setViewType(type); // Update the view type
-    const data = type === 'daily' ? dailyData : monthlyData; // Select appropriate raw data
-    setFilteredData(data); // Set filtered data to the selected raw data
-    setSummary(calculateSummary(data, type)); // Recalculate summary for the new view type
+    setViewType(type);
+    const data = type === 'daily' ? dailyData : monthlyData;
+    setFilteredData(data);
+    setSummary(calculateSummary(data, type));
     setSearchTerm(''); // Clear search term when switching views
+  };
+
+  // Handler for refreshing data
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Refreshing attendance data...');
+
+      const results = await Promise.allSettled([
+        axiosInstance.get('/hr/attendance/'),
+        axiosInstance.get('/hr/monthly-summary/'),
+        axiosInstance.get('/hr/warning-letters/'),
+        axiosInstance.get('/hr/terminations/'),
+        axiosInstance.get('/Register/drivers/')
+      ]);
+
+      // Process results similar to initial load
+      let dailyDataResult = [];
+      let monthlyDataResult = [];
+      let warningLettersResult = [];
+      let terminationsResult = [];
+      let driversResult = [];
+
+      if (results[0].status === 'fulfilled') {
+        const dailyResponse = results[0].value.data;
+        dailyDataResult = Array.isArray(dailyResponse) ? dailyResponse : (dailyResponse?.results || []);
+      }
+
+      if (results[1].status === 'fulfilled') {
+        const monthlyResponse = results[1].value.data;
+        monthlyDataResult = Array.isArray(monthlyResponse) ? monthlyResponse : (monthlyResponse?.results || []);
+      }
+
+      if (results[2].status === 'fulfilled') {
+        const warningResponse = results[2].value.data;
+        warningLettersResult = Array.isArray(warningResponse) ? warningResponse : (warningResponse?.results || []);
+      }
+
+      if (results[3].status === 'fulfilled') {
+        const terminationResponse = results[3].value.data;
+        terminationsResult = Array.isArray(terminationResponse) ? terminationResponse : (terminationResponse?.results || []);
+      }
+
+      if (results[4].status === 'fulfilled') {
+        const driversResponse = results[4].value.data;
+        driversResult = Array.isArray(driversResponse) ? driversResponse : (driversResponse?.results || []);
+      }
+
+      // Update all state
+      setDailyData(dailyDataResult);
+      setMonthlyData(monthlyDataResult);
+      setWarningLetters(warningLettersResult);
+      setTerminations(terminationsResult);
+      setDrivers(driversResult);
+
+      // Recalculate at-risk drivers
+      const atRisk = calculateAtRiskDrivers(dailyDataResult, driversResult);
+      setAtRiskDrivers(atRisk);
+
+      // Update current view
+      const currentData = viewType === 'daily' ? dailyDataResult : monthlyDataResult;
+      setFilteredData(currentData);
+      setSummary(calculateSummary(currentData, viewType));
+
+      toast.success('✅ Attendance data refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error);
+      toast.error('Failed to refresh attendance data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -478,15 +719,21 @@ const AttendanceReport = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => window.location.reload()}
-                variant="outline"
-                size="sm"
-                className="flex items-center"
+              <button
+                onClick={() => setShowManualEntryModal(true)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Manual Entry
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -506,22 +753,22 @@ const AttendanceReport = () => {
 
       <div className="p-8">
         <div className="max-w-8xl mx-auto space-y-8">
-          {/* Enhanced Summary Cards */}
+          {/* Enhanced Summary Cards with Dynamic Data */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
             <MetricCard
               title="Total Present"
               value={summary.present || 0}
-              change="+5% from yesterday"
-              changeType="increase"
+              change={`${summary.total_records || 0} total records`}
+              changeType="neutral"
               icon={UserCheck}
               color="bg-green-500"
-              subtitle="Active employees today"
+              subtitle={viewType === 'daily' ? 'Present today' : 'Present this period'}
             />
             <MetricCard
               title="Late Arrivals"
               value={summary.late || 0}
-              change="-2% from yesterday"
-              changeType="decrease"
+              change={summary.present > 0 ? `${((summary.late / summary.present) * 100).toFixed(1)}% of present` : 'No data'}
+              changeType={summary.late > 0 ? 'warning' : 'neutral'}
               icon={Clock}
               color="bg-yellow-500"
               subtitle="Delayed check-ins"
@@ -529,8 +776,8 @@ const AttendanceReport = () => {
             <MetricCard
               title="Total Absent"
               value={summary.absent || 0}
-              change="+1% from yesterday"
-              changeType="increase"
+              change={summary.total_records > 0 ? `${((summary.absent / summary.total_records) * 100).toFixed(1)}% absence rate` : 'No data'}
+              changeType={summary.absent > 0 ? 'decrease' : 'neutral'}
               icon={UserX}
               color="bg-red-500"
               subtitle="Missing employees"
@@ -538,8 +785,8 @@ const AttendanceReport = () => {
             <MetricCard
               title="On-time Rate"
               value={`${summary.on_time_percent || 0}%`}
-              change="+3% from yesterday"
-              changeType="increase"
+              change={parseFloat(summary.on_time_percent || 0) >= 90 ? 'Excellent' : parseFloat(summary.on_time_percent || 0) >= 75 ? 'Good' : 'Needs improvement'}
+              changeType={parseFloat(summary.on_time_percent || 0) >= 90 ? 'increase' : parseFloat(summary.on_time_percent || 0) >= 75 ? 'neutral' : 'decrease'}
               icon={Target}
               color="bg-blue-500"
               subtitle="Punctuality score"
@@ -547,8 +794,8 @@ const AttendanceReport = () => {
             <MetricCard
               title="Total Deductions"
               value={`₹${Number(summary.total_deductions || 0).toFixed(0)}`}
-              change="-₹500 from yesterday"
-              changeType="decrease"
+              change={summary.present > 0 ? `₹${(Number(summary.total_deductions || 0) / summary.present).toFixed(0)} avg per person` : 'No data'}
+              changeType={Number(summary.total_deductions || 0) > 0 ? 'decrease' : 'neutral'}
               icon={AlertCircle}
               color="bg-purple-500"
               subtitle="Penalty amount"
@@ -556,11 +803,11 @@ const AttendanceReport = () => {
             <MetricCard
               title="At Risk Drivers"
               value={atRiskDrivers.length}
-              change="2 new alerts"
-              changeType="warning"
+              change={atRiskDrivers.length > 0 ? 'Requires attention' : 'All good'}
+              changeType={atRiskDrivers.length > 0 ? 'warning' : 'increase'}
               icon={AlertTriangle}
               color="bg-orange-500"
-              subtitle="Require attention"
+              subtitle="Performance alerts"
             />
           </div>
 
@@ -603,9 +850,68 @@ const AttendanceReport = () => {
                   icon={Search}
                   className="flex-1"
                 />
+                {selectedRecords.length > 0 && (
+                  <button
+                    onClick={() => setShowBulkActions(!showBulkActions)}
+                    className="flex items-center px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors whitespace-nowrap"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Bulk ({selectedRecords.length})
+                  </button>
+                )}
               </div>
             </div>
           </Card>
+
+          {/* Bulk Actions Panel */}
+          {showBulkActions && selectedRecords.length > 0 && (
+            <Card className="mb-6 border-orange-200 bg-orange-50">
+              <div className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <h3 className="text-lg font-semibold text-orange-800">
+                      Bulk Actions ({selectedRecords.length} selected)
+                    </h3>
+                    <select
+                      value={bulkAction}
+                      onChange={(e) => setBulkAction(e.target.value)}
+                      className="px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    >
+                      <option value="">Select Action</option>
+                      <option value="mark_present">Mark as Present</option>
+                      <option value="mark_absent">Mark as Absent</option>
+                      <option value="delete">Delete Records</option>
+                    </select>
+                    <button
+                      onClick={handleBulkAction}
+                      disabled={!bulkAction}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Apply Action
+                    </button>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleSelectAll}
+                      className="px-3 py-2 text-orange-700 hover:bg-orange-100 rounded-lg transition-colors"
+                    >
+                      {selectedRecords.length === filteredData.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedRecords([]);
+                        setShowBulkActions(false);
+                        setBulkAction('');
+                      }}
+                      className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           {/* Enhanced Attendance Table */}
           <Card className="overflow-hidden">
@@ -634,6 +940,14 @@ const AttendanceReport = () => {
                     {viewType === 'daily' ? (
                       // Headers for Daily Report
                       <>
+                        <TableHead className="w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedRecords.length === filteredData.length && filteredData.length > 0}
+                            onChange={handleSelectAll}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </TableHead>
                         <TableHead>Driver</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Assigned Time</TableHead>
@@ -650,6 +964,14 @@ const AttendanceReport = () => {
                     ) : (
                       // Headers for Monthly Report
                       <>
+                        <TableHead className="w-12">
+                          <input
+                            type="checkbox"
+                            checked={selectedRecords.length === filteredData.length && filteredData.length > 0}
+                            onChange={handleSelectAll}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </TableHead>
                         <TableHead>Driver</TableHead>
                         <TableHead>Month</TableHead>
                         <TableHead>Present Days</TableHead>
@@ -665,14 +987,22 @@ const AttendanceReport = () => {
           <TableBody>
             {loading ? (
               // Loading state row
-              <TableRow><TableCell colSpan={viewType === 'daily' ? 11 : 7} className="text-center p-4 text-gray-400">Loading data...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={viewType === 'daily' ? 12 : 8} className="text-center p-4 text-gray-400">Loading data...</TableCell></TableRow>
             ) : filteredData.length === 0 ? (
               // No data found state row
-              <TableRow><TableCell colSpan={viewType === 'daily' ? 11 : 7} className="text-center p-4 text-gray-400">No attendance data found for this view.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={viewType === 'daily' ? 12 : 8} className="text-center p-4 text-gray-400">No attendance data found for this view.</TableCell></TableRow>
             ) : viewType === 'daily' ? (
               // Render Daily Report rows
               filteredData.map((d, i) => (
                 <TableRow key={i} className="border-b border-gray-800">
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedRecords.includes(d.id)}
+                      onChange={() => handleSelectRecord(d.id)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </TableCell>
                   <TableCell>{d.driver_name}</TableCell>
                   <TableCell>{d.date}</TableCell>
                   <TableCell>{d.assigned_time}</TableCell>
@@ -704,6 +1034,14 @@ const AttendanceReport = () => {
               // Render Monthly Report rows
               filteredData.map((d, i) => (
                 <TableRow key={i} className="border-b border-gray-800">
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedRecords.includes(d.id)}
+                      onChange={() => handleSelectRecord(d.id)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </TableCell>
                   <TableCell>{d.driver_name}</TableCell>
                   <TableCell>{d.month}</TableCell>
                   <TableCell>{d.present_days}</TableCell>
@@ -842,6 +1180,147 @@ const AttendanceReport = () => {
           Manage Terminations ({terminations.length})
         </a>
       </div>
+
+      {/* Manual Attendance Entry Modal */}
+      {showManualEntryModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📝 Manual Attendance Entry</h3>
+              <form onSubmit={(e) => { e.preventDefault(); handleManualEntry(); }}>
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Driver *
+                  </label>
+                  <select
+                    value={manualEntryForm.driver_id}
+                    onChange={(e) => setManualEntryForm({...manualEntryForm, driver_id: e.target.value})}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  >
+                    <option value="">Select Driver</option>
+                    {drivers.map(driver => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.driver_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={manualEntryForm.date}
+                    onChange={(e) => setManualEntryForm({...manualEntryForm, date: e.target.value})}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Status *
+                  </label>
+                  <select
+                    value={manualEntryForm.status}
+                    onChange={(e) => setManualEntryForm({...manualEntryForm, status: e.target.value})}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                  >
+                    <option value="present">Present</option>
+                    <option value="on-time">On Time</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Login Time
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.login_time}
+                      onChange={(e) => setManualEntryForm({...manualEntryForm, login_time: e.target.value})}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      Logout Time
+                    </label>
+                    <input
+                      type="time"
+                      value={manualEntryForm.logout_time}
+                      onChange={(e) => setManualEntryForm({...manualEntryForm, logout_time: e.target.value})}
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Deduction Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={manualEntryForm.deduct_amount}
+                    onChange={(e) => setManualEntryForm({...manualEntryForm, deduct_amount: e.target.value})}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                    Reason for Deduction
+                  </label>
+                  <textarea
+                    value={manualEntryForm.reason_for_deduction}
+                    onChange={(e) => setManualEntryForm({...manualEntryForm, reason_for_deduction: e.target.value})}
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    rows="3"
+                    placeholder="Optional reason for deduction..."
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowManualEntryModal(false);
+                      setManualEntryForm({
+                        driver_id: '',
+                        date: new Date().toISOString().split('T')[0],
+                        login_time: '',
+                        logout_time: '',
+                        status: 'present',
+                        reason_for_deduction: '',
+                        deduct_amount: '0',
+                        platform: 'manual_entry'
+                      });
+                    }}
+                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Create Entry
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Warning Letter Modal */}
       {showWarningModal && (

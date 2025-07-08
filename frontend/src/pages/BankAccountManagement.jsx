@@ -74,7 +74,7 @@ const BankAccountManagement = () => {
     try {
       console.log('🏦 Loading bank accounts from API...');
 
-      const response = await axiosInstance.get('/bank-accounts/');
+      const response = await axiosInstance.get('/accounting/bank-accounts/');
       const bankAccountsData = Array.isArray(response.data) ? response.data : [];
       setBankAccounts(bankAccountsData);
 
@@ -160,12 +160,12 @@ const BankAccountManagement = () => {
 
       if (selectedAccount) {
         // Update existing account
-        await axiosInstance.put(`/bank-accounts/${selectedAccount.id}/`, formData);
+        await axiosInstance.put(`/accounting/bank-accounts/${selectedAccount.id}/`, formData);
         toast.success("✅ Bank account updated successfully!");
         setShowEditModal(false);
       } else {
         // Create new account
-        await axiosInstance.post('/bank-accounts/', formData);
+        await axiosInstance.post('/accounting/bank-accounts/', formData);
         toast.success("✅ Bank account created successfully!");
         setShowAddModal(false);
       }

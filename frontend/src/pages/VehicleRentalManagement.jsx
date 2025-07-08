@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
 import {
   Car,
   Plus,
@@ -224,108 +225,77 @@ const VehicleRentalManagement = () => {
     utilizationRate: 0
   });
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockLeases = [
-      {
-        id: 1,
-        vehicle: { vehicle_name: 'Toyota Camry', vehicle_number: 'ABC-123' },
-        lessee_name: 'ABC Corporation',
-        lessee_contact: '+1-555-0123',
-        lessee_license: 'BL123456789',
-        lessee_address: '123 Business St, City, State',
-        lease_start_date: '2024-01-01T09:00:00',
-        lease_end_date: '2024-12-31T18:00:00',
-        actual_return_date: null,
-        monthly_rate: 450.00,
-        total_months: 12,
-        base_amount: 5400.00,
-        security_deposit: 1000.00,
-        additional_charges: 0,
-        discount: 0,
-        total_amount: 6400.00,
-        pickup_odometer: 45000,
-        return_odometer: null,
-        pickup_fuel_level: 'FULL',
-        return_fuel_level: null,
-        lease_status: 'ACTIVE',
-        payment_status: 'PARTIAL',
-        lease_type: 'BUSINESS'
-      },
-      {
-        id: 2,
-        vehicle: { vehicle_name: 'Honda Civic', vehicle_number: 'XYZ-789' },
-        lessee_name: 'XYZ Logistics Ltd',
-        lessee_contact: '+1-555-0456',
-        lessee_license: 'BL987654321',
-        lessee_address: '456 Industrial Ave, City, State',
-        lease_start_date: '2023-06-01T10:00:00',
-        lease_end_date: '2024-05-31T17:00:00',
-        actual_return_date: '2024-05-31T16:30:00',
-        monthly_rate: 380.00,
-        total_months: 12,
-        base_amount: 4560.00,
-        security_deposit: 800.00,
-        additional_charges: 200.00,
-        discount: 160.00,
-        total_amount: 5400.00,
-        pickup_odometer: 32000,
-        return_odometer: 45000,
-        pickup_fuel_level: 'FULL',
-        return_fuel_level: 'FULL',
-        lease_status: 'COMPLETED',
-        payment_status: 'PAID',
-        lease_type: 'BUSINESS'
-      },
-      {
-        id: 3,
-        vehicle: { vehicle_name: 'Ford Transit', vehicle_number: 'DEF-456' },
-        lessee_name: 'Green Delivery Services',
-        lessee_contact: '+1-555-0789',
-        lessee_license: 'BL456789123',
-        lessee_address: '789 Commerce St, City, State',
-        lease_start_date: '2024-01-01T08:00:00',
-        lease_end_date: '2025-12-31T20:00:00',
-        actual_return_date: null,
-        monthly_rate: 650.00,
-        total_months: 24,
-        base_amount: 15600.00,
-        security_deposit: 1500.00,
-        additional_charges: 0,
-        discount: 0,
-        total_amount: 17100.00,
-        pickup_odometer: 78000,
-        return_odometer: null,
-        pickup_fuel_level: 'FULL',
-        return_fuel_level: null,
-        lease_status: 'ACTIVE',
-        payment_status: 'PENDING',
-        lease_type: 'COMMERCIAL'
+  // Fetch leases from API
+  const fetchLeases = async () => {
+    try {
+      setLoading(true);
+      console.log('🚗 Loading vehicle leases from API...');
+
+      const response = await axiosInstance.get('/vehicle-rentals/');
+      let leasesData = [];
+
+      if (Array.isArray(response.data)) {
+        leasesData = response.data;
+      } else if (response.data && Array.isArray(response.data.results)) {
+        leasesData = response.data.results;
       }
-    ];
 
-    setLeases(mockLeases);
-    setFilteredLeases(mockLeases);
+      setLeases(leasesData);
+      setFilteredLeases(leasesData);
+      console.log('✅ Loaded leases from API:', leasesData.length);
 
-    // Calculate stats
-    const totalRevenue = mockLeases.reduce((sum, lease) => sum + lease.total_amount, 0);
-    const avgMonthlyRate = mockLeases.reduce((sum, lease) => sum + lease.monthly_rate, 0) / mockLeases.length;
+    } catch (error) {
+      console.error('❌ Error fetching leases:', error);
+      toast.error('Failed to load vehicle leases');
+      setLeases([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats from leases data
+  const calculateStats = (leasesData) => {
+    if (leasesData.length === 0) {
+      setLeaseStats({
+        totalLeases: 0,
+        activeLeases: 0,
+        completedLeases: 0,
+        overdueLeases: 0,
+        totalRevenue: 0,
+        avgMonthlyRate: 0,
+        thisMonth: 0,
+        pendingPayments: 0,
+        utilizationRate: 0
+      });
+      return;
+    }
+
+    const totalRevenue = leasesData.reduce((sum, lease) => sum + (parseFloat(lease.total_amount) || 0), 0);
+    const avgMonthlyRate = leasesData.reduce((sum, lease) => sum + (parseFloat(lease.monthly_rate) || 0), 0) / leasesData.length;
 
     const stats = {
-      totalLeases: mockLeases.length,
-      activeLeases: mockLeases.filter(r => r.lease_status === 'ACTIVE').length,
-      completedLeases: mockLeases.filter(r => r.lease_status === 'COMPLETED').length,
-      overdueLeases: mockLeases.filter(r => new Date(r.lease_end_date) < new Date() && r.lease_status === 'ACTIVE').length,
+      totalLeases: leasesData.length,
+      activeLeases: leasesData.filter(r => r.lease_status === 'ACTIVE').length,
+      completedLeases: leasesData.filter(r => r.lease_status === 'COMPLETED').length,
+      overdueLeases: leasesData.filter(r => new Date(r.lease_end_date) < new Date() && r.lease_status === 'ACTIVE').length,
       totalRevenue: totalRevenue,
       avgMonthlyRate: avgMonthlyRate,
-      thisMonth: mockLeases.filter(r => new Date(r.lease_start_date).getMonth() === new Date().getMonth()).length,
-      pendingPayments: mockLeases.filter(r => r.payment_status === 'PENDING' || r.payment_status === 'PARTIAL').length,
-      utilizationRate: 75 // Mock utilization rate
+      thisMonth: leasesData.filter(r => new Date(r.lease_start_date).getMonth() === new Date().getMonth()).length,
+      pendingPayments: leasesData.filter(r => r.payment_status === 'PENDING' || r.payment_status === 'PARTIAL').length,
+      utilizationRate: Math.round((leasesData.filter(r => r.lease_status === 'ACTIVE').length / leasesData.length) * 100) || 0
     };
 
     setLeaseStats(stats);
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchLeases();
   }, []);
+
+  // Update stats when leases change
+  useEffect(() => {
+    calculateStats(leases);
+  }, [leases]);
 
   // Filter leases based on search and filters
   useEffect(() => {
@@ -352,27 +322,43 @@ const VehicleRentalManagement = () => {
   }, [leases, searchTerm, statusFilter, paymentFilter]);
 
   const handleViewLease = (lease) => {
-    navigate(`/vehicle-lease/${lease.id}`);
+    // TODO: Implement lease detail view
+    toast.info('Lease detail view will be implemented soon');
+    console.log('View lease:', lease);
   };
 
   const handleEditLease = (lease) => {
-    navigate(`/vehicle-lease-edit/${lease.id}`);
+    // TODO: Implement lease edit functionality
+    toast.info('Lease edit functionality will be implemented soon');
+    console.log('Edit lease:', lease);
   };
 
-  const handleDeleteLease = (lease) => {
+  const handleDeleteLease = async (lease) => {
     if (window.confirm('Are you sure you want to delete this lease record?')) {
-      const updatedLeases = leases.filter(r => r.id !== lease.id);
-      setLeases(updatedLeases);
-      toast.success('Lease record deleted successfully');
+      try {
+        console.log('🗑️ Deleting lease via API...');
+        await axiosInstance.delete(`/vehicle-rentals/${lease.id}/`);
+
+        // Refresh the leases list
+        await fetchLeases();
+        toast.success('Lease record deleted successfully');
+      } catch (error) {
+        console.error('❌ Error deleting lease:', error);
+        toast.error('Failed to delete lease record');
+      }
     }
   };
 
   const handleReturnVehicle = (lease) => {
-    navigate(`/vehicle-lease-return/${lease.id}`);
+    // TODO: Implement vehicle return functionality
+    toast.info('Vehicle return functionality will be implemented soon');
+    console.log('Return vehicle for lease:', lease);
   };
 
   const handleExtendLease = (lease) => {
-    navigate(`/vehicle-lease-extend/${lease.id}`);
+    // TODO: Implement lease extension functionality
+    toast.info('Lease extension functionality will be implemented soon');
+    console.log('Extend lease:', lease);
   };
 
   if (loading) {

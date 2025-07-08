@@ -552,9 +552,9 @@ const IncomeManagement = () => {
 
       // Fetch all dependencies concurrently
       const [categoriesRes, paymentMethodsRes, bankAccountsRes, companiesRes, driversRes] = await Promise.allSettled([
-        axiosInstance.get('/categories/'),
-        axiosInstance.get('/payment-methods/'),
-        axiosInstance.get('/bank-accounts/'),
+        axiosInstance.get('/accounting/categories/'),
+        axiosInstance.get('/accounting/payment-methods/'),
+        axiosInstance.get('/accounting/bank-accounts/'),
         axiosInstance.get('/companies/'),
         axiosInstance.get('/Register/drivers/')
       ]);

@@ -7,10 +7,6 @@ from .views import CompanyViewSet
 router = DefaultRouter()
 router.register(r'companies', CompanyViewSet,basename='companies')
 
-urlpatterns = [
-    path('companies', include(router.urls)),
-    
-]
-urlpatterns += router.urls
+urlpatterns = router.urls
 
 

@@ -440,8 +440,85 @@ const AttendanceReportEnhanced = () => {
   };
 
   const exportToPDF = () => {
-    // This would integrate with a PDF library like jsPDF
-    toast.info('PDF export functionality would be implemented here');
+    // Create a simple HTML table for printing
+    const printWindow = window.open('', '_blank');
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Attendance Report - ${new Date().toLocaleDateString()}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #333; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+            .stat-item { text-align: center; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>Attendance Report</h1>
+          <p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+          <p><strong>Total Records:</strong> ${filteredData.length}</p>
+
+          <div class="stats">
+            <div class="stat-item">
+              <h3>${attendanceStats.presentToday}</h3>
+              <p>Present Today</p>
+            </div>
+            <div class="stat-item">
+              <h3>${attendanceStats.absentToday}</h3>
+              <p>Absent Today</p>
+            </div>
+            <div class="stat-item">
+              <h3>${attendanceStats.lateToday}</h3>
+              <p>Late Today</p>
+            </div>
+            <div class="stat-item">
+              <h3>${attendanceStats.onTimePercentage}%</h3>
+              <p>On-time Rate</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Driver Name</th>
+                <th>Status</th>
+                <th>Login Time</th>
+                <th>Logout Time</th>
+                <th>Working Hours</th>
+                <th>Deduction</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredData.map(record => `
+                <tr>
+                  <td>${record.date}</td>
+                  <td>${record.driver?.driver_name || record.driver_name || 'N/A'}</td>
+                  <td>${record.status}</td>
+                  <td>${record.login_time || 'N/A'}</td>
+                  <td>${record.logout_time || 'N/A'}</td>
+                  <td>${calculateWorkingHours(record.login_time, record.logout_time)}</td>
+                  <td>₹${record.deduct_amount || 0}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+
+    toast.success('PDF report generated successfully');
   };
 
   if (loading) {
@@ -475,6 +552,13 @@ const AttendanceReportEnhanced = () => {
             >
               <Download className="w-4 h-4 mr-2" />
               Export CSV
+            </button>
+            <button
+              onClick={exportToPDF}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Export PDF
             </button>
           </div>
         </div>

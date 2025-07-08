@@ -65,7 +65,7 @@ const BudgetManagement = () => {
     try {
       console.log('💰 Loading budgets from API...');
 
-      const response = await axiosInstance.get('/budgets/');
+      const response = await axiosInstance.get('/accounting/budgets/');
       const budgetsData = Array.isArray(response.data) ? response.data : [];
       setBudgets(budgetsData);
       console.log('✅ Budgets loaded from API:', budgetsData.length);
@@ -199,12 +199,12 @@ const BudgetManagement = () => {
 
       if (selectedBudget) {
         // Update existing budget
-        await axiosInstance.put(`/budgets/${selectedBudget.id}/`, dataToSubmit);
+        await axiosInstance.put(`/accounting/budgets/${selectedBudget.id}/`, dataToSubmit);
         toast.success("✅ Budget updated successfully!");
         setShowEditModal(false);
       } else {
         // Create new budget
-        await axiosInstance.post('/budgets/', dataToSubmit);
+        await axiosInstance.post('/accounting/budgets/', dataToSubmit);
         toast.success("✅ Budget created successfully!");
         setShowAddModal(false);
       }

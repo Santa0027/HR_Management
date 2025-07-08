@@ -81,14 +81,14 @@ const AccountingDashboard = () => {
     try {
       console.log('📊 Loading accounting dashboard data from API...');
 
-      // Fetch dashboard data from API
+      // Fetch dashboard data from API using correct action endpoints
       const [summaryRes, transactionsRes, categoryRes, trendsRes, cashFlowRes, budgetRes] = await Promise.allSettled([
-        axiosInstance.get('/accounting/summary/', { params: dateRange }),
-        axiosInstance.get('/accounting/recent-transactions/', { params: { limit: 10, ...dateRange } }),
-        axiosInstance.get('/accounting/category-breakdown/', { params: dateRange }),
-        axiosInstance.get('/accounting/monthly-trends/', { params: dateRange }),
-        axiosInstance.get('/accounting/cash-flow/', { params: dateRange }),
-        axiosInstance.get('/accounting/budget-alerts/', { params: dateRange })
+        axiosInstance.get('/accounting/transactions/summary/', { params: dateRange }),
+        axiosInstance.get('/accounting/transactions/', { params: { limit: 10, ...dateRange } }),
+        axiosInstance.get('/accounting/transactions/category_breakdown/', { params: dateRange }),
+        axiosInstance.get('/accounting/transactions/monthly_trends/', { params: dateRange }),
+        axiosInstance.get('/accounting/reports/', { params: { report_type: 'cash_flow', ...dateRange } }),
+        axiosInstance.get('/accounting/budgets/', { params: dateRange })
       ]);
 
       // Process summary data
