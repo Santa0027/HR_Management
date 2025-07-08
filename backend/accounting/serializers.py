@@ -133,7 +133,13 @@ class IncomeSerializer(serializers.ModelSerializer):
             transaction_data.pop('created_by')
         
         # Set 'created_by' for the Transaction from the request context
-        transaction_data['created_by'] = self.context['request'].user
+        # Handle anonymous users (for testing/development)
+        if self.context['request'].user.is_authenticated:
+            transaction_data['created_by'] = self.context['request'].user
+        else:
+            # For anonymous users, don't set created_by (it will be null)
+            transaction_data.pop('created_by', None)
+
         # Ensure transaction_type is always 'income' for Income-related transactions
         transaction_data['transaction_type'] = 'income'
         
@@ -161,11 +167,16 @@ class IncomeSerializer(serializers.ModelSerializer):
             validated_data.pop('created_by')
 
         # Create the Income instance, linking it to the newly created Transaction
-        income = Income.objects.create(
-            transaction=transaction,
-            created_by=self.context['request'].user, # Explicitly set created_by for Income
+        # Handle anonymous users (for testing/development)
+        income_data = {
+            'transaction': transaction,
             **validated_data
-        )
+        }
+
+        if self.context['request'].user.is_authenticated:
+            income_data['created_by'] = self.context['request'].user
+
+        income = Income.objects.create(**income_data)
         print(f"Income created: {income.id}")
         return income
 

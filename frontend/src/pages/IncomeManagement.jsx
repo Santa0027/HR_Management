@@ -1,552 +1,101 @@
-import { useState, useEffect } from 'react';
-import axiosInstance from '../api/axiosInstance';
-import { format } from 'date-fns';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import axiosInstance from '../api/axiosInstance';
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  IconButton, Button, TextField, MenuItem, Select, FormControl, InputLabel,
-  Pagination, CircularProgress, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox, FormControlLabel, Grid
-} from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import SearchBar from '../components/SearchBar'; 
-
-// --- Inline ConfirmModal Component ---
-const ConfirmModal = ({ open, handleClose, handleConfirm, title, message }) => {
-  return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-description"
-    >
-      <DialogTitle id="confirm-dialog-title">{title}</DialogTitle>
-      <DialogContent>
-        <Typography id="confirm-dialog-description">{message}</Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} color="primary">
-          Cancel
-        </Button>
-        <Button onClick={handleConfirm} color="secondary" autoFocus>
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-// --- Inline AddEditIncomeModal Component ---
-const AddEditIncomeModal = ({
-  open,
-  handleClose,
-  newIncome,
-  handleInputChange,
-  handleSaveIncome,
-  selectedIncome,
-  categories,
-  paymentMethods,
-  bankAccounts,
-  companies,
-  drivers,
-  incomeSources // Passed from parent
-}) => {
-  return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
-      <DialogTitle>{selectedIncome ? 'Edit Income' : 'Add New Income'}</DialogTitle>
-      <DialogContent dividers>
-        <Box component="form" sx={{ mt: 2 }}>
-          <Grid container spacing={2}>
-            {/* Transaction Data Fields (now nested under 'transaction') */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Amount"
-                name="transaction.amount" 
-                type="number"
-                value={newIncome.transaction.amount}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  name="transaction.category" 
-                  value={newIncome.transaction.category}
-                  onChange={handleInputChange}
-                  label="Category"
-                >
-                  {categories.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Description"
-                name="transaction.description" 
-                value={newIncome.transaction.description}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                multiline
-                rows={2}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Payment Method</InputLabel>
-                <Select
-                  name="transaction.payment_method" 
-                  value={newIncome.transaction.payment_method}
-                  onChange={handleInputChange}
-                  label="Payment Method"
-                >
-                  {paymentMethods.map((pm) => (
-                    <MenuItem key={pm.id} value={pm.id}>
-                      {pm.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Bank Account</InputLabel>
-                <Select
-                  name="transaction.bank_account" 
-                  value={newIncome.transaction.bank_account}
-                  onChange={handleInputChange}
-                  label="Bank Account"
-                  displayEmpty
-                >
-                  <MenuItem value=""><em>None</em></MenuItem>
-                  {bankAccounts.map((ba) => (
-                    <MenuItem key={ba.id} value={ba.id}>
-                      {ba.account_name} ({ba.bank_name})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Company *</InputLabel>
-                <Select
-                  name="transaction.company"
-                  value={newIncome.transaction.company}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    // Auto-populate company bank account if available
-                    const selectedCompany = companies.find(c => c.id === parseInt(e.target.value));
-                    if (selectedCompany && selectedCompany.bank_name) {
-                      // Find matching bank account
-                      const companyBankAccount = bankAccounts.find(ba =>
-                        ba.bank_name === selectedCompany.bank_name &&
-                        ba.account_number === selectedCompany.account_number
-                      );
-                      if (companyBankAccount) {
-                        setNewIncome(prev => ({
-                          ...prev,
-                          transaction: {
-                            ...prev.transaction,
-                            bank_account: companyBankAccount.id
-                          }
-                        }));
-                      }
-                    }
-                  }}
-                  label="Company *"
-                  displayEmpty
-                  required
-                >
-                  <MenuItem value=""><em>Select Company</em></MenuItem>
-                  {companies.map((company) => (
-                    <MenuItem key={company.id} value={company.id}>
-                      {company.company_name}
-                      {company.registration_number && ` (${company.registration_number})`}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {newIncome.transaction.company && (
-                <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  {(() => {
-                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
-                    return selectedCompany ? (
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                        <div><strong>Contact:</strong> {selectedCompany.contact_person}</div>
-                        <div><strong>Email:</strong> {selectedCompany.contact_email}</div>
-                        <div><strong>Phone:</strong> {selectedCompany.contact_phone}</div>
-                        {selectedCompany.commission_type && (
-                          <div><strong>Commission:</strong> {selectedCompany.commission_type}</div>
-                        )}
-                        {selectedCompany.bank_name && (
-                          <div><strong>Bank:</strong> {selectedCompany.bank_name}</div>
-                        )}
-                      </Box>
-                    ) : null;
-                  })()}
-                </Box>
-              )}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Driver (Optional)</InputLabel>
-                <Select
-                  name="transaction.driver"
-                  value={newIncome.transaction.driver}
-                  onChange={handleInputChange}
-                  label="Driver (Optional)"
-                  displayEmpty
-                >
-                  <MenuItem value=""><em>Select Driver (Optional)</em></MenuItem>
-                  {drivers.map((driver) => (
-                    <MenuItem key={driver.id} value={driver.id}>
-                      {driver.first_name} {driver.last_name}
-                      {driver.driver_id && ` (ID: ${driver.driver_id})`}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              {newIncome.transaction.driver && (
-                <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  {(() => {
-                    const selectedDriver = drivers.find(d => d.id === parseInt(newIncome.transaction.driver));
-                    return selectedDriver ? (
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                        <div><strong>Phone:</strong> {selectedDriver.phone_number}</div>
-                        <div><strong>Status:</strong> {selectedDriver.status}</div>
-                        {selectedDriver.email && (
-                          <div><strong>Email:</strong> {selectedDriver.email}</div>
-                        )}
-                      </Box>
-                    ) : null;
-                  })()}
-                </Box>
-              )}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Transaction Date"
-                name="transaction.transaction_date" 
-                type="date"
-                value={newIncome.transaction.transaction_date}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal" required>
-                <InputLabel>Transaction Status</InputLabel>
-                <Select
-                  name="transaction.status" 
-                  value={newIncome.transaction.status}
-                  onChange={handleInputChange}
-                  label="Transaction Status"
-                >
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Income Specific Fields */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Income Source *</InputLabel>
-                <Select
-                  name="income_source"
-                  value={newIncome.income_source}
-                  onChange={handleInputChange}
-                  label="Income Source *"
-                  required
-                >
-                  <MenuItem value=""><em>Select Source</em></MenuItem>
-                  {(() => {
-                    // Get suggested income sources based on selected company's commission type
-                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
-                    let suggestedSources = [...incomeSources];
-
-                    if (selectedCompany?.commission_type) {
-                      // Reorder sources based on company commission type
-                      const prioritySources = [];
-                      const otherSources = [];
-
-                      incomeSources.forEach(source => {
-                        if (selectedCompany.commission_type === 'km' && source.value === 'driver_commission') {
-                          prioritySources.push(source);
-                        } else if (selectedCompany.commission_type === 'order' && source.value === 'service_fee') {
-                          prioritySources.push(source);
-                        } else if (selectedCompany.commission_type === 'fixed' && source.value === 'company_payment') {
-                          prioritySources.push(source);
-                        } else {
-                          otherSources.push(source);
-                        }
-                      });
-
-                      suggestedSources = [...prioritySources, ...otherSources];
-                    }
-
-                    return suggestedSources.map((source) => (
-                      <MenuItem key={source.value} value={source.value}>
-                        {source.label}
-                        {selectedCompany?.commission_type && (
-                          (selectedCompany.commission_type === 'km' && source.value === 'driver_commission') ||
-                          (selectedCompany.commission_type === 'order' && source.value === 'service_fee') ||
-                          (selectedCompany.commission_type === 'fixed' && source.value === 'company_payment')
-                        ) && ' (Recommended)'}
-                      </MenuItem>
-                    ));
-                  })()}
-                </Select>
-              </FormControl>
-              {newIncome.transaction.company && (
-                <Box sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
-                  {(() => {
-                    const selectedCompany = companies.find(c => c.id === parseInt(newIncome.transaction.company));
-                    if (selectedCompany?.commission_type) {
-                      return (
-                        <Typography variant="caption" sx={{ color: 'info.dark' }}>
-                          💡 Based on {selectedCompany.company_name}'s commission type ({selectedCompany.commission_type}),
-                          certain income sources are recommended for this transaction.
-                        </Typography>
-                      );
-                    }
-                    return null;
-                  })()}
-                </Box>
-              )}
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Invoice Number"
-                name="invoice_number"
-                value={newIncome.invoice_number}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Due Date"
-                name="due_date"
-                type="date"
-                value={newIncome.due_date}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Tax Amount"
-                name="tax_amount"
-                type="number"
-                value={newIncome.tax_amount}
-                onChange={handleInputChange}
-                fullWidth
-                margin="normal"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    name="is_recurring"
-                    checked={newIncome.is_recurring}
-                    onChange={handleInputChange}
-                    color="primary"
-                  />
-                }
-                label="Is Recurring?"
-              />
-            </Grid>
-            {newIncome.is_recurring && (
-              <>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth margin="normal">
-                    <InputLabel>Recurring Frequency</InputLabel>
-                    <Select
-                      name="recurring_frequency"
-                      value={newIncome.recurring_frequency}
-                      onChange={handleInputChange}
-                      label="Recurring Frequency"
-                    >
-                      <MenuItem value=""><em>None</em></MenuItem>
-                      <MenuItem value="daily">Daily</MenuItem>
-                      <MenuItem value="weekly">Weekly</MenuItem>
-                      <MenuItem value="monthly">Monthly</MenuItem>
-                      <MenuItem value="quarterly">Quarterly</MenuItem>
-                      <MenuItem value="annually">Annually</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Next Due Date"
-                    name="next_due_date"
-                    type="date"
-                    value={newIncome.next_due_date}
-                    onChange={handleInputChange}
-                    fullWidth
-                    margin="normal"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-              </>
-            )}
-          </Grid>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} color="error">
-          Cancel
-        </Button>
-        <Button onClick={handleSaveIncome} color="primary" variant="contained">
-          {selectedIncome ? 'Update' : 'Add'} Income
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
+  Plus,
+  DollarSign,
+  Calendar,
+  FileText,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  Eye,
+  BarChart3,
+  RefreshCw,
+  X
+} from 'lucide-react';
 
 const IncomeManagement = () => {
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedIncome, setSelectedIncome] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [incomeToDelete, setIncomeToDelete] = useState(null);
-
-  // Hardcoded income sources for the frontend.
-  // IMPORTANT: These must match the choices defined in your Django Income model's income_source field.
-  // The 'value' should be the first element of the tuple in Django, and 'label' the second.
-  const [incomeSources, setIncomeSources] = useState([
-    { value: 'driver_commission', label: 'Driver Commission' },
-    { value: 'company_payment', label: 'Company Payment' },
-    { value: 'vehicle_rental', label: 'Vehicle Rental' },
-    { value: 'service_fee', label: 'Service Fee' },
-    { value: 'penalty_collection', label: 'Penalty Collection' },
-    { value: 'other', label: 'Other' },
-  ]);
-
-  // State for form data
-  const [newIncome, setNewIncome] = useState({
-    transaction: { 
-      amount: '',
-      description: '',
-      category: '', 
-      payment_method: '', 
-      bank_account: '', 
-      company: '', 
-      driver: '', 
-      transaction_date: format(new Date(), 'yyyy-MM-dd'),
-      status: 'completed' 
-      // transaction_type is NOT sent from frontend; it's set by backend serializer
-    },
-    income_source: '', 
-    invoice_number: '',
-    due_date: '',
-    tax_amount: '0.00',
-    is_recurring: false,
-    recurring_frequency: '',
-    next_due_date: ''
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    income_source: '',
+    status: '',
+    category: '',
+    date_from: '',
+    date_to: ''
   });
 
+  // Dependencies
   const [categories, setCategories] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
-  // Pagination and Filters
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(10); 
-  const [totalIncomes, setTotalIncomes] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
-    income_source: '',
-    is_recurring: '', 
-    'transaction__company': '',
-    'transaction__driver': '',
-    'transaction__status': '',
-    'transaction__transaction_date__gte': '',
-    'transaction__transaction_date__lte': '',
+  // Summary statistics
+  const [summary, setSummary] = useState({
+    total_income: 0,
+    monthly_income: 0,
+    pending_income: 0,
+    overdue_income: 0
   });
-  const [ordering, setOrdering] = useState('-transaction__transaction_date');
 
+  // Form state for new/edit income
+  const [formData, setFormData] = useState({
+    amount: '',
+    description: '',
+    category: '',
+    payment_method: '',
+    bank_account: '',
+    company: '',
+    driver: '',
+    transaction_date: new Date().toISOString().split('T')[0],
+    income_source: '',
+    invoice_number: '',
+    due_date: '',
+    tax_amount: '0.00',
+    is_recurring: false,
+    recurring_frequency: '',
+    status: 'completed'
+  });
 
-  // ✅ CLEARED: fetchIncomes API calls removed - Using real database data
-  const fetchIncomes = async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch incomes from API
+  const fetchIncomes = useCallback(async () => {
     try {
-      console.log('🧹 API CALLS CLEARED - Loading real database income data');
+      setLoading(true);
+      console.log('💰 Loading income data from API...');
 
-      // Actual database income data (no income records in database)
-      const actualIncomeData = [];
-
-      // Apply filters to actual data
-      let filteredData = actualIncomeData;
-
-      if (filters.status) {
-        filteredData = filteredData.filter(income =>
-          income.transaction.status === filters.status
-        );
-      }
-
-      if (filters.category) {
-        filteredData = filteredData.filter(income =>
-          income.transaction.category.id == filters.category
-        );
-      }
-
-      if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase();
-        filteredData = filteredData.filter(income =>
-          income.transaction.description.toLowerCase().includes(searchLower) ||
-          income.transaction.category.name.toLowerCase().includes(searchLower)
-        );
-      }
-
-      // Apply pagination
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const paginatedData = filteredData.slice(startIndex, endIndex);
-
-      setIncomes(paginatedData);
-      setTotalIncomes(filteredData.length);
-
-      toast.success("✅ Income data loaded - No income records in database");
-    } catch (err) {
-      console.error('Error loading income data:', err);
-      setError(err);
-      toast.error('Failed to load income data (simulation)');
+      const response = await axiosInstance.get('/accounting/income/');
+      const incomesData = Array.isArray(response.data.results) ? response.data.results : 
+                         Array.isArray(response.data) ? response.data : [];
+      
+      setIncomes(incomesData);
+      console.log('✅ Income data loaded from API:', incomesData.length);
+    } catch (error) {
+      console.error('Error fetching incomes:', error);
+      toast.error('Failed to load income data');
       setIncomes([]);
-      setTotalIncomes(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch dependencies from API
-  const fetchDependencies = async () => {
+  const fetchDependencies = useCallback(async () => {
     try {
       console.log('💰 Loading income form dependencies from API...');
 
@@ -561,71 +110,136 @@ const IncomeManagement = () => {
 
       // Process categories
       if (categoriesRes.status === 'fulfilled') {
-        const categoriesData = Array.isArray(categoriesRes.value.data) ? categoriesRes.value.data : [];
+        const categoriesData = Array.isArray(categoriesRes.value.data.results) ? categoriesRes.value.data.results : 
+                              Array.isArray(categoriesRes.value.data) ? categoriesRes.value.data : [];
         setCategories(categoriesData.filter(cat => cat.category_type === 'income'));
       }
 
       // Process payment methods
       if (paymentMethodsRes.status === 'fulfilled') {
-        const paymentMethodsData = Array.isArray(paymentMethodsRes.value.data) ? paymentMethodsRes.value.data : [];
+        const paymentMethodsData = Array.isArray(paymentMethodsRes.value.data.results) ? paymentMethodsRes.value.data.results : 
+                                  Array.isArray(paymentMethodsRes.value.data) ? paymentMethodsRes.value.data : [];
         setPaymentMethods(paymentMethodsData);
       }
 
       // Process bank accounts
       if (bankAccountsRes.status === 'fulfilled') {
-        const bankAccountsData = Array.isArray(bankAccountsRes.value.data) ? bankAccountsRes.value.data : [];
+        const bankAccountsData = Array.isArray(bankAccountsRes.value.data.results) ? bankAccountsRes.value.data.results : 
+                                Array.isArray(bankAccountsRes.value.data) ? bankAccountsRes.value.data : [];
         setBankAccounts(bankAccountsData);
       }
 
       // Process companies
       if (companiesRes.status === 'fulfilled') {
-        const companiesData = Array.isArray(companiesRes.value.data) ? companiesRes.value.data : [];
+        const companiesData = Array.isArray(companiesRes.value.data.results) ? companiesRes.value.data.results : 
+                             Array.isArray(companiesRes.value.data) ? companiesRes.value.data : [];
         setCompanies(companiesData);
       }
 
       // Process drivers
       if (driversRes.status === 'fulfilled') {
-        const driversData = Array.isArray(driversRes.value.data) ? driversRes.value.data : [];
+        const driversData = Array.isArray(driversRes.value.data.results) ? driversRes.value.data.results : 
+                           Array.isArray(driversRes.value.data) ? driversRes.value.data : [];
         setDrivers(driversData);
       }
 
-      console.log('✅ Income form dependencies loaded from API');
-    } catch (err) {
-      console.error("Error loading dependencies:", err);
-      toast.error("Failed to load form data");
+      console.log('✅ Income dependencies loaded from API');
+    } catch (error) {
+      console.error('Error loading dependencies:', error);
+      toast.error('Failed to load form dependencies');
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    fetchDependencies();
+  // Fetch summary statistics
+  const fetchSummary = useCallback(async () => {
+    try {
+      const currentDate = new Date();
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+      const [totalRes, monthlyRes] = await Promise.all([
+        axiosInstance.get('/accounting/transactions/summary/', {
+          params: {
+            start_date: '2020-01-01',
+            end_date: currentDate.toISOString().split('T')[0]
+          }
+        }),
+        axiosInstance.get('/accounting/transactions/summary/', {
+          params: {
+            start_date: startOfMonth.toISOString().split('T')[0],
+            end_date: endOfMonth.toISOString().split('T')[0]
+          }
+        })
+      ]);
+
+      setSummary({
+        total_income: parseFloat(totalRes.data.total_income || 0),
+        monthly_income: parseFloat(monthlyRes.data.total_income || 0),
+        pending_income: 0, // Calculate from incomes data
+        overdue_income: 0  // Calculate from incomes data
+      });
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+      setSummary({
+        total_income: 0,
+        monthly_income: 0,
+        pending_income: 0,
+        overdue_income: 0
+      });
+    }
   }, []);
 
   useEffect(() => {
     fetchIncomes();
-  }, [page, searchQuery, filters, ordering]);
+    fetchDependencies();
+    fetchSummary();
+  }, [fetchIncomes, fetchDependencies, fetchSummary]);
 
-  const handlePageChange = (_, value) => {
-    setPage(value);
+  // Handle form input changes
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    setPage(1);
-  };
+  // Handle save income
+  const handleSaveIncome = async () => {
+    try {
+      setLoading(true);
+      
+      const incomeData = {
+        transaction: {
+          amount: parseFloat(formData.amount),
+          description: formData.description,
+          category: formData.category,
+          payment_method: formData.payment_method,
+          bank_account: formData.bank_account || null,
+          company: formData.company || null,
+          driver: formData.driver || null,
+          transaction_date: formData.transaction_date,
+          status: formData.status
+        },
+        income_source: formData.income_source,
+        invoice_number: formData.invoice_number,
+        due_date: formData.due_date || null,
+        tax_amount: parseFloat(formData.tax_amount || 0),
+        is_recurring: formData.is_recurring,
+        recurring_frequency: formData.recurring_frequency || null
+      };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPage(1);
-  };
+      if (selectedIncome) {
+        await axiosInstance.put(`/accounting/income/${selectedIncome.id}/`, incomeData);
+        toast.success('✅ Income updated successfully!');
+        setShowEditModal(false);
+      } else {
+        await axiosInstance.post('/accounting/income/', incomeData);
+        toast.success('✅ Income added successfully!');
+        setShowAddModal(false);
+      }
 
-  const handleOrderingChange = (e) => {
-    setOrdering(e.target.value);
-  };
-
-  const resetForm = () => {
-    setNewIncome({
-      transaction: { 
+      // Reset form and refresh data
+      setFormData({
         amount: '',
         description: '',
         category: '',
@@ -633,385 +247,757 @@ const IncomeManagement = () => {
         bank_account: '',
         company: '',
         driver: '',
-        transaction_date: format(new Date(), 'yyyy-MM-dd'),
+        transaction_date: new Date().toISOString().split('T')[0],
+        income_source: '',
+        invoice_number: '',
+        due_date: '',
+        tax_amount: '0.00',
+        is_recurring: false,
+        recurring_frequency: '',
         status: 'completed'
-      },
-      income_source: '',
-      invoice_number: '',
-      due_date: '',
-      tax_amount: '0.00',
-      is_recurring: false,
-      recurring_frequency: '',
-      next_due_date: ''
-    });
-    setSelectedIncome(null);
-  };
-
-  const handleAddClick = () => {
-    resetForm();
-    setShowAddModal(true);
-  };
-
-  const handleModalClose = () => {
-    setShowAddModal(false);
-    resetForm();
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    if (name.startsWith("transaction.")) {
-      const transactionFieldName = name.split(".")[1];
-      setNewIncome(prev => ({
-        ...prev,
-        transaction: {
-          ...prev.transaction,
-          [transactionFieldName]: value
-        }
-      }));
-    } else {
-      setNewIncome(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
-  };
-
-  // ✅ CLEARED: handleSaveIncome API calls removed - Using simulation
-  const handleSaveIncome = async () => {
-    try {
-      console.log('🧹 API CALLS CLEARED - Simulating income save');
-
-      const dataToSend = { ...newIncome };
-
-      // Validate data (keep validation logic)
-      dataToSend.transaction.amount = parseFloat(dataToSend.transaction.amount);
-      dataToSend.tax_amount = parseFloat(dataToSend.tax_amount);
-
-      // Convert empty strings to null for optional date/frequency fields
-      if (dataToSend.due_date === '') dataToSend.due_date = null;
-      if (dataToSend.next_due_date === '') dataToSend.next_due_date = null;
-      if (dataToSend.recurring_frequency === '') dataToSend.recurring_frequency = null;
-
-      // Filter out empty foreign key fields from transaction if they are optional
-      for (const key of ['bank_account', 'company', 'driver', 'category', 'payment_method']) {
-        if (dataToSend.transaction[key] === '') {
-          dataToSend.transaction[key] = null;
-        }
-      }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      if (selectedIncome) {
-        toast.success("✅ Income updated successfully! (Simulated - API cleared)");
-      } else {
-        toast.success("✅ Income added successfully! (Simulated - API cleared)");
-      }
-
-      // Don't refetch since API is cleared
-      handleModalClose(); // Close the modal and reset form
+      });
+      setSelectedIncome(null);
+      fetchIncomes();
+      fetchSummary();
     } catch (error) {
-      console.error("Error saving income:", error);
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        console.error("Error response status:", error.response.status);
-        console.error("Error response headers:", error.response.headers);
-        if (error.response.data && typeof error.response.data === 'object') {
-          let errorMessage = "Validation Error: ";
-          for (const key in error.response.data) {
-            errorMessage += `${key}: ${Array.isArray(error.response.data[key]) ? error.response.data[key].join(', ') : error.response.data[key]}. `;
-          }
-          toast.error(errorMessage);
-        } else {
-          toast.error(`Error: ${error.response.data.detail || error.response.data || 'An unexpected error occurred.'}`);
-        }
-      } else if (error.request) {
-        toast.error("No response from server. Check network connection.");
-      } else {
-        toast.error(`Request failed: ${error.message}`);
+      console.error('Error saving income:', error);
+      toast.error('Failed to save income');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle delete income
+  const handleDeleteIncome = async (incomeId) => {
+    if (window.confirm('Are you sure you want to delete this income record?')) {
+      try {
+        await axiosInstance.delete(`/accounting/income/${incomeId}/`);
+        toast.success('✅ Income deleted successfully!');
+        fetchIncomes();
+        fetchSummary();
+      } catch (error) {
+        console.error('Error deleting income:', error);
+        toast.error('Failed to delete income');
       }
     }
   };
 
-  const handleEdit = (income) => {
+  // Handle edit income
+  const handleEditIncome = (income) => {
     setSelectedIncome(income);
-    setNewIncome({
-      transaction: { 
-        amount: income.transaction.amount,
-        description: income.transaction.description,
-        category: income.transaction.category, 
-        payment_method: income.transaction.payment_method, 
-        bank_account: income.transaction.bank_account || '', 
-        company: income.transaction.company || '', 
-        driver: income.transaction.driver || '', 
-        transaction_date: income.transaction.transaction_date.split('T')[0],
-        status: income.transaction.status
-      },
-      income_source: income.income_source,
+    setFormData({
+      amount: income.transaction?.amount || '',
+      description: income.transaction?.description || '',
+      category: income.transaction?.category?.id || '',
+      payment_method: income.transaction?.payment_method?.id || '',
+      bank_account: income.transaction?.bank_account?.id || '',
+      company: income.transaction?.company?.id || '',
+      driver: income.transaction?.driver?.id || '',
+      transaction_date: income.transaction?.transaction_date || '',
+      income_source: income.income_source || '',
       invoice_number: income.invoice_number || '',
       due_date: income.due_date || '',
-      tax_amount: income.tax_amount,
-      is_recurring: income.is_recurring,
+      tax_amount: income.tax_amount || '0.00',
+      is_recurring: income.is_recurring || false,
       recurring_frequency: income.recurring_frequency || '',
-      next_due_date: income.next_due_date ? income.next_due_date.split('T')[0] : ''
+      status: income.transaction?.status || 'completed'
     });
-    setShowAddModal(true);
+    setShowEditModal(true);
   };
 
-  const handleDelete = (income) => {
-    setIncomeToDelete(income);
-    setShowConfirmModal(true);
+  // Format currency
+  const formatCurrency = (amount) => {
+    const numericAmount = parseFloat(amount) || 0;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(numericAmount);
   };
 
-  // ✅ CLEARED: confirmDelete API calls removed - Using simulation
-  const confirmDelete = async () => {
-    try {
-      console.log('🧹 API CALLS CLEARED - Simulating income delete');
+  // Filter incomes based on search and filters
+  const filteredIncomes = incomes.filter(income => {
+    const matchesSearch = !searchQuery || 
+      income.transaction?.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      income.income_source?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      income.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+    const matchesSource = !filters.income_source || income.income_source === filters.income_source;
+    const matchesStatus = !filters.status || income.transaction?.status === filters.status;
+    const matchesCategory = !filters.category || income.transaction?.category?.id == filters.category;
 
-      toast.success("✅ Income deleted successfully! (Simulated - API cleared)");
-      // Don't refetch since API is cleared
-    } catch (error) {
-      console.error("Error simulating delete:", error);
-      toast.error("Failed to delete income (simulation)");
-    } finally {
-      setShowConfirmModal(false);
-      setIncomeToDelete(null);
-    }
-  };
+    return matchesSearch && matchesSource && matchesStatus && matchesCategory;
+  });
 
-  if (loading) {
+  if (loading && incomes.length === 0) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
-        <CircularProgress />
-        <Typography variant="h6" sx={{ ml: 2 }}>Loading Incomes...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
-        <Typography color="error">Error: {error.message || "Something went wrong."}</Typography>
-      </Box>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading income data...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Income Management
-      </Typography>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Income Management</h1>
+          <p className="text-gray-600 mt-1">Manage and track all income sources</p>
+        </div>
+        <Button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Income
+        </Button>
+      </div>
 
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleAddClick}
-        sx={{ mb: 2 }}
-      >
-        Add New Income
-      </Button>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Income</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.total_income)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Search and Filter Section */}
-      <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <SearchBar onSearch={handleSearch} placeholder="Search by description or invoice" />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">This Month</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.monthly_income)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel id="status-label">Transaction Status</InputLabel>
-          <Select
-            labelId="status-label"
-            name="transaction__status"
-            value={filters['transaction__status']}
-            onChange={handleFilterChange}
-            label="Transaction Status"
-          >
-            <MenuItem value=""><em>Any</em></MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="completed">Completed</MenuItem>
-            <MenuItem value="cancelled">Cancelled</MenuItem>
-          </Select>
-        </FormControl>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-orange-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.pending_income)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel id="is_recurring-label">Recurring</InputLabel>
-          <Select
-            labelId="is_recurring-label"
-            name="is_recurring"
-            value={filters.is_recurring}
-            onChange={handleFilterChange}
-            label="Recurring"
-          >
-            <MenuItem value=""><em>Any</em></MenuItem>
-            <MenuItem value="true">Yes</MenuItem>
-            <MenuItem value="false">No</MenuItem>
-          </Select>
-        </FormControl>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Overdue</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.overdue_income)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Example Date Filters */}
-        <TextField
-          label="Transaction Date From"
-          type="date"
-          name="transaction__transaction_date__gte"
-          value={filters['transaction__transaction_date__gte']}
-          onChange={handleFilterChange}
-          InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 180 }}
-        />
-        <TextField
-          label="Transaction Date To"
-          type="date"
-          name="transaction__transaction_date__lte"
-          value={filters['transaction__transaction_date__lte']}
-          onChange={handleFilterChange}
-          InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 180 }}
-        />
-
-        {/* Company Filter (if applicable and user has permission) */}
-        {companies.length > 0 && (
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel id="company-filter-label">Company</InputLabel>
-            <Select
-              labelId="company-filter-label"
-              name="transaction__company"
-              value={filters['transaction__company']}
-              onChange={handleFilterChange}
-              label="Company"
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search incomes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <select
+              value={filters.income_source}
+              onChange={(e) => setFilters(prev => ({ ...prev, income_source: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <MenuItem value=""><em>All Companies</em></MenuItem>
-              {companies.map(company => (
-                <MenuItem key={company.id} value={company.id}>{company.company_name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+              <option value="">All Sources</option>
+              <option value="driver_commission">Driver Commission</option>
+              <option value="company_payment">Company Payment</option>
+              <option value="vehicle_rental">Vehicle Rental</option>
+              <option value="service_fee">Service Fee</option>
+              <option value="penalty_collection">Penalty Collection</option>
+              <option value="other">Other</option>
+            </select>
 
-        {/* Driver Filter (if applicable and user has permission) */}
-        {drivers.length > 0 && (
-          <FormControl sx={{ minWidth: 180 }}>
-            <InputLabel id="driver-filter-label">Driver</InputLabel>
-            <Select
-              labelId="driver-filter-label"
-              name="transaction__driver"
-              value={filters['transaction__driver']}
-              onChange={handleFilterChange}
-              label="Driver"
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <MenuItem value=""><em>All Drivers</em></MenuItem>
-              {drivers.map(driver => (
-                <MenuItem key={driver.id} value={driver.id}>{driver.full_name || driver.driver_name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        )}
+              <option value="">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
 
-        <FormControl sx={{ minWidth: 180 }}>
-          <InputLabel id="ordering-label">Sort By</InputLabel>
-          <Select
-            labelId="ordering-label"
-            name="ordering"
-            value={ordering}
-            onChange={handleOrderingChange}
-            label="Sort By"
-          >
-            <MenuItem value="-transaction__transaction_date">Date (Newest First)</MenuItem>
-            <MenuItem value="transaction__transaction_date">Date (Oldest First)</MenuItem>
-            <MenuItem value="-transaction__amount">Amount (High to Low)</MenuItem>
-            <MenuItem value="transaction__amount">Amount (Low to High)</MenuItem>
-            <MenuItem value="income_source">Income Source (A-Z)</MenuItem>
-          </Select>
-        </FormControl>
+            <Button 
+              onClick={() => setFilters({ income_source: '', status: '', category: '', date_from: '', date_to: '' })}
+              variant="outline"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      </Box>
+      {/* Income List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Income Records ({filteredIncomes.length})
+            </div>
+            <Button
+              onClick={fetchIncomes}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredIncomes.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No income records found</h3>
+              <p className="text-gray-600 mb-4">Get started by adding your first income record.</p>
+              <Button 
+                onClick={() => setShowAddModal(true)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add First Income
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Source
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredIncomes.map((income) => (
+                    <tr key={income.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {income.transaction?.description || 'N/A'}
+                        </div>
+                        {income.invoice_number && (
+                          <div className="text-sm text-gray-500">
+                            Invoice: {income.invoice_number}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-green-600">
+                          {formatCurrency(income.transaction?.amount)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {income.income_source || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {income.transaction?.transaction_date || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge 
+                          className={
+                            income.transaction?.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            income.transaction?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }
+                        >
+                          {income.transaction?.status || 'N/A'}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button
+                            onClick={() => handleEditIncome(income)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteIncome(income.id)}
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="income table">
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Source</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Created By</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {incomes.length > 0 ? (
-              incomes.map((income) => (
-                <TableRow key={income.id}>
-                  <TableCell>
-                    {income.id}
-                  </TableCell>
-                  <TableCell>
-                    {/* Safely convert to number before toFixed */}
-                    ${income.transaction?.amount ? parseFloat(income.transaction.amount).toFixed(2) : '0.00'}
-                  </TableCell>
-                  <TableCell>{income.transaction?.description}</TableCell>
-                  <TableCell>{income.transaction?.category_name}</TableCell>
-                  <TableCell>{income.income_source}</TableCell> {/* Display the value directly */}
-                  <TableCell>{income.transaction?.transaction_date}</TableCell>
-                  <TableCell>{income.transaction?.status}</TableCell>
-                  <TableCell>{income.created_by_username || 'N/A'}</TableCell>
-                  <TableCell>
-                    <IconButton color="primary" onClick={() => handleEdit(income)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton color="secondary" onClick={() => handleDelete(income)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
-                  No incomes found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Add Income Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Add New Income</h2>
+                <Button
+                  onClick={() => setShowAddModal(false)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-      <Pagination
-        count={Math.ceil(totalIncomes / pageSize)}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-        sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}
-      />
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
 
-      {/* Render the inline modals */}
-      <AddEditIncomeModal
-        open={showAddModal}
-        handleClose={handleModalClose}
-        newIncome={newIncome}
-        handleInputChange={handleInputChange}
-        handleSaveIncome={handleSaveIncome}
-        selectedIncome={selectedIncome}
-        categories={categories.filter(cat => cat.category_type === 'income')}
-        paymentMethods={paymentMethods}
-        bankAccounts={bankAccounts}
-        companies={companies}
-        drivers={drivers}
-        incomeSources={incomeSources}
-      />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Transaction Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.transaction_date}
+                    onChange={(e) => handleInputChange('transaction_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
 
-      <ConfirmModal
-        open={showConfirmModal}
-        handleClose={() => setShowConfirmModal(false)}
-        handleConfirm={confirmDelete}
-        title="Confirm Deletion"
-        message={`Are you sure you want to delete income ID: ${incomeToDelete?.id}? This action cannot be undone.`}
-      />
-    </Box>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter income description"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Income Source *
+                  </label>
+                  <select
+                    value={formData.income_source}
+                    onChange={(e) => handleInputChange('income_source', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select source</option>
+                    <option value="driver_commission">Driver Commission</option>
+                    <option value="company_payment">Company Payment</option>
+                    <option value="vehicle_rental">Vehicle Rental</option>
+                    <option value="service_fee">Service Fee</option>
+                    <option value="penalty_collection">Penalty Collection</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={formData.payment_method}
+                    onChange={(e) => handleInputChange('payment_method', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select payment method</option>
+                    {paymentMethods.map((method) => (
+                      <option key={method.id} value={method.id}>
+                        {method.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bank Account
+                  </label>
+                  <select
+                    value={formData.bank_account}
+                    onChange={(e) => handleInputChange('bank_account', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select bank account</option>
+                    {bankAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.account_name} - {account.account_number}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company
+                  </label>
+                  <select
+                    value={formData.company}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Driver
+                  </label>
+                  <select
+                    value={formData.driver}
+                    onChange={(e) => handleInputChange('driver', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select driver</option>
+                    {drivers.map((driver) => (
+                      <option key={driver.id} value={driver.id}>
+                        {driver.first_name} {driver.last_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Invoice Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.invoice_number}
+                    onChange={(e) => handleInputChange('invoice_number', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="INV-001"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => handleInputChange('due_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tax Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.tax_amount}
+                    onChange={(e) => handleInputChange('tax_amount', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_recurring}
+                      onChange={(e) => handleInputChange('is_recurring', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Recurring Income</span>
+                  </label>
+                </div>
+
+                {formData.is_recurring && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Recurring Frequency
+                    </label>
+                    <select
+                      value={formData.recurring_frequency}
+                      onChange={(e) => handleInputChange('recurring_frequency', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
+              <Button
+                onClick={() => setShowAddModal(false)}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveIncome}
+                disabled={loading || !formData.amount || !formData.description || !formData.income_source}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Income
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Income Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Edit Income</h2>
+                <Button
+                  onClick={() => setShowEditModal(false)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Transaction Date *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.transaction_date}
+                    onChange={(e) => handleInputChange('transaction_date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter income description"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Income Source *
+                  </label>
+                  <select
+                    value={formData.income_source}
+                    onChange={(e) => handleInputChange('income_source', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select source</option>
+                    <option value="driver_commission">Driver Commission</option>
+                    <option value="company_payment">Company Payment</option>
+                    <option value="vehicle_rental">Vehicle Rental</option>
+                    <option value="service_fee">Service Fee</option>
+                    <option value="penalty_collection">Penalty Collection</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
+              <Button
+                onClick={() => setShowEditModal(false)}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveIncome}
+                disabled={loading || !formData.amount || !formData.description || !formData.income_source}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Update Income
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
