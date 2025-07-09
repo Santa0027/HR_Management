@@ -166,7 +166,7 @@ function CompanyRegistrationForm() {
             ifsc_code: companyData.ifsc_code || '',
             swift_code: companyData.swift_code || '',
             iban_code: companyData.iban_code || '',
-            commission_type: companyData.commission_type || 'FIXED',
+            commission_type: companyData.commission_type || 'fixed',
             rate_per_km: companyData.rate_per_km || '',
             min_km: companyData.min_km || '',
             rate_per_order: companyData.rate_per_order || '',
@@ -532,13 +532,13 @@ function CompanyRegistrationForm() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     >
-                      <option value="FIXED">Fixed Commission</option>
-                      <option value="KM">KM Based</option>
-                      <option value="ORDER">Order Based</option>
+                      <option value="fixed">Fixed Commission</option>
+                      <option value="km">KM Based</option>
+                      <option value="order">Order Based</option>
                     </select>
                   </div>
 
-                  {formData.commission_type === 'KM' && (
+                  {formData.commission_type === 'km' && (
                     <>
                       <Input
                         label="Rate per KM"
@@ -559,7 +559,7 @@ function CompanyRegistrationForm() {
                     </>
                   )}
 
-                  {formData.commission_type === 'ORDER' && (
+                  {formData.commission_type === 'order' && (
                     <Input
                       label="Rate per Order"
                       name="rate_per_order"
@@ -570,7 +570,7 @@ function CompanyRegistrationForm() {
                     />
                   )}
 
-                  {formData.commission_type === 'FIXED' && (
+                  {formData.commission_type === 'fixed' && (
                     <Input
                       label="Fixed Commission Amount"
                       name="fixed_commission"

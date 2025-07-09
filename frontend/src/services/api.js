@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8000", // Django local server
+  baseURL: "http://43.204.238.225:8000", // Django local server
   withCredentials: false,
 });
 

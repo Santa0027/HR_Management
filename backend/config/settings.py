@@ -27,10 +27,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173",  # Common Vite port
-    "http://127.0.0.1:5173",
-    "http://13.204.66.176:5174",
-    "http://172.31.8.148:5174",
+    "http://43.204.238.225:5173",
+    "http://43.204.238.225:5174",
+    "http://43.204.238.225",  # <- Added this line for direct IP access
 ]
 
 # Allow all headers that might be needed for authentication and API calls
@@ -74,15 +73,14 @@ CORS_EXPOSE_HEADERS = [
 ]
 
 # Disable CSRF for API endpoints (since we're using JWT)
-CSRF_TRUSTED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://13.204.66.176:5174",
-    "http://172.31.8.148:5174",
+    "http://43.204.238.225:5173",
+    "http://43.204.238.225:5174",
+    "http://43.204.238.225",  # <- Added this line for direct IP access
 ]
 
 INSTALLED_APPS = [

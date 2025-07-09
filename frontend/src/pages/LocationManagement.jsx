@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../api/axiosInstance';
+import {
+  X, Plus, MapPin, Building, Car, Search, Filter, CheckCircle, XCircle, Trash2, Edit, Save, ArrowLeft,
+  AlertTriangle, Eye, Upload, Download, Phone, Mail, Calendar, User, FileText, ChevronDown, Clock
+} from 'lucide-react'; // Ensure you have lucide-react installed if using these icons
 
-// Interactive Map Component using OpenStreetMap (Leaflet)
+
+// --- Reusable MapSelector Component (for interactive map) ---
 const MapSelector = ({ latitude, longitude, onLocationSelect, radius = 100 }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -31,11 +36,18 @@ const MapSelector = ({ latitude, longitude, onLocationSelect, radius = 100 }) =>
   useEffect(() => {
     if (!mapLoaded || !mapRef.current || !window.L) return;
 
-    const initialLat = parseFloat(latitude) || 24.7136; // Default to Riyadh
+    // Ensure initial coordinates are valid numbers, fallback to Riyadh
+    const initialLat = parseFloat(latitude) || 24.7136;
     const initialLng = parseFloat(longitude) || 46.6753;
+
+    // Destroy existing map instance if it exists to prevent re-initialization errors
+    if (mapRef.current._leaflet_map) {
+      mapRef.current._leaflet_map.remove();
+    }
 
     // Create map
     const map = window.L.map(mapRef.current).setView([initialLat, initialLng], 15);
+    mapRef.current._leaflet_map = map; // Store map instance on ref for cleanup
 
     // Add OpenStreetMap tiles
     window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -60,6 +72,7 @@ const MapSelector = ({ latitude, longitude, onLocationSelect, radius = 100 }) =>
       const position = event.target.getLatLng();
       circle.setLatLng(position);
       onLocationSelect(position.lat, position.lng);
+      setClickCoords({ lat: position.lat, lng: position.lng }); // Update clickCoords
     });
 
     // Handle map click
@@ -73,7 +86,10 @@ const MapSelector = ({ latitude, longitude, onLocationSelect, radius = 100 }) =>
 
     // Cleanup function
     return () => {
-      map.remove();
+      if (mapRef.current && mapRef.current._leaflet_map) {
+        mapRef.current._leaflet_map.remove();
+        mapRef.current._leaflet_map = null;
+      }
     };
   }, [mapLoaded, latitude, longitude, radius, onLocationSelect]);
 
@@ -107,29 +123,42 @@ const MapSelector = ({ latitude, longitude, onLocationSelect, radius = 100 }) =>
   );
 };
 
-// Simple coordinate picker as fallback
-const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => {
-  const [tempLat, setTempLat] = useState(latitude || '24.7136');
-  const [tempLng, setTempLng] = useState(longitude || '46.6753');
+// --- Reusable CoordinatePicker Component (for manual input and quick selections) ---
+const CoordinatePicker = ({ latitude, longitude, onLocationSelect }) => {
+  const [tempLat, setTempLat] = useState(latitude ? parseFloat(latitude).toFixed(6) : '24.7136');
+  const [tempLng, setTempLng] = useState(longitude ? parseFloat(longitude).toFixed(6) : '46.6753');
+
+  useEffect(() => {
+    // Update internal state when props change (e.g., when editing an existing location)
+    setTempLat(latitude ? parseFloat(latitude).toFixed(6) : '');
+    setTempLng(longitude ? parseFloat(longitude).toFixed(6) : '');
+  }, [latitude, longitude]);
 
   const handleApplyCoordinates = () => {
     const lat = parseFloat(tempLat);
     const lng = parseFloat(tempLng);
     if (!isNaN(lat) && !isNaN(lng)) {
       onLocationSelect(lat, lng);
-      toast.success('Coordinates applied successfully');
+      toast.success('Coordinates applied successfully!');
     } else {
-      toast.error('Please enter valid coordinates');
+      toast.error('Please enter valid numerical coordinates.');
     }
   };
 
+  const setQuickLocation = (lat, lng, name) => {
+    setTempLat(lat.toFixed(6));
+    setTempLng(lng.toFixed(6));
+    onLocationSelect(lat, lng);
+    toast.info(`Quick location set to ${name}`);
+  };
+
   return (
-    <div className="w-full h-96 bg-gray-50 rounded-lg border border-gray-300 p-6">
+    <div className="w-full h-auto bg-gray-50 rounded-lg border border-gray-300 p-6">
       <div className="text-center mb-6">
         <div className="text-4xl mb-4">📍</div>
-        <h3 className="text-lg font-medium text-gray-700 mb-2">Coordinate Selector</h3>
+        <h3 className="text-lg font-medium text-gray-700 mb-2">Manual Coordinate Selector</h3>
         <p className="text-gray-600 text-sm">
-          Enter coordinates manually or use the quick location buttons below
+          Enter coordinates manually or use the quick location buttons below.
         </p>
       </div>
 
@@ -143,7 +172,7 @@ const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => 
               value={tempLat}
               onChange={(e) => setTempLat(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-              placeholder="24.7136"
+              placeholder="e.g., 24.7136"
             />
           </div>
           <div>
@@ -154,12 +183,13 @@ const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => 
               value={tempLng}
               onChange={(e) => setTempLng(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-              placeholder="46.6753"
+              placeholder="e.g., 46.6753"
             />
           </div>
         </div>
 
         <button
+          type="button" // Important: Prevent form submission
           onClick={handleApplyCoordinates}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded text-sm"
         >
@@ -170,41 +200,29 @@ const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => 
           <p className="text-xs text-gray-600 mb-2">Quick Locations (Saudi Arabia):</p>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => {
-                setTempLat('24.7136');
-                setTempLng('46.6753');
-                onLocationSelect(24.7136, 46.6753);
-              }}
+              type="button"
+              onClick={() => setQuickLocation(24.7136, 46.6753, 'Riyadh')}
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded text-xs"
             >
               🏢 Riyadh Center
             </button>
             <button
-              onClick={() => {
-                setTempLat('21.4858');
-                setTempLng('39.1925');
-                onLocationSelect(21.4858, 39.1925);
-              }}
+              type="button"
+              onClick={() => setQuickLocation(21.4858, 39.1925, 'Jeddah')}
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded text-xs"
             >
               🏢 Jeddah Center
             </button>
             <button
-              onClick={() => {
-                setTempLat('26.4207');
-                setTempLng('50.0888');
-                onLocationSelect(26.4207, 50.0888);
-              }}
+              type="button"
+              onClick={() => setQuickLocation(26.4207, 50.0888, 'Dammam')}
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded text-xs"
             >
               🏢 Dammam Center
             </button>
             <button
-              onClick={() => {
-                setTempLat('21.2854');
-                setTempLng('40.4183');
-                onLocationSelect(21.2854, 40.4183);
-              }}
+              type="button"
+              onClick={() => setQuickLocation(21.2854, 40.4183, 'Mecca')}
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded text-xs"
             >
               🏢 Mecca Center
@@ -214,9 +232,9 @@ const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => 
 
         {latitude && longitude && (
           <div className="text-xs text-gray-500 text-center pt-2 border-t">
-            Current: {parseFloat(latitude).toFixed(6)}, {parseFloat(longitude).toFixed(6)} •
+            Current Set: {parseFloat(latitude).toFixed(6)}, {parseFloat(longitude).toFixed(6)} •
             <a
-              href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-1 text-blue-500 hover:text-blue-700 underline"
@@ -230,6 +248,9 @@ const CoordinatePicker = ({ latitude, longitude, onLocationSelect, radius }) => 
   );
 };
 
+
+// --- Main LocationManagement Component ---
+
 const LocationManagement = () => {
   const [activeTab, setActiveTab] = useState('checkin');
   const [loading, setLoading] = useState(false);
@@ -241,19 +262,18 @@ const LocationManagement = () => {
 
   // Modal states
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [showMapModal, setShowMapModal] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocationForMap, setSelectedLocationForMap] = useState(null); // For viewing map of an existing location
   const [editingLocation, setEditingLocation] = useState(null);
-  const [showMapSelector, setShowMapSelector] = useState(false);
+  const [showMapInputSelector, setShowMapInputSelector] = useState(false); // Controls which input method is shown in the form modal
 
   // Form state
   const [locationForm, setLocationForm] = useState({
     name: '',
     latitude: '',
     longitude: '',
-    radius_meters: '',
-    alarm_radius_meters: '',
-    driver: '',
+    radius_meters: '', // For check-in
+    alarm_radius_meters: '', // For apartment
+    driver: '', // Driver ID, can be null
     is_active: true
   });
 
@@ -274,18 +294,19 @@ const LocationManagement = () => {
         axiosInstance.get('/Register/drivers/')
       ]);
 
+      // Ensure data is always an array, handle `results` key from DRF pagination if present
       setCheckinLocations(checkinRes.data.results || checkinRes.data);
       setApartmentLocations(apartmentRes.data.results || apartmentRes.data);
       setDrivers(driversRes.data.results || driversRes.data);
 
       console.log('Location data loaded:', {
-        checkin: checkinRes.data.results?.length || checkinRes.data.length,
-        apartment: apartmentRes.data.results?.length || apartmentRes.data.length,
-        drivers: driversRes.data.results?.length || driversRes.data.length
+        checkin: (checkinRes.data.results || checkinRes.data).length,
+        apartment: (apartmentRes.data.results || apartmentRes.data).length,
+        drivers: (driversRes.data.results || driversRes.data).length
       });
     } catch (error) {
-      console.error('Error fetching location data:', error);
-      toast.error('Failed to load location data');
+      console.error('Error fetching location data:', error.response?.data || error.message);
+      toast.error('Failed to load location data.');
     } finally {
       setLoading(false);
     }
@@ -296,33 +317,75 @@ const LocationManagement = () => {
     e.preventDefault();
     setLoading(true);
 
+    const isCheckin = activeTab === 'checkin';
+
+    // Basic client-side validation
+    if (!locationForm.name.trim()) {
+      toast.error('Location Name is required.');
+      setLoading(false);
+      return;
+    }
+    const lat = parseFloat(locationForm.latitude);
+    const lng = parseFloat(locationForm.longitude);
+    if (isNaN(lat) || isNaN(lng)) {
+      toast.error('Valid Latitude and Longitude are required.');
+      setLoading(false);
+      return;
+    }
+    let radiusValue = isCheckin ? locationForm.radius_meters : locationForm.alarm_radius_meters;
+    if (isNaN(parseInt(radiusValue)) || parseInt(radiusValue) <= 0) {
+        toast.error(`${isCheckin ? 'Check-in Radius' : 'Alarm Radius'} must be a positive number.`);
+        setLoading(false);
+        return;
+    }
+
+
     try {
-      const endpoint = activeTab === 'checkin' ? '/hr/checkin-locations/' : '/hr/apartment-locations/';
-      const data = {
-        ...locationForm,
-        latitude: parseFloat(locationForm.latitude),
-        longitude: parseFloat(locationForm.longitude),
-        ...(activeTab === 'checkin' 
-          ? { radius_meters: parseInt(locationForm.radius_meters) }
-          : { alarm_radius_meters: parseInt(locationForm.alarm_radius_meters) }
-        ),
-        driver: locationForm.driver || null
+      const endpoint = isCheckin ? '/hr/checkin-locations/' : '/hr/apartment-locations/';
+      const dataToSend = {
+        name: locationForm.name,
+        latitude: lat,
+        longitude: lng,
+        is_active: locationForm.is_active,
+        // Send driver ID or null
+        driver: locationForm.driver ? parseInt(locationForm.driver) : null
       };
 
-      if (editingLocation) {
-        await axiosInstance.put(`${endpoint}${editingLocation.id}/`, data);
-        toast.success(`${activeTab === 'checkin' ? 'Check-in' : 'Apartment'} location updated successfully`);
+      // Add radius based on active tab
+      if (isCheckin) {
+        dataToSend.radius_meters = parseInt(locationForm.radius_meters);
       } else {
-        await axiosInstance.post(endpoint, data);
-        toast.success(`${activeTab === 'checkin' ? 'Check-in' : 'Apartment'} location created successfully`);
+        dataToSend.alarm_radius_meters = parseInt(locationForm.alarm_radius_meters);
+      }
+
+      if (editingLocation) {
+        await axiosInstance.put(`${endpoint}${editingLocation.id}/`, dataToSend);
+        toast.success(`${isCheckin ? 'Check-in' : 'Apartment'} location updated successfully!`);
+      } else {
+        await axiosInstance.post(endpoint, dataToSend);
+        toast.success(`${isCheckin ? 'Check-in' : 'Apartment'} location created successfully!`);
       }
 
       setShowLocationModal(false);
       resetForm();
-      fetchData();
+      fetchData(); // Re-fetch all data to update lists
     } catch (error) {
-      console.error('Error saving location:', error);
-      toast.error(error.response?.data?.detail || 'Failed to save location');
+      console.error('Error saving location:', error.response?.data || error.message);
+      // More specific error handling for API responses
+      if (error.response?.data) {
+          const errors = error.response.data;
+          let errorMessage = 'Failed to save location: ';
+          if (typeof errors === 'object') {
+              for (const key in errors) {
+                  errorMessage += `${key}: ${errors[key].join(', ')} `;
+              }
+          } else {
+              errorMessage = errors; // If it's a simple string error
+          }
+          toast.error(errorMessage);
+      } else {
+          toast.error('Failed to save location. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -330,23 +393,23 @@ const LocationManagement = () => {
 
   // Delete location
   const handleDeleteLocation = async (location) => {
-    if (!window.confirm(`Are you sure you want to delete "${location.name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete "${location.name}"? This action cannot be undone.`)) return;
 
     setLoading(true);
     try {
       const endpoint = activeTab === 'checkin' ? '/hr/checkin-locations/' : '/hr/apartment-locations/';
       await axiosInstance.delete(`${endpoint}${location.id}/`);
-      toast.success('Location deleted successfully');
-      fetchData();
+      toast.success('Location deleted successfully!');
+      fetchData(); // Re-fetch data after deletion
     } catch (error) {
-      console.error('Error deleting location:', error);
-      toast.error('Failed to delete location');
+      console.error('Error deleting location:', error.response?.data || error.message);
+      toast.error('Failed to delete location.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset form
+  // Reset form state
   const resetForm = () => {
     setLocationForm({
       name: '',
@@ -358,30 +421,45 @@ const LocationManagement = () => {
       is_active: true
     });
     setEditingLocation(null);
+    setShowMapInputSelector(false); // Reset map input selector
   };
 
-  // Open location modal
+  // Open location form modal (for add or edit)
   const openLocationModal = (location = null) => {
     if (location) {
       setLocationForm({
         name: location.name,
-        latitude: location.latitude.toString(),
-        longitude: location.longitude.toString(),
+        latitude: location.latitude?.toString() || '',
+        longitude: location.longitude?.toString() || '',
         radius_meters: location.radius_meters?.toString() || '',
         alarm_radius_meters: location.alarm_radius_meters?.toString() || '',
-        driver: location.driver?.toString() || '',
+        driver: location.driver?.toString() || '', // Ensure driver ID is string for select value
         is_active: location.is_active
       });
       setEditingLocation(location);
     } else {
-      resetForm();
+      resetForm(); // Reset form for new entry
     }
     setShowLocationModal(true);
   };
 
-  // Get current location
+  // Close form modal
+  const closeLocationModal = () => {
+    setShowLocationModal(false);
+    resetForm();
+  }
+
+  // Get current geolocation from browser
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      // Check if already on HTTPS for secure context
+      if (window.location.protocol !== 'https:') {
+        toast.error('Geolocation requires a secure connection (HTTPS).');
+        console.warn('Geolocation request blocked: Not a secure context (HTTPS).');
+        return;
+      }
+
+      toast.info('Requesting current location...');
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocationForm(prev => ({
@@ -389,19 +467,37 @@ const LocationManagement = () => {
             latitude: position.coords.latitude.toFixed(6),
             longitude: position.coords.longitude.toFixed(6)
           }));
-          toast.success('Current location detected');
+          toast.success('Current location detected successfully!');
         },
         (error) => {
           console.error('Error getting location:', error);
-          toast.error('Failed to get current location');
-        }
+          let errorMessage = 'Failed to get current location: ';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += "User denied geolocation prompt.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += "Location information is unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage += "The request to get user location timed out.";
+              break;
+            case error.UNKNOWN_ERROR:
+              errorMessage += "An unknown error occurred.";
+              break;
+            default:
+              errorMessage += "An unexpected error occurred.";
+          }
+          toast.error(errorMessage);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      toast.error('Geolocation is not supported by this browser');
+      toast.error('Geolocation is not supported by your browser.');
     }
   };
 
-  // Handle map location selection
+  // Handle location selected from MapSelector or CoordinatePicker
   const handleMapLocationSelect = (lat, lng) => {
     setLocationForm(prev => ({
       ...prev,
@@ -410,24 +506,29 @@ const LocationManagement = () => {
     }));
   };
 
-  // Filter locations
+  // Filter locations based on search, driver, and status
   const getFilteredLocations = () => {
     const locations = activeTab === 'checkin' ? checkinLocations : apartmentLocations;
     return locations.filter(location => {
       const matchesSearch = location.name.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesDriver = !filters.driver || location.driver?.toString() === filters.driver;
-      const matchesStatus = !filters.status || 
+      // If filters.driver is 'unassigned', match locations with no driver assigned
+      const matchesDriver = !filters.driver ||
+                            (filters.driver === 'unassigned' && !location.driver) ||
+                            (location.driver?.toString() === filters.driver);
+      const matchesStatus = !filters.status ||
         (filters.status === 'active' && location.is_active) ||
         (filters.status === 'inactive' && !location.is_active);
-      
+
       return matchesSearch && matchesDriver && matchesStatus;
     });
   };
 
+  // Initial data fetch on component mount
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Helper to get status badge styling
   const getStatusBadge = (isActive) => {
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -438,13 +539,21 @@ const LocationManagement = () => {
     );
   };
 
+  // Helper to get driver name from ID
   const getDriverName = (driverId) => {
+    if (!driverId) return 'Unassigned';
     const driver = drivers.find(d => d.id === driverId);
-    return driver ? driver.driver_name : 'Unassigned';
+    return driver ? driver.driver_name : 'Unknown Driver';
   };
 
+  // Helper to format coordinates for display
   const formatCoordinates = (lat, lng) => {
-    return `${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
+    const parsedLat = parseFloat(lat);
+    const parsedLng = parseFloat(lng);
+    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+      return 'N/A';
+    }
+    return `${parsedLat.toFixed(4)}, ${parsedLng.toFixed(4)}`;
   };
 
   return (
@@ -488,9 +597,7 @@ const LocationManagement = () => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative">
-                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search locations..."
@@ -505,7 +612,7 @@ const LocationManagement = () => {
                   className="px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 >
                   <option value="">All Drivers</option>
-                  <option value="">Unassigned</option>
+                  <option value="unassigned">Unassigned</option> {/* Explicit option for unassigned */}
                   {drivers.map((driver) => (
                     <option key={driver.id} value={driver.id}>
                       {driver.driver_name}
@@ -532,9 +639,7 @@ const LocationManagement = () => {
               className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-5 h-5 mr-2" />
               Add {activeTab === 'checkin' ? 'Check-in' : 'Apartment'} Location
             </button>
               </div>
@@ -550,12 +655,12 @@ const LocationManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {getFilteredLocations().length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  <div className="text-4xl mb-4">📍</div>
+                  <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     No {activeTab === 'checkin' ? 'check-in' : 'apartment'} locations found
                   </h3>
                   <p className="text-gray-500">
-                    Add your first {activeTab === 'checkin' ? 'check-in' : 'apartment'} location to get started
+                    Add your first {activeTab === 'checkin' ? 'check-in' : 'apartment'} location to get started.
                   </p>
                 </div>
               ) : (
@@ -565,50 +670,50 @@ const LocationManagement = () => {
                       <h3 className="text-lg font-semibold text-gray-900">{location.name}</h3>
                       {getStatusBadge(location.is_active)}
                     </div>
-                    
+
                     <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
-                        <span className="w-20">📍 Location:</span>
+                        <MapPin className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
                         <span className="font-mono">{formatCoordinates(location.latitude, location.longitude)}</span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-20">👤 Driver:</span>
+                        <User className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
                         <span>{getDriverName(location.driver)}</span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-20">📏 Radius:</span>
+                        <Filter className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
                         <span>
-                          {activeTab === 'checkin' 
-                            ? `${location.radius_meters}m` 
-                            : `${location.alarm_radius_meters}m`
+                          {activeTab === 'checkin'
+                            ? `${location.radius_meters || 'N/A'}m (Check-in)`
+                            : `${location.alarm_radius_meters || 'N/A'}m (Alarm)`
                           }
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-20">📅 Created:</span>
-                        <span>{new Date(location.created_at).toLocaleDateString()}</span>
+                        <Calendar className="h-4 w-4 mr-2 flex-shrink-0 text-gray-500" />
+                        <span>Created: {new Date(location.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
 
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setSelectedLocation(location)}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-2 px-3 rounded"
+                        onClick={() => setSelectedLocationForMap(location)}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs py-2 px-3 rounded flex items-center justify-center"
                       >
-                        🗺️ View Map
+                        <MapPin className="h-3 w-3 mr-1" /> View Map
                       </button>
                       <button
                         onClick={() => openLocationModal(location)}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 px-3 rounded"
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 px-3 rounded flex items-center justify-center"
                       >
-                        ✏️ Edit
+                        <Edit className="h-3 w-3 mr-1" /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteLocation(location)}
-                        className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-2 px-3 rounded"
+                        className="flex-1 bg-red-500 hover:bg-red-600 text-white text-xs py-2 px-3 rounded flex items-center justify-center"
                         disabled={loading}
                       >
-                        🗑️ Delete
+                        <Trash2 className="h-3 w-3 mr-1" /> Delete
                       </button>
                     </div>
                   </div>
@@ -621,362 +726,284 @@ const LocationManagement = () => {
 
       {/* Location Form Modal */}
       {showLocationModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-6xl">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
                 {editingLocation ? 'Edit' : 'Add New'} {activeTab === 'checkin' ? 'Check-in' : 'Apartment'} Location
               </h3>
-
-              <form onSubmit={handleSaveLocation}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column - Form Fields */}
-                  <div className="space-y-4">
-                    {/* Location Name */}
-                    <div>
-                      <label className="block text-gray-700 text-sm font-bold mb-2">
-                        📍 Location Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={locationForm.name}
-                        onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
-                        className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="e.g., Main Office, Building A"
-                        required
-                      />
-                    </div>
-
-                    {/* Coordinates Section */}
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-3">🌐 Location Coordinates</h4>
-
-                      {/* Coordinate Input Method Toggle */}
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <button
-                          type="button"
-                          onClick={() => setShowMapSelector(true)}
-                          className={`px-3 py-2 text-xs rounded ${
-                            showMapSelector === true
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          🗺️ Interactive Map
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowMapSelector('coordinate')}
-                          className={`px-3 py-2 text-xs rounded ${
-                            showMapSelector === 'coordinate'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          📍 Coordinate Picker
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowMapSelector(false)}
-                          className={`px-3 py-2 text-xs rounded ${
-                            showMapSelector === false
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          📝 Manual Input
-                        </button>
-                        <button
-                          type="button"
-                          onClick={getCurrentLocation}
-                          className="px-3 py-2 text-xs rounded bg-green-500 hover:bg-green-600 text-white"
-                        >
-                          📱 Current Location
-                        </button>
-                      </div>
-
-                      {/* Coordinate Inputs */}
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                          <label className="block text-gray-600 text-xs font-medium mb-1">
-                            Latitude *
-                          </label>
-                          <input
-                            type="number"
-                            step="any"
-                            value={locationForm.latitude}
-                            onChange={(e) => setLocationForm({ ...locationForm, latitude: e.target.value })}
-                            className="shadow border rounded w-full py-2 px-3 text-gray-700 text-sm leading-tight focus:outline-none focus:shadow-outline"
-                            placeholder="24.7136"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-gray-600 text-xs font-medium mb-1">
-                            Longitude *
-                          </label>
-                          <input
-                            type="number"
-                            step="any"
-                            value={locationForm.longitude}
-                            onChange={(e) => setLocationForm({ ...locationForm, longitude: e.target.value })}
-                            className="shadow border rounded w-full py-2 px-3 text-gray-700 text-sm leading-tight focus:outline-none focus:shadow-outline"
-                            placeholder="46.6753"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {/* Coordinate Preview */}
-                      {locationForm.latitude && locationForm.longitude && (
-                        <div className="text-xs text-gray-600">
-                          📍 {formatCoordinates(locationForm.latitude, locationForm.longitude)} •
-                          <a
-                            href={`https://www.google.com/maps?q=${locationForm.latitude},${locationForm.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-1 text-blue-500 hover:text-blue-700 underline"
-                          >
-                            View on Google Maps
-                          </a>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Radius Configuration */}
-                    <div>
-                      <label className="block text-gray-700 text-sm font-bold mb-2">
-                        📏 {activeTab === 'checkin' ? 'Check-in Radius (meters)' : 'Alarm Radius (meters)'} *
-                      </label>
-                      <input
-                        type="number"
-                        value={activeTab === 'checkin' ? locationForm.radius_meters : locationForm.alarm_radius_meters}
-                        onChange={(e) => setLocationForm({
-                          ...locationForm,
-                          [activeTab === 'checkin' ? 'radius_meters' : 'alarm_radius_meters']: e.target.value
-                        })}
-                        className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="100"
-                        min="1"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {activeTab === 'checkin'
-                          ? 'Drivers must be within this radius to check in'
-                          : 'Alert radius for apartment location monitoring'
-                        }
-                      </p>
-                    </div>
-
-                    {/* Driver Assignment */}
-                    <div>
-                      <label className="block text-gray-700 text-sm font-bold mb-2">
-                        👤 Assign to Driver
-                      </label>
-                      <select
-                        value={locationForm.driver}
-                        onChange={(e) => setLocationForm({ ...locationForm, driver: e.target.value })}
-                        className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                      >
-                        <option value="">Unassigned (General Location)</option>
-                        {drivers.map((driver) => (
-                          <option key={driver.id} value={driver.id}>
-                            {driver.driver_name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Leave unassigned for general use by all drivers
-                      </p>
-                    </div>
-
-                    {/* Status Toggle */}
-                    <div>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={locationForm.is_active}
-                          onChange={(e) => setLocationForm({ ...locationForm, is_active: e.target.checked })}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700">✅ Location is active</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Right Column - Map Selector */}
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-3">
-                        {showMapSelector ? '🗺️ Interactive Map' : '📍 Location Preview'}
-                      </h4>
-
-                      {showMapSelector ? (
-                        <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <p className="text-xs text-gray-600">
-                              Click on the map or drag the marker to select location. The circle shows the {activeTab === 'checkin' ? 'check-in' : 'alarm'} radius.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => setShowMapSelector('coordinate')}
-                              className="text-xs text-blue-500 hover:text-blue-700 underline"
-                            >
-                              Use coordinate picker instead
-                            </button>
-                          </div>
-                          {showMapSelector === 'coordinate' ? (
-                            <CoordinatePicker
-                              latitude={locationForm.latitude}
-                              longitude={locationForm.longitude}
-                              onLocationSelect={handleMapLocationSelect}
-                              radius={parseInt(activeTab === 'checkin' ? locationForm.radius_meters : locationForm.alarm_radius_meters) || 100}
-                            />
-                          ) : (
-                            <MapSelector
-                              latitude={locationForm.latitude}
-                              longitude={locationForm.longitude}
-                              onLocationSelect={handleMapLocationSelect}
-                              radius={parseInt(activeTab === 'checkin' ? locationForm.radius_meters : locationForm.alarm_radius_meters) || 100}
-                            />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="h-96 bg-gray-100 rounded-lg border border-gray-300 flex flex-col items-center justify-center">
-                          <div className="text-4xl mb-4">📍</div>
-                          <h4 className="text-lg font-medium text-gray-700 mb-2">Location Preview</h4>
-                          {locationForm.latitude && locationForm.longitude ? (
-                            <div className="text-center">
-                              <p className="text-sm text-gray-600 mb-2">
-                                Coordinates: {formatCoordinates(locationForm.latitude, locationForm.longitude)}
-                              </p>
-                              <p className="text-sm text-gray-600 mb-4">
-                                Radius: {activeTab === 'checkin' ? locationForm.radius_meters : locationForm.alarm_radius_meters}m
-                              </p>
-                              <a
-                                href={`https://www.google.com/maps?q=${locationForm.latitude},${locationForm.longitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded text-sm"
-                              >
-                                🌐 View on Google Maps
-                              </a>
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 text-center">
-                              Enter coordinates or use map selector to see location preview
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowLocationModal(false);
-                      setShowMapSelector(false);
-                    }}
-                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || !locationForm.latitude || !locationForm.longitude}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-                  >
-                    {loading ? 'Saving...' : (editingLocation ? 'Update' : 'Create')} Location
-                  </button>
-                </div>
-              </form>
+              <button onClick={closeLocationModal} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
             </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveLocation} className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Form Fields */}
+                <div className="space-y-4">
+                  {/* Location Name */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      📍 Location Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={locationForm.name}
+                      onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="e.g., Main Office, Building A"
+                      required
+                    />
+                  </div>
+
+                  {/* Coordinates Section */}
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3">🌐 Location Coordinates</h4>
+
+                    {/* Coordinate Input Method Toggle */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowMapInputSelector('map')}
+                        className={`px-3 py-2 text-xs rounded ${
+                          showMapInputSelector === 'map'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        🗺️ Interactive Map
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMapInputSelector('coordinate')}
+                        className={`px-3 py-2 text-xs rounded ${
+                          showMapInputSelector === 'coordinate'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        📍 Coordinate Picker
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMapInputSelector('manual')}
+                        className={`px-3 py-2 text-xs rounded ${
+                          showMapInputSelector === 'manual'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        📝 Manual Input
+                      </button>
+                      <button
+                        type="button"
+                        onClick={getCurrentLocation}
+                        className="px-3 py-2 text-xs rounded bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        📱 Current Location
+                      </button>
+                    </div>
+
+                    {/* Render MapSelector, CoordinatePicker or manual inputs based on toggle */}
+                    {showMapInputSelector === 'map' && (
+                      <MapSelector
+                        latitude={locationForm.latitude}
+                        longitude={locationForm.longitude}
+                        onLocationSelect={handleMapLocationSelect}
+                        radius={activeTab === 'checkin' ? (parseFloat(locationForm.radius_meters) || 100) : (parseFloat(locationForm.alarm_radius_meters) || 100)}
+                      />
+                    )}
+                    {showMapInputSelector === 'coordinate' && (
+                      <CoordinatePicker
+                        latitude={locationForm.latitude}
+                        longitude={locationForm.longitude}
+                        onLocationSelect={handleMapLocationSelect}
+                      />
+                    )}
+                    {showMapInputSelector === 'manual' && (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label className="block text-gray-600 text-xs font-medium mb-1">
+                                    Latitude *
+                                </label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    value={locationForm.latitude}
+                                    onChange={(e) => setLocationForm({ ...locationForm, latitude: e.target.value })}
+                                    className="shadow border rounded w-full py-2 px-3 text-gray-700 text-sm leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="24.7136"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-600 text-xs font-medium mb-1">
+                                    Longitude *
+                                </label>
+                                <input
+                                    type="number"
+                                    step="any"
+                                    value={locationForm.longitude}
+                                    onChange={(e) => setLocationForm({ ...locationForm, longitude: e.target.value })}
+                                    className="shadow border rounded w-full py-2 px-3 text-gray-700 text-sm leading-tight focus:outline-none focus:shadow-outline"
+                                    placeholder="46.6753"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    )}
+
+
+                    {/* Coordinate Preview (always show if available, regardless of input method) */}
+                    {locationForm.latitude && locationForm.longitude && (
+                      <div className="text-xs text-gray-600 mt-3 p-2 bg-white rounded border">
+                        📍 Current selection: {formatCoordinates(locationForm.latitude, locationForm.longitude)} •
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${locationForm.latitude},${locationForm.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1 text-blue-500 hover:text-blue-700 underline"
+                        >
+                          View on Google Maps
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Radius Configuration */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      📏 {activeTab === 'checkin' ? 'Check-in Radius (meters)' : 'Alarm Radius (meters)'} *
+                    </label>
+                    <input
+                      type="number"
+                      value={activeTab === 'checkin' ? locationForm.radius_meters : locationForm.alarm_radius_meters}
+                      onChange={(e) => setLocationForm({
+                        ...locationForm,
+                        [activeTab === 'checkin' ? 'radius_meters' : 'alarm_radius_meters']: e.target.value
+                      })}
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="100"
+                      min="1"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {activeTab === 'checkin'
+                        ? 'Drivers must be within this radius to check in.'
+                        : 'Alert radius for apartment location monitoring.'
+                      }
+                    </p>
+                  </div>
+
+                  {/* Driver Assignment */}
+                  <div>
+                    <label className="block text-gray-700 text-sm font-bold mb-2">
+                      👤 Assign to Driver
+                    </label>
+                    <select
+                      value={locationForm.driver}
+                      onChange={(e) => setLocationForm({ ...locationForm, driver: e.target.value })}
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    >
+                      <option value="">-- No Driver --</option> {/* Option for unassigning */}
+                      {drivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.driver_name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                        Assign this location to a specific driver. Leave blank for unassigned.
+                    </p>
+                  </div>
+
+                  {/* Active Status Toggle */}
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="is_active"
+                      checked={locationForm.is_active}
+                      onChange={(e) => setLocationForm({ ...locationForm, is_active: e.target.checked })}
+                      className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="is_active" className="text-gray-700 text-sm font-bold">
+                      Is Active
+                    </label>
+                    <p className="text-xs text-gray-500 ml-2">
+                      Toggle to activate or deactivate this location.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Column - Map/Coordinate Selector (Placeholder - actual rendering is dynamic now) */}
+                <div className="hidden lg:block"> {/* This column is primarily for visual separation */}
+                  {/* The actual MapSelector or CoordinatePicker will render within the left column based on showMapInputSelector */}
+                  <div className="h-full flex items-center justify-center p-4 bg-gray-100 rounded-lg border border-gray-200 text-gray-500">
+                    <p>Select a location input method from the left.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="mt-8 flex justify-end space-x-3 border-t pt-4">
+                <button
+                  type="button"
+                  onClick={closeLocationModal}
+                  className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-md transition-colors"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 inline-block mr-2" />
+                      {editingLocation ? 'Update Location' : 'Add Location'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Map View Modal */}
-      {selectedLocation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  🗺️ {selectedLocation.name} - Location Map
-                </h3>
-                <button
-                  onClick={() => setSelectedLocation(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Location Details */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-3">📋 Location Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-gray-600">Name:</span>
-                      <div className="font-medium">{selectedLocation.name}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Coordinates:</span>
-                      <div className="font-mono text-xs">{formatCoordinates(selectedLocation.latitude, selectedLocation.longitude)}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Driver:</span>
-                      <div className="font-medium">{getDriverName(selectedLocation.driver)}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Radius:</span>
-                      <div className="font-medium">
-                        {activeTab === 'checkin'
-                          ? `${selectedLocation.radius_meters}m`
-                          : `${selectedLocation.alarm_radius_meters}m`
-                        }
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Status:</span>
-                      <div>{getStatusBadge(selectedLocation.is_active)}</div>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Created:</span>
-                      <div className="text-xs">{new Date(selectedLocation.created_at).toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Placeholder */}
-                <div className="lg:col-span-2 bg-gray-100 rounded-lg p-8 text-center">
-                  <div className="text-4xl mb-4">🗺️</div>
-                  <h4 className="text-lg font-medium text-gray-700 mb-2">Interactive Map</h4>
-                  <p className="text-gray-600 mb-4">
-                    Map integration coming soon. For now, you can view the location on Google Maps.
-                  </p>
-                  <a
-                    href={`https://www.google.com/maps?q=${selectedLocation.latitude},${selectedLocation.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded inline-block"
-                  >
-                    🌐 Open in Google Maps
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => setSelectedLocation(null)}
-                  className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-                >
-                  Close
-                </button>
+      {/* View Map Modal (for existing locations) */}
+      {selectedLocationForMap && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-6xl">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Map View for: {selectedLocationForMap.name}
+              </h3>
+              <button onClick={() => setSelectedLocationForMap(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            {/* Modal Body */}
+            <div className="p-6">
+              <MapSelector
+                latitude={selectedLocationForMap.latitude}
+                longitude={selectedLocationForMap.longitude}
+                onLocationSelect={(lat, lng) => toast.info(`Map position changed to ${lat.toFixed(4)}, ${lng.toFixed(4)}`)} // Read-only for this modal
+                radius={activeTab === 'checkin' ? (selectedLocationForMap.radius_meters || 100) : (selectedLocationForMap.alarm_radius_meters || 100)}
+              />
+              <div className="mt-4 text-sm text-gray-700">
+                Coordinates: {formatCoordinates(selectedLocationForMap.latitude, selectedLocationForMap.longitude)}
+                <br />
+                Assigned Driver: {getDriverName(selectedLocationForMap.driver)}
               </div>
             </div>
           </div>

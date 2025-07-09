@@ -17,7 +17,7 @@ class AccountingCategory(models.Model):
 
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    category_type = models.CharField(max_length=10, choices=CATEGORY_TYPE_CHOICES)
+    category_type = models.CharField(max_length=10, choices=CATEGORY_TYPE_CHOICES,default='expense')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -84,7 +84,7 @@ class Transaction(models.Model):
         ('failed', 'Failed'),
     ]
 
-    transaction_id = models.CharField(max_length=50, unique=True, editable=False)
+    transaction_id = models.CharField(max_length=50, unique=True, editable=False,default=None, null=True, blank=True)
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE_CHOICES)
     amount = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     currency = models.CharField(max_length=3, default='USD')
@@ -93,8 +93,8 @@ class Transaction(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 
     # Relationships
-    category = models.ForeignKey(AccountingCategory, on_delete=models.PROTECT, related_name='transactions')
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name='transactions')
+    category = models.ForeignKey(AccountingCategory, on_delete=models.PROTECT, related_name='transactions',default=None, null=True, blank=True)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name='transactions',default=None, null=True, blank=True)
     bank_account = models.ForeignKey(BankAccount, on_delete=models.PROTECT, related_name='transactions', null=True, blank=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='transactions', null=True, blank=True)
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='transactions', null=True, blank=True)
@@ -138,12 +138,12 @@ class Income(models.Model):
         ('other', 'Other'),
     ]
 
-    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='income_detail')
-    income_source = models.CharField(max_length=50, choices=INCOME_SOURCE_CHOICES) # Adjusted max_length
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='income_detail',default=None, null=True)
+    income_source = models.CharField(max_length=50, choices=INCOME_SOURCE_CHOICES, default=None,null=True) # Adjusted max_length
     invoice_number = models.CharField(max_length=100, blank=True, null=True)
     due_date = models.DateField(null=True, blank=True)
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    net_amount = models.DecimalField(max_digits=15, decimal_places=2, editable=False)
+    net_amount = models.DecimalField(max_digits=15, decimal_places=2, editable=False,default=0.00)  # Calculated field
 
     # For recurring income
     is_recurring = models.BooleanField(default=False)
@@ -198,8 +198,8 @@ class Expense(models.Model):
         ('other', 'Other'),
     ]
 
-    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='expense_detail')
-    expense_type = models.CharField(max_length=20, choices=EXPENSE_TYPE_CHOICES)
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='expense_detail',default=None, null=True)
+    expense_type = models.CharField(max_length=20, choices=EXPENSE_TYPE_CHOICES ,default='other')
     vendor_name = models.CharField(max_length=100, blank=True, null=True)
     bill_number = models.CharField(max_length=50, blank=True, null=True)
     due_date = models.DateField(null=True, blank=True)
@@ -437,8 +437,8 @@ class RecurringTransaction(models.Model):
     # Transaction template data
     transaction_type = models.CharField(max_length=10, choices=Transaction.TRANSACTION_TYPE_CHOICES)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
-    category = models.ForeignKey(AccountingCategory, on_delete=models.PROTECT, related_name='recurring_transactions')
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name='recurring_transactions')
+    category = models.ForeignKey(AccountingCategory, on_delete=models.PROTECT, related_name='recurring_transactions',default=None, null=True, blank=True)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.PROTECT, related_name='recurring_transactions',default=None, null=True, blank=True)
     bank_account = models.ForeignKey(BankAccount, on_delete=models.PROTECT, related_name='recurring_transactions', null=True, blank=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='recurring_transactions', null=True, blank=True)
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='recurring_transactions', null=True, blank=True)
@@ -577,7 +577,7 @@ class Trip(models.Model):
     total_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     # Payment information
-    payment_method = models.CharField(max_length=50, default='cash')
+    payment_method = models.CharField(max_length=50, default='cash')  # Cash, Card, etc.
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     payment_reference = models.CharField(max_length=100, blank=True, null=True)
 
