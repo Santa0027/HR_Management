@@ -13,7 +13,10 @@ from .serializers import CompanySerializer
 from django.db.models import Count
 
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.annotate(driver_count=Count('drivers')).order_by('-created_at')
+    queryset = Company.objects.annotate(
+        new_driver_applications_count=Count('new_driver_applications'),
+        working_drivers_count=Count('working_drivers')
+    ).order_by('-created_at')
     serializer_class = CompanySerializer
     permission_classes = [AllowAny]
 

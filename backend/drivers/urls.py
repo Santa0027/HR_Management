@@ -3,7 +3,9 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     DriverViewSet, DriverLogViewSet, DriverAuthViewSet,
     driver_login, driver_profile, driver_change_password,
-    driver_logout, check_username_availability
+    driver_logout, check_username_availability,
+    NewDriverApplicationViewSet, WorkingDriverViewSet,
+    submit_driver_form
 )
 from . import views
 
@@ -12,6 +14,8 @@ router = DefaultRouter()
 router.register(r'drivers', DriverViewSet)
 router.register(r'driver-logs', DriverLogViewSet)
 router.register(r'driver-auth', DriverAuthViewSet, basename='driver-auth')
+router.register(r'new-driver-applications', NewDriverApplicationViewSet)
+router.register(r'working-drivers', WorkingDriverViewSet)
 
 urlpatterns = [
     # Admin/Dashboard URLs
@@ -28,5 +32,8 @@ urlpatterns = [
 
     # Utility URLs
     path('check-username/', check_username_availability, name='check-username-availability'),
+
+    # Enhanced Driver Form URLs
+    path('submit-form/', submit_driver_form, name='submit-driver-form'),
 ]
     

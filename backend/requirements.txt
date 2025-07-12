@@ -8,4 +8,5 @@ PyJWT==2.9.0
 sqlparse==0.5.3
 Pillow
 WeasyPrint
+django-filter
 

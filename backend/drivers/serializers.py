@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import Driver, DriverLog, DriverAuth
+from .models import Driver, DriverLog, DriverAuth, NewDriverApplication, WorkingDriver
+from company.models import Company
 from vehicle.models import VehicleRegistration
 from company.models import Company
 
@@ -238,3 +239,200 @@ class DriverChangePasswordSerializer(serializers.Serializer):
         if not driver_auth.check_password(value):
             raise serializers.ValidationError("Current password is incorrect")
         return value
+
+
+# ==================== NEW ENHANCED DRIVER SERIALIZERS ====================
+
+class NewDriverApplicationSerializer(serializers.ModelSerializer):
+    age_calculated = serializers.SerializerMethodField()
+    application_status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = NewDriverApplication
+        fields = '__all__'
+        read_only_fields = ('application_number', 'age', 'created_at', 'updated_at')
+
+    def get_age_calculated(self, obj):
+        if obj.date_of_birth:
+            from datetime import date
+            today = date.today()
+            return today.year - obj.date_of_birth.year - ((today.month, today.day) < (obj.date_of_birth.month, obj.date_of_birth.day))
+        return None
+
+    def create(self, validated_data):
+        # Auto-calculate age before saving
+        if validated_data.get('date_of_birth'):
+            from datetime import date
+            today = date.today()
+            dob = validated_data['date_of_birth']
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            validated_data['age'] = age
+
+        return super().create(validated_data)
+
+
+class WorkingDriverSerializer(serializers.ModelSerializer):
+    age_calculated = serializers.SerializerMethodField()
+    employment_status_display = serializers.CharField(source='get_employment_status_display', read_only=True)
+    documents_expiring_soon = serializers.ReadOnlyField()
+    all_accessories_issued = serializers.ReadOnlyField()
+
+    class Meta:
+        model = WorkingDriver
+        fields = '__all__'
+        read_only_fields = ('total_trips', 'total_earnings', 'created_at', 'updated_at')
+
+    def get_age_calculated(self, obj):
+        return obj.age
+
+    def validate(self, data):
+        # Validate that expiry dates are in the future
+        from datetime import date
+        today = date.today()
+
+        if data.get('civil_id_expiry') and data['civil_id_expiry'] <= today:
+            raise serializers.ValidationError({'civil_id_expiry': 'Civil ID expiry date must be in the future'})
+
+        if data.get('license_expiry_date') and data['license_expiry_date'] <= today:
+            raise serializers.ValidationError({'license_expiry_date': 'License expiry date must be in the future'})
+
+        if data.get('vehicle_expiry_date') and data['vehicle_expiry_date'] <= today:
+            raise serializers.ValidationError({'vehicle_expiry_date': 'Vehicle expiry date must be in the future'})
+
+        if data.get('health_card_expiry') and data['health_card_expiry'] <= today:
+            raise serializers.ValidationError({'health_card_expiry': 'Health card expiry date must be in the future'})
+
+        return data
+
+
+# Simplified serializers for list views
+class NewDriverApplicationListSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source='company.company_name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = NewDriverApplication
+        fields = ['id', 'application_number', 'full_name', 'company_name', 'status', 'status_display',
+                 'vehicle_type', 'nationality', 'phone_number', 'application_date', 'age']
+
+
+class WorkingDriverListSerializer(serializers.ModelSerializer):
+    employment_status_display = serializers.CharField(source='get_employment_status_display', read_only=True)
+    working_department_display = serializers.CharField(source='get_working_department_display', read_only=True)
+    age_calculated = serializers.ReadOnlyField(source='age')
+
+    class Meta:
+        model = WorkingDriver
+        fields = ['id', 'employee_id', 'full_name', 'employment_status', 'employment_status_display',
+                 'working_department', 'working_department_display', 'vehicle_type', 'vehicle_model',
+                 'phone_number', 'nationality', 'age_calculated', 'joining_date', 'rating']
+
+
+# Driver form submission serializer
+class DriverFormSubmissionSerializer(serializers.Serializer):
+    driver_type = serializers.ChoiceField(choices=[('new', 'New Driver'), ('working', 'Working Driver')])
+
+    # Common fields
+    full_name = serializers.CharField(max_length=255)
+    gender = serializers.ChoiceField(choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')])
+    date_of_birth = serializers.DateField()
+    nationality = serializers.CharField(max_length=100)
+    phone_number = serializers.CharField(max_length=20)
+    vehicle_type = serializers.CharField(max_length=20)
+
+    # New driver specific fields
+    passport_document = serializers.FileField(required=False)
+    visa_document = serializers.FileField(required=False)
+    police_certificate = serializers.FileField(required=False)
+    passport_photo = serializers.ImageField(required=False)
+    medical_certificate = serializers.FileField(required=False)
+    city = serializers.CharField(max_length=100, required=False)
+    company = serializers.CharField(max_length=100, required=False)
+    apartment_area = serializers.CharField(max_length=200, required=False)
+    marital_status = serializers.CharField(max_length=20, required=False)
+    blood_group = serializers.CharField(max_length=5, required=False)
+    home_country_address = serializers.CharField(required=False)
+    home_country_phone = serializers.CharField(max_length=20, required=False)
+    nominee_name = serializers.CharField(max_length=255, required=False)
+    nominee_relationship = serializers.CharField(max_length=20, required=False)
+    nominee_phone = serializers.CharField(max_length=20, required=False)
+    nominee_address = serializers.CharField(required=False)
+    t_shirt_size = serializers.CharField(max_length=5, required=False)
+    weight = serializers.DecimalField(max_digits=5, decimal_places=2, required=False)
+    height = serializers.DecimalField(max_digits=5, decimal_places=2, required=False)
+    kuwait_entry_date = serializers.DateField(required=False)
+    vehicle_destination = serializers.CharField(max_length=200, required=False)
+
+    # Working driver specific fields
+    vehicle_model = serializers.CharField(max_length=100, required=False)
+    employee_id = serializers.CharField(max_length=20, required=False)
+    civil_id_front = serializers.ImageField(required=False)
+    civil_id_back = serializers.ImageField(required=False)
+    license_front = serializers.ImageField(required=False)
+    license_back = serializers.ImageField(required=False)
+    vehicle_documents = serializers.FileField(required=False)
+    driver_photo = serializers.ImageField(required=False)
+    health_card_document = serializers.FileField(required=False)
+    vehicle_photo_front = serializers.ImageField(required=False)
+    vehicle_photo_back = serializers.ImageField(required=False)
+    vehicle_photo_left = serializers.ImageField(required=False)
+    vehicle_photo_right = serializers.ImageField(required=False)
+    civil_id_number = serializers.CharField(max_length=50, required=False)
+    civil_id_expiry = serializers.DateField(required=False)
+    license_number = serializers.CharField(max_length=50, required=False)
+    license_expiry_date = serializers.DateField(required=False)
+    vehicle_number = serializers.CharField(max_length=50, required=False)
+    vehicle_expiry_date = serializers.DateField(required=False)
+    health_card_number = serializers.CharField(max_length=50, required=False)
+    health_card_expiry = serializers.DateField(required=False)
+    working_department = serializers.CharField(max_length=20, required=False)
+
+    # Accessories
+    t_shirt_issued = serializers.BooleanField(required=False)
+    cap_issued = serializers.BooleanField(required=False)
+    bag_issued = serializers.BooleanField(required=False)
+    vest_issued = serializers.BooleanField(required=False)
+    safety_equipment_issued = serializers.BooleanField(required=False)
+    helmet_issued = serializers.BooleanField(required=False)
+    cool_jacket_issued = serializers.BooleanField(required=False)
+    water_bottle_issued = serializers.BooleanField(required=False)
+
+    def validate(self, data):
+        driver_type = data.get('driver_type')
+
+        if driver_type == 'new':
+            # Validate required fields for new driver
+            required_fields = ['city', 'company', 'apartment_area', 'nominee_name', 'kuwait_entry_date']
+            for field in required_fields:
+                if not data.get(field):
+                    raise serializers.ValidationError({field: f'{field} is required for new driver application'})
+
+        elif driver_type == 'working':
+            # Validate required fields for working driver
+            required_fields = ['employee_id', 'vehicle_model', 'civil_id_number', 'civil_id_expiry',
+                             'license_number', 'license_expiry_date', 'working_department']
+            for field in required_fields:
+                if not data.get(field):
+                    raise serializers.ValidationError({field: f'{field} is required for working driver'})
+
+        return data
+
+    def create(self, validated_data):
+        driver_type = validated_data.pop('driver_type')
+
+        if driver_type == 'new':
+            # Create new driver application
+            company_name = validated_data.pop('company')
+            company = Company.objects.get(company_name=company_name)
+            validated_data['company'] = company
+
+            return NewDriverApplication.objects.create(**validated_data)
+
+        elif driver_type == 'working':
+            # Create working driver
+            # Assuming we get company from the request or set a default
+            company = Company.objects.first()
+            validated_data['company'] = company
+            validated_data['created_by'] = 'System'  # Should be from request.user
+
+            return WorkingDriver.objects.create(**validated_data)

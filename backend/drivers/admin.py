@@ -122,3 +122,136 @@ class DriverLogAdmin(admin.ModelAdmin):
     list_filter = ['action', 'timestamp', 'performed_by']
     search_fields = ['driver__driver_name', 'action', 'note']
     readonly_fields = ['timestamp']
+
+
+# ==================== NEW DRIVER MODELS ADMIN ====================
+
+from .models import NewDriverApplication, WorkingDriver
+
+@admin.register(NewDriverApplication)
+class NewDriverApplicationAdmin(admin.ModelAdmin):
+    list_display = ['application_number', 'full_name', 'company', 'status', 'application_date', 'age']
+    list_filter = ['status', 'company', 'vehicle_type', 'gender', 'nationality', 'application_date']
+    search_fields = ['application_number', 'full_name', 'phone_number', 'nominee_name']
+    readonly_fields = ['application_number', 'age', 'application_date', 'created_at', 'updated_at']
+    date_hierarchy = 'application_date'
+
+    fieldsets = (
+        ('Application Info', {
+            'fields': ('application_number', 'application_date', 'status', 'company')
+        }),
+        ('Personal Details', {
+            'fields': ('full_name', 'gender', 'date_of_birth', 'age', 'nationality', 'city', 'apartment_area')
+        }),
+        ('Contact Information', {
+            'fields': ('phone_number', 'home_country_address', 'home_country_phone')
+        }),
+        ('Physical Details', {
+            'fields': ('marital_status', 'blood_group', 't_shirt_size', 'weight', 'height')
+        }),
+        ('Work Details', {
+            'fields': ('vehicle_type', 'vehicle_destination', 'kuwait_entry_date')
+        }),
+        ('Nominee Information', {
+            'fields': ('nominee_name', 'nominee_relationship', 'nominee_phone', 'nominee_address')
+        }),
+        ('Documents', {
+            'fields': ('passport_document', 'visa_document', 'police_certificate', 'medical_certificate', 'passport_photo')
+        }),
+        ('Review', {
+            'fields': ('review_notes', 'reviewed_by', 'reviewed_at')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    actions = ['approve_applications', 'reject_applications']
+
+    def approve_applications(self, request, queryset):
+        """Approve selected applications"""
+        count = queryset.update(status='approved', reviewed_by=request.user.get_full_name())
+        self.message_user(request, f'Successfully approved {count} applications.')
+    approve_applications.short_description = 'Approve selected applications'
+
+    def reject_applications(self, request, queryset):
+        """Reject selected applications"""
+        count = queryset.update(status='rejected', reviewed_by=request.user.get_full_name())
+        self.message_user(request, f'Successfully rejected {count} applications.')
+    reject_applications.short_description = 'Reject selected applications'
+
+
+@admin.register(WorkingDriver)
+class WorkingDriverAdmin(admin.ModelAdmin):
+    list_display = ['employee_id', 'full_name', 'company', 'working_department', 'employment_status', 'vehicle_type', 'age']
+    list_filter = ['employment_status', 'company', 'working_department', 'vehicle_type', 'gender', 'joining_date']
+    search_fields = ['employee_id', 'full_name', 'phone_number', 'civil_id_number', 'license_number', 'vehicle_number']
+    readonly_fields = ['age', 'total_trips', 'total_earnings', 'created_at', 'updated_at']
+    date_hierarchy = 'joining_date'
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('employee_id', 'full_name', 'gender', 'date_of_birth', 'nationality', 'phone_number')
+        }),
+        ('Vehicle Information', {
+            'fields': ('vehicle_type', 'vehicle_model', 'vehicle_number', 'vehicle_expiry_date')
+        }),
+        ('Legal Documents', {
+            'fields': ('civil_id_number', 'civil_id_expiry', 'license_number', 'license_expiry_date',
+                      'health_card_number', 'health_card_expiry')
+        }),
+        ('Document Files', {
+            'fields': ('civil_id_front', 'civil_id_back', 'license_front', 'license_back',
+                      'vehicle_registration', 'vehicle_insurance', 'driver_photo', 'health_card_document')
+        }),
+        ('Vehicle Photos', {
+            'fields': ('vehicle_photo_front', 'vehicle_photo_back', 'vehicle_photo_left', 'vehicle_photo_right')
+        }),
+        ('Employment', {
+            'fields': ('company', 'working_department', 'employment_status', 'joining_date', 'created_by')
+        }),
+        ('Accessories & Uniform', {
+            'fields': ('t_shirt_issued', 't_shirt_size', 'cap_issued', 'bag_issued', 'vest_issued',
+                      'safety_equipment_issued', 'helmet_issued', 'cool_jacket_issued', 'water_bottle_issued')
+        }),
+        ('Performance', {
+            'fields': ('total_trips', 'total_earnings', 'rating'),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    actions = ['activate_drivers', 'suspend_drivers', 'issue_all_accessories']
+
+    def activate_drivers(self, request, queryset):
+        """Activate selected drivers"""
+        count = queryset.update(employment_status='active')
+        self.message_user(request, f'Successfully activated {count} drivers.')
+    activate_drivers.short_description = 'Activate selected drivers'
+
+    def suspend_drivers(self, request, queryset):
+        """Suspend selected drivers"""
+        count = queryset.update(employment_status='suspended')
+        self.message_user(request, f'Successfully suspended {count} drivers.')
+    suspend_drivers.short_description = 'Suspend selected drivers'
+
+    def issue_all_accessories(self, request, queryset):
+        """Mark all accessories as issued for selected drivers"""
+        count = 0
+        for driver in queryset:
+            driver.t_shirt_issued = True
+            driver.cap_issued = True
+            driver.bag_issued = True
+            driver.vest_issued = True
+            driver.safety_equipment_issued = True
+            driver.helmet_issued = True
+            driver.cool_jacket_issued = True
+            driver.water_bottle_issued = True
+            driver.save()
+            count += 1
+        self.message_user(request, f'Successfully issued all accessories to {count} drivers.')
+    issue_all_accessories.short_description = 'Issue all accessories to selected drivers'

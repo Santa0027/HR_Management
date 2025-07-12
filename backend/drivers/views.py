@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
@@ -9,12 +9,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q
 
-from .models import Driver, DriverLog, DriverAuth
+from .models import Driver, DriverLog, DriverAuth, NewDriverApplication, WorkingDriver
 from .serializers import (
     DriverSerializer, DriverLogSerializer,
     DriverAuthSerializer, DriverAuthCreateSerializer, DriverAuthUpdateSerializer,
-    DriverLoginSerializer, DriverProfileSerializer, DriverChangePasswordSerializer
+    DriverLoginSerializer, DriverProfileSerializer, DriverChangePasswordSerializer,
+    NewDriverApplicationSerializer, WorkingDriverSerializer,
+    NewDriverApplicationListSerializer, WorkingDriverListSerializer,
+    DriverFormSubmissionSerializer
 )
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
@@ -304,3 +308,180 @@ def check_username_availability(request):
         'username': username,
         'is_available': is_available
     }, status=status.HTTP_200_OK)
+
+
+# ==================== NEW ENHANCED DRIVER VIEWS ====================
+
+class NewDriverApplicationViewSet(viewsets.ModelViewSet):
+    """ViewSet for New Driver Applications"""
+    queryset = NewDriverApplication.objects.all().order_by('-application_date')
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return NewDriverApplicationListSerializer
+        return NewDriverApplicationSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter by status
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # Filter by company
+        company_filter = self.request.query_params.get('company', None)
+        if company_filter:
+            queryset = queryset.filter(company__company_name__icontains=company_filter)
+
+        # Search by name or phone
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(full_name__icontains=search) |
+                Q(phone_number__icontains=search) |
+                Q(application_number__icontains=search)
+            )
+
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a driver application"""
+        application = self.get_object()
+        application.status = 'approved'
+        application.reviewed_by = request.user.get_full_name() if hasattr(request.user, 'get_full_name') else 'Admin'
+        application.reviewed_at = timezone.now()
+        application.save()
+
+        return Response({
+            'message': 'Application approved successfully',
+            'application_number': application.application_number
+        })
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject a driver application"""
+        application = self.get_object()
+        application.status = 'rejected'
+        application.reviewed_by = request.user.get_full_name() if hasattr(request.user, 'get_full_name') else 'Admin'
+        application.reviewed_at = timezone.now()
+        application.review_notes = request.data.get('reason', '')
+        application.save()
+
+        return Response({
+            'message': 'Application rejected successfully',
+            'application_number': application.application_number
+        })
+
+
+class WorkingDriverViewSet(viewsets.ModelViewSet):
+    """ViewSet for Working Drivers"""
+    queryset = WorkingDriver.objects.all().order_by('-joining_date')
+    permission_classes = [AllowAny]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return WorkingDriverListSerializer
+        return WorkingDriverSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter by employment status
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(employment_status=status_filter)
+
+        # Filter by department
+        department_filter = self.request.query_params.get('department', None)
+        if department_filter:
+            queryset = queryset.filter(working_department=department_filter)
+
+        # Search by name, employee ID, or phone
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                Q(full_name__icontains=search) |
+                Q(employee_id__icontains=search) |
+                Q(phone_number__icontains=search)
+            )
+
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Activate a working driver"""
+        driver = self.get_object()
+        driver.employment_status = 'active'
+        driver.save()
+
+        return Response({
+            'message': 'Driver activated successfully',
+            'employee_id': driver.employee_id
+        })
+
+    @action(detail=True, methods=['post'])
+    def suspend(self, request, pk=None):
+        """Suspend a working driver"""
+        driver = self.get_object()
+        driver.employment_status = 'suspended'
+        driver.save()
+
+        return Response({
+            'message': 'Driver suspended successfully',
+            'employee_id': driver.employee_id
+        })
+
+    @action(detail=True, methods=['post'])
+    def issue_accessories(self, request, pk=None):
+        """Issue all accessories to a driver"""
+        driver = self.get_object()
+        accessories = request.data.get('accessories', {})
+
+        for accessory, issued in accessories.items():
+            if hasattr(driver, f'{accessory}_issued'):
+                setattr(driver, f'{accessory}_issued', issued)
+
+        driver.save()
+
+        return Response({
+            'message': 'Accessories updated successfully',
+            'employee_id': driver.employee_id
+        })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def submit_driver_form(request):
+    """Submit driver form (new or working driver)"""
+    serializer = DriverFormSubmissionSerializer(data=request.data)
+
+    if serializer.is_valid():
+        try:
+            with transaction.atomic():
+                driver_instance = serializer.save()
+
+                driver_type = request.data.get('driver_type')
+                if driver_type == 'new':
+                    response_serializer = NewDriverApplicationSerializer(driver_instance)
+                    message = f'New driver application submitted successfully. Application number: {driver_instance.application_number}'
+                else:
+                    response_serializer = WorkingDriverSerializer(driver_instance)
+                    message = f'Working driver created successfully. Employee ID: {driver_instance.employee_id}'
+
+                return Response({
+                    'message': message,
+                    'driver_type': driver_type,
+                    'data': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                'error': f'Failed to create driver: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
