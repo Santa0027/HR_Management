@@ -3,8 +3,27 @@ from .models import Company, VehicleTariff, EmployeeAccessory, EmployeeAccessory
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ['company_name', 'registration_number', 'contact_person', 'contact_email', 'commission_type']
-    list_filter = ['commission_type', 'country', 'city']
+    list_display = [
+        'company_name', 'registration_number', 'contact_person', 'contact_email',
+        'commission_type', 'rate_per_km', 'min_km', 'rate_per_order', 'fixed_commission',
+        'car_commission_type', 'car_rate_per_km', 'car_min_km', 'car_rate_per_order', 'car_fixed_commission',
+        'bike_commission_type', 'bike_rate_per_km', 'bike_min_km', 'bike_rate_per_order', 'bike_fixed_commission',
+    ]
+    list_filter = [
+        'commission_type', 'car_commission_type', 'bike_commission_type',
+        'country', 'city'
+    ]
+    def car_commission_type(self, obj):
+        if obj.car_commission_details:
+            return obj.car_commission_details.commission_type
+        return '-'
+    car_commission_type.short_description = 'Car Commission Type'
+
+    def bike_commission_type(self, obj):
+        if obj.bike_commission_details:
+            return obj.bike_commission_details.commission_type
+        return '-'
+    bike_commission_type.short_description = 'Bike Commission Type'
     search_fields = ['company_name', 'registration_number', 'contact_person', 'contact_email']
     readonly_fields = ['created_at', 'updated_at']
 

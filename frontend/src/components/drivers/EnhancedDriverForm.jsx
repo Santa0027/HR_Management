@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -19,21 +19,17 @@ import {
   Chip,
   Alert,
   Paper,
-  Divider,
-  IconButton,
-  Avatar
+  Divider
 } from '@mui/material';
 import {
   Person,
   Work,
   Assignment,
   PhotoCamera,
-  LocationOn,
   ContactPhone,
   Business,
   DirectionsCar,
   Security,
-  LocalHospital,
   Checkroom
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -112,6 +108,8 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
   });
 
   const [companies, setCompanies] = useState([]);
+  const [selectedCompanyAccessories, setSelectedCompanyAccessories] = useState({});
+  const [accessoryCounts, setAccessoryCounts] = useState({});
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -121,6 +119,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     'Contact & Address',
     'Physical Details & Nominee',
     'Work Information',
+    'Accessories & Equipment',
     'Documents Upload'
   ];
 
@@ -201,6 +200,37 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     }
   };
 
+  const handleCompanySelection = async (companyName) => {
+    try {
+      // Find the selected company
+      const selectedCompany = companies.find(c => c.company_name === companyName);
+      if (selectedCompany && selectedCompany.employee_accessories) {
+        setSelectedCompanyAccessories(selectedCompany.employee_accessories);
+
+        // Initialize accessory counts with default values
+        const initialCounts = {};
+        selectedCompany.employee_accessories.forEach(accessory => {
+          if (accessory.enabled) {
+            initialCounts[accessory.name] = accessory.default_quantity || 0;
+          }
+        });
+        setAccessoryCounts(initialCounts);
+      } else {
+        setSelectedCompanyAccessories([]);
+        setAccessoryCounts({});
+      }
+    } catch (error) {
+      console.error('Error handling company selection:', error);
+    }
+  };
+
+  const handleAccessoryCountChange = (accessoryKey, newCount) => {
+    setAccessoryCounts(prev => ({
+      ...prev,
+      [accessoryKey]: Math.max(0, newCount)
+    }));
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -219,13 +249,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     if (field === 'date_of_birth' && value) {
       const today = new Date();
       const birthDate = new Date(value);
-      const age = today.getFullYear() - birthDate.getFullYear();
+      let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       setFormData(prev => ({
         ...prev,
         age: age.toString()
@@ -266,7 +296,9 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
           if (!formData.vehicle_type) newErrors.vehicle_type = 'Vehicle type is required';
           if (!formData.kuwait_entry_date) newErrors.kuwait_entry_date = 'Kuwait entry date is required';
           break;
-        case 4: // Documents
+        case 4: // Accessories & Equipment - no validation needed
+          break;
+        case 5: // Documents
           if (!formData.passport_document) newErrors.passport_document = 'Passport document is required';
           if (!formData.visa_document) newErrors.visa_document = 'Visa document is required';
           if (!formData.passport_photo) newErrors.passport_photo = 'Passport photo is required';
@@ -465,14 +497,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Date of Birth *"
                 value={formData.date_of_birth}
                 onChange={(date) => handleInputChange('date_of_birth', date)}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={!!errors.date_of_birth}
-                    helperText={errors.date_of_birth}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!errors.date_of_birth,
+                    helperText: errors.date_of_birth
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -480,7 +511,11 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 fullWidth
                 label="Age"
                 value={formData.age}
-                InputProps={{ readOnly: true }}
+                slotProps={{
+                  input: {
+                    readOnly: true
+                  }
+                }}
                 helperText="Auto-calculated from date of birth"
               />
             </Grid>
@@ -699,7 +734,10 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 <InputLabel>Company *</InputLabel>
                 <Select
                   value={formData.company}
-                  onChange={(e) => handleInputChange('company', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('company', e.target.value);
+                    handleCompanySelection(e.target.value);
+                  }}
                   label="Company *"
                 >
                   {companies.map(company => (
@@ -739,20 +777,135 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Kuwait Entry Date *"
                 value={formData.kuwait_entry_date}
                 onChange={(date) => handleInputChange('kuwait_entry_date', date)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    error={!!errors.kuwait_entry_date}
-                    helperText={errors.kuwait_entry_date}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!errors.kuwait_entry_date,
+                    helperText: errors.kuwait_entry_date
+                  }
+                }}
               />
             </Grid>
           </Grid>
         );
 
-      case 4: // Documents Upload
+      case 4: // Accessories & Equipment
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                <Checkroom sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Accessories & Equipment
+              </Typography>
+              {formData.company ? (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Select the quantity of accessories you need from {formData.company}
+                </Alert>
+              ) : (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  Please select a company first to see available accessories
+                </Alert>
+              )}
+            </Grid>
+
+            {formData.company && selectedCompanyAccessories.length > 0 ? (
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Available Accessories from {formData.company}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {selectedCompanyAccessories
+                      .filter(accessory => accessory.enabled)
+                      .map((accessory, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={index}>
+                          <Paper
+                            sx={{
+                              p: 2,
+                              textAlign: 'center',
+                              border: '2px solid',
+                              borderColor: 'primary.main',
+                              bgcolor: 'primary.light',
+                              color: 'primary.contrastText'
+                            }}
+                          >
+                            <Typography variant="h4" sx={{ mb: 1 }}>
+                              {accessory.icon}
+                            </Typography>
+                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                              {accessory.name}
+                            </Typography>
+                            <Typography variant="caption" display="block" sx={{ mb: 1, opacity: 0.8 }}>
+                              {accessory.description}
+                            </Typography>
+                            <Typography variant="caption" color="inherit" display="block" sx={{ mb: 2 }}>
+                              Company Default: {accessory.default_quantity}
+                            </Typography>
+                            <Typography variant="caption" display="block" gutterBottom>
+                              Quantity Needed:
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => handleAccessoryCountChange(accessory.name, (accessoryCounts[accessory.name] || accessory.default_quantity) - 1)}
+                                disabled={(accessoryCounts[accessory.name] || accessory.default_quantity) <= 0}
+                                sx={{
+                                  bgcolor: 'rgba(255,255,255,0.2)',
+                                  color: 'inherit',
+                                  borderColor: 'rgba(255,255,255,0.5)'
+                                }}
+                              >
+                                -
+                              </Button>
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={accessoryCounts[accessory.name] || accessory.default_quantity}
+                                onChange={(e) => handleAccessoryCountChange(accessory.name, parseInt(e.target.value) || 0)}
+                                slotProps={{
+                                  input: {
+                                    style: { textAlign: 'center', width: '60px' },
+                                    min: 0
+                                  }
+                                }}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    bgcolor: 'rgba(255,255,255,0.9)',
+                                    color: 'text.primary'
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => handleAccessoryCountChange(accessory.name, (accessoryCounts[accessory.name] || accessory.default_quantity) + 1)}
+                                sx={{
+                                  bgcolor: 'rgba(255,255,255,0.2)',
+                                  color: 'inherit',
+                                  borderColor: 'rgba(255,255,255,0.5)'
+                                }}
+                              >
+                                +
+                              </Button>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      ))}
+                  </Grid>
+                </Paper>
+              </Grid>
+            ) : formData.company ? (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  This company has not configured any accessories yet. Please contact the company administrator.
+                </Alert>
+              </Grid>
+            ) : null}
+          </Grid>
+        );
+
+      case 5: // Documents Upload
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -771,7 +924,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               { field: 'police_certificate', label: 'Police Certificate', required: false },
               { field: 'medical_certificate', label: 'Medical Certificate', required: false },
               { field: 'passport_photo', label: 'Passport Photo *', required: true, accept: 'image/*' }
-            ].map(({ field, label, required, accept = '.pdf,.jpg,.jpeg,.png' }) => (
+            ].map(({ field, label, accept = '.pdf,.jpg,.jpeg,.png' }) => (
               <Grid item xs={12} md={6} key={field}>
                 <Paper sx={{ p: 2, border: errors[field] ? '1px solid red' : '1px solid #ddd' }}>
                   <Typography variant="subtitle2" gutterBottom>
@@ -849,14 +1002,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Date of Birth *"
                 value={formData.date_of_birth}
                 onChange={(date) => handleInputChange('date_of_birth', date)}
-                renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    fullWidth 
-                    error={!!errors.date_of_birth}
-                    helperText={errors.date_of_birth}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!errors.date_of_birth,
+                    helperText: errors.date_of_birth
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -966,9 +1118,11 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Vehicle Expiry Date"
                 value={formData.vehicle_expiry_date}
                 onChange={(date) => handleInputChange('vehicle_expiry_date', date)}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
               />
             </Grid>
           </Grid>
@@ -998,14 +1152,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Civil ID Expiry *"
                 value={formData.civil_id_expiry}
                 onChange={(date) => handleInputChange('civil_id_expiry', date)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    error={!!errors.civil_id_expiry}
-                    helperText={errors.civil_id_expiry}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!errors.civil_id_expiry,
+                    helperText: errors.civil_id_expiry
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1023,14 +1176,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="License Expiry Date *"
                 value={formData.license_expiry_date}
                 onChange={(date) => handleInputChange('license_expiry_date', date)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    error={!!errors.license_expiry_date}
-                    helperText={errors.license_expiry_date}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    error: !!errors.license_expiry_date,
+                    helperText: errors.license_expiry_date
+                  }
+                }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -1046,9 +1198,11 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 label="Health Card Expiry"
                 value={formData.health_card_expiry}
                 onChange={(date) => handleInputChange('health_card_expiry', date)}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
               />
             </Grid>
           </Grid>
@@ -1075,7 +1229,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               { field: 'vehicle_documents', label: 'Vehicle Documents', required: false },
               { field: 'driver_photo', label: 'Driver Photo *', required: true },
               { field: 'health_card_document', label: 'Health Card', required: false }
-            ].map(({ field, label, required }) => (
+            ].map(({ field, label }) => (
               <Grid item xs={12} md={6} key={field}>
                 <Paper sx={{ p: 2, border: errors[field] ? '1px solid red' : '1px solid #ddd' }}>
                   <Typography variant="subtitle2" gutterBottom>

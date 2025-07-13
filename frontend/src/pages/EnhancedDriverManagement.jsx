@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -19,23 +19,39 @@ import {
   Chip,
   IconButton,
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
   Alert,
-  Snackbar
+  Snackbar,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Tooltip,
+  Avatar,
+  LinearProgress,
+  Fade,
+  Zoom
 } from '@mui/material';
 import {
   Add,
   Edit,
-  Delete,
   Visibility,
   CheckCircle,
   Cancel,
   Person,
   Work,
   Assignment,
-  DirectionsCar
+  DirectionsCar,
+  Search,
+  FilterList,
+  Download,
+  Refresh,
+  TrendingUp,
+  Group,
+  PendingActions,
+  VerifiedUser
 } from '@mui/icons-material';
 import EnhancedDriverForm from '../components/drivers/EnhancedDriverForm';
 
@@ -47,6 +63,9 @@ const EnhancedDriverManagement = () => {
   const [workingDrivers, setWorkingDrivers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   useEffect(() => {
     fetchData();
@@ -289,89 +308,336 @@ const EnhancedDriverManagement = () => {
     <Container maxWidth="xl">
       <Box sx={{ py: 3 }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Enhanced Driver Management
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setShowForm(true)}
-            size="large"
-          >
-            Add Driver
-          </Button>
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                🚗 Driver Management System
+              </Typography>
+              <Typography variant="subtitle1" color="text.secondary">
+                Manage driver applications and working drivers efficiently
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Tooltip title="Refresh Data">
+                <IconButton
+                  onClick={fetchData}
+                  disabled={loading}
+                  sx={{ bgcolor: 'action.hover' }}
+                >
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Export Data">
+                <IconButton sx={{ bgcolor: 'action.hover' }}>
+                  <Download />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setShowForm(true)}
+                size="large"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                  px: 3
+                }}
+              >
+                Add New Driver
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Search and Filters */}
+          <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  placeholder="Search drivers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search color="action" />
+                        </InputAdornment>
+                      ),
+                    }
+                  }}
+                  sx={{ bgcolor: 'white' }}
+                />
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Status Filter</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    label="Status Filter"
+                    sx={{ bgcolor: 'white' }}
+                  >
+                    <MenuItem value="all">All Status</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="approved">Approved</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="suspended">Suspended</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Department</InputLabel>
+                  <Select
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    label="Department"
+                    sx={{ bgcolor: 'white' }}
+                  >
+                    <MenuItem value="all">All Departments</MenuItem>
+                    <MenuItem value="delivery">Delivery</MenuItem>
+                    <MenuItem value="transport">Transport</MenuItem>
+                    <MenuItem value="logistics">Logistics</MenuItem>
+                    <MenuItem value="maintenance">Maintenance</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<FilterList />}
+                  sx={{ height: '56px' }}
+                >
+                  Advanced
+                </Button>
+              </Grid>
+            </Grid>
+          </Paper>
         </Box>
 
-        {/* Statistics Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Enhanced Statistics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Person sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">{newDriverApplications.length}</Typography>
-                    <Typography color="textSecondary">New Applications</Typography>
+            <Zoom in timeout={300}>
+              <Card
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                    transition: 'all 0.3s ease'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {newDriverApplications.length}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        New Applications
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <TrendingUp sx={{ fontSize: 16, mr: 0.5 }} />
+                        <Typography variant="caption">+12% this month</Typography>
+                      </Box>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 60, height: 60 }}>
+                      <Person sx={{ fontSize: 30 }} />
+                    </Avatar>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Zoom>
           </Grid>
+
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Work sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">{workingDrivers.length}</Typography>
-                    <Typography color="textSecondary">Working Drivers</Typography>
+            <Zoom in timeout={400}>
+              <Card
+                sx={{
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                    transition: 'all 0.3s ease'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {workingDrivers.length}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Working Drivers
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <Group sx={{ fontSize: 16, mr: 0.5 }} />
+                        <Typography variant="caption">Total workforce</Typography>
+                      </Box>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 60, height: 60 }}>
+                      <Work sx={{ fontSize: 30 }} />
+                    </Avatar>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Zoom>
           </Grid>
+
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Assignment sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">
-                      {newDriverApplications.filter(app => app.status === 'pending').length}
-                    </Typography>
-                    <Typography color="textSecondary">Pending Review</Typography>
+            <Zoom in timeout={500}>
+              <Card
+                sx={{
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                    transition: 'all 0.3s ease'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {newDriverApplications.filter(app => app.status === 'pending').length}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Pending Review
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <PendingActions sx={{ fontSize: 16, mr: 0.5 }} />
+                        <Typography variant="caption">Needs attention</Typography>
+                      </Box>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 60, height: 60 }}>
+                      <Assignment sx={{ fontSize: 30 }} />
+                    </Avatar>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Zoom>
           </Grid>
+
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <DirectionsCar sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">
-                      {workingDrivers.filter(driver => driver.employment_status === 'active').length}
-                    </Typography>
-                    <Typography color="textSecondary">Active Drivers</Typography>
+            <Zoom in timeout={600}>
+              <Card
+                sx={{
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 4,
+                    transition: 'all 0.3s ease'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {workingDrivers.filter(driver => driver.employment_status === 'active').length}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                        Active Drivers
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <VerifiedUser sx={{ fontSize: 16, mr: 0.5 }} />
+                        <Typography variant="caption">Currently working</Typography>
+                      </Box>
+                    </Box>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 60, height: 60 }}>
+                      <DirectionsCar sx={{ fontSize: 30 }} />
+                    </Avatar>
                   </Box>
-                </Box>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Zoom>
           </Grid>
         </Grid>
 
-        {/* Tabs */}
-        <Paper sx={{ mb: 3 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(e, newValue) => setActiveTab(newValue)}
+        {/* Loading Progress */}
+        {loading && (
+          <Fade in={loading}>
+            <Box sx={{ mb: 2 }}>
+              <LinearProgress />
+            </Box>
+          </Fade>
+        )}
+
+        {/* Enhanced Tabs */}
+        <Paper
+          sx={{
+            mb: 3,
+            borderRadius: 3,
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          }}
+        >
+          <Tabs
+            value={activeTab}
+            onChange={(_, newValue) => setActiveTab(newValue)}
             variant="fullWidth"
+            sx={{
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 'bold',
+                fontSize: '1rem',
+                py: 2,
+                '&.Mui-selected': {
+                  color: 'primary.main',
+                }
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: '3px 3px 0 0',
+              }
+            }}
           >
-            <Tab label="New Driver Applications" />
-            <Tab label="Working Drivers" />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Person />
+                  New Driver Applications
+                  <Chip
+                    label={newDriverApplications.filter(app => app.status === 'pending').length}
+                    size="small"
+                    color="warning"
+                  />
+                </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Work />
+                  Working Drivers
+                  <Chip
+                    label={workingDrivers.filter(driver => driver.employment_status === 'active').length}
+                    size="small"
+                    color="success"
+                  />
+                </Box>
+              }
+            />
           </Tabs>
         </Paper>
 
