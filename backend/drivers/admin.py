@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Driver, DriverLog, DriverAuth
+from .models import Driver, DriverLog, DriverAuth, NewDriverApplication, WorkingDriver
 
 
 @admin.register(Driver)
@@ -255,3 +255,78 @@ class WorkingDriverAdmin(admin.ModelAdmin):
             count += 1
         self.message_user(request, f'Successfully issued all accessories to {count} drivers.')
     issue_all_accessories.short_description = 'Issue all accessories to selected drivers'
+
+
+# Register WorkingDriver without decorator to avoid conflicts
+class WorkingDriverAdmin(admin.ModelAdmin):
+    list_display = ['employee_id', 'full_name', 'employment_status', 'working_department', 'vehicle_type', 'joining_date', 'rating']
+    list_filter = ['employment_status', 'working_department', 'vehicle_type', 'company', 'joining_date']
+    search_fields = ['employee_id', 'full_name', 'phone_number', 'civil_id_number', 'license_number']
+    readonly_fields = ['age', 'documents_expiring_soon', 'all_accessories_issued', 'total_trips', 'total_earnings', 'created_at', 'updated_at']
+
+    fieldsets = (
+        ('Employment Info', {
+            'fields': ('employee_id', 'employment_status', 'working_department', 'joining_date', 'company')
+        }),
+        ('Personal Details', {
+            'fields': ('full_name', 'gender', 'date_of_birth', 'age', 'nationality', 'phone_number')
+        }),
+        ('Vehicle Information', {
+            'fields': ('vehicle_type', 'vehicle_model', 'vehicle_number', 'vehicle_expiry_date')
+        }),
+        ('Legal Documents', {
+            'fields': ('civil_id_number', 'civil_id_expiry', 'license_number', 'license_expiry_date', 'health_card_number', 'health_card_expiry')
+        }),
+        ('Document Photos', {
+            'fields': ('civil_id_front', 'civil_id_back', 'license_front', 'license_back', 'vehicle_documents', 'driver_photo', 'health_card_document')
+        }),
+        ('Vehicle Photos', {
+            'fields': ('vehicle_photo_front', 'vehicle_photo_back', 'vehicle_photo_left', 'vehicle_photo_right')
+        }),
+        ('Accessories & Uniform', {
+            'fields': ('t_shirt_issued', 'cap_issued', 'bag_issued', 'vest_issued', 'safety_equipment_issued', 'helmet_issued', 'cool_jacket_issued', 'water_bottle_issued', 'all_accessories_issued')
+        }),
+        ('Performance', {
+            'fields': ('total_trips', 'total_earnings', 'rating')
+        }),
+        ('System Info', {
+            'fields': ('created_by', 'created_at', 'updated_at', 'documents_expiring_soon'),
+            'classes': ('collapse',)
+        })
+    )
+
+    actions = ['activate_drivers', 'suspend_drivers', 'issue_all_accessories']
+
+    def activate_drivers(self, request, queryset):
+        count = queryset.update(employment_status='active')
+        self.message_user(request, f'Successfully activated {count} drivers.')
+    activate_drivers.short_description = 'Activate selected drivers'
+
+    def suspend_drivers(self, request, queryset):
+        count = queryset.update(employment_status='suspended')
+        self.message_user(request, f'Successfully suspended {count} drivers.')
+    suspend_drivers.short_description = 'Suspend selected drivers'
+
+    def issue_all_accessories(self, request, queryset):
+        count = 0
+        for driver in queryset:
+            driver.t_shirt_issued = True
+            driver.cap_issued = True
+            driver.bag_issued = True
+            driver.vest_issued = True
+            driver.safety_equipment_issued = True
+            driver.helmet_issued = True
+            driver.cool_jacket_issued = True
+            driver.water_bottle_issued = True
+            driver.save()
+            count += 1
+        self.message_user(request, f'Successfully issued all accessories to {count} drivers.')
+    issue_all_accessories.short_description = 'Issue all accessories to selected drivers'
+
+# Register the WorkingDriver admin
+try:
+    admin.site.register(WorkingDriver, WorkingDriverAdmin)
+except admin.sites.AlreadyRegistered:
+    pass
+
+

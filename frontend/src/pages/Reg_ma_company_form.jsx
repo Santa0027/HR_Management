@@ -11,7 +11,7 @@ const Input = ({ label, name, type = "text", value, onChange, placeholder, requi
     <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-2">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-    <input
+    <input 
       type={type}
       id={name}
       name={name}
@@ -21,7 +21,7 @@ const Input = ({ label, name, type = "text", value, onChange, placeholder, requi
       required={required}
       min={min}
       max={max}
-      className={`w-full px-4 py-3 border rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+      className={`w-full px-4 py-3 border rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${ 
         error ? 'border-red-300 bg-red-50' : 'border-gray-300'
       }`}
     />
@@ -45,7 +45,7 @@ const Textarea = ({ label, name, value, onChange, placeholder, required = false,
       onChange={onChange}
       placeholder={placeholder}
       required={required}
-      rows={rows}
+      rows={rows} 
       className={`w-full px-4 py-3 border rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical ${
         error ? 'border-red-300 bg-red-50' : 'border-gray-300'
       }`}
@@ -67,7 +67,7 @@ const FileUploadField = ({ label, name, file, onChange, required = false, error,
       <input
         type="text"
         readOnly
-        value={file ? file.name : 'No file chosen'}
+        value={file ? file.name : 'No file chosen'} 
         className={`flex-1 bg-gray-50 px-4 py-3 text-gray-700 rounded-l-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap ${
           error ? 'border-red-300 bg-red-50' : 'border-gray-300'
         }`}
@@ -77,7 +77,7 @@ const FileUploadField = ({ label, name, file, onChange, required = false, error,
         type="file"
         id={name}
         name={name}
-        onChange={onChange}
+        onChange={onChange} 
         className="hidden"
         accept={accept}
         required={required}
@@ -107,7 +107,7 @@ function CompanyRegistrationForm() {
 
   // Initial state for a single commission block (reusable structure)
   const initialCommissionState = {
-    id: null, // Add ID for existing commission details when in edit mode
+    id: null, // Add ID for existing commission details when in edit mode 
     commission_type: 'FIXED',
     rate_per_km: '',
     min_km: '',
@@ -131,8 +131,8 @@ function CompanyRegistrationForm() {
     ifsc_code: '',
     swift_code: '',
     iban_code: '',
-    // Vehicle-specific commission details, each being a distinct object
-    car_commission_details: { ...initialCommissionState },
+    // Vehicle-specific commission details, each being a distinct object 
+    car_commission_details: { ...initialCommissionState }, 
     bike_commission_details: { ...initialCommissionState },
     website: '',
     description: '',
@@ -154,7 +154,7 @@ function CompanyRegistrationForm() {
   const [loadingData, setLoadingData] = useState(false);
 
   // Helper to validate a single commission block
-  const validateCommissionBlock = (commissionData, prefix, errors) => {
+  const validateCommissionBlock = (commissionData, prefix, errors) => { 
     // Only validate if a commission type is explicitly selected
     if (commissionData.commission_type) {
       if (commissionData.commission_type === 'KM') {
@@ -188,7 +188,7 @@ function CompanyRegistrationForm() {
         .then(response => {
           const companyData = response.data;
 
-          // Helper to safely get commission data or default, including the ID
+          // Helper to safely get commission data or default, including the ID 
           const getCommissionOrDefault = (dataKey) => {
             const commission = companyData[dataKey];
             return {
@@ -212,8 +212,8 @@ function CompanyRegistrationForm() {
             contact_email: companyData.contact_email || '',
             contact_phone: companyData.contact_phone || '',
             company_logo: null, // File input requires null for default, not URL string.
-                                // If you want to show existing logo, you'd fetch its URL
-                                // and perhaps display it separately, but not in the file input.
+                                // If you want to show existing logo, you'd fetch its URL 
+                                // and perhaps display it separately, but not in the file input. 
             bank_name: companyData.bank_name || '',
             account_number: companyData.account_number || '',
             ifsc_code: companyData.ifsc_code || '',
@@ -250,7 +250,7 @@ function CompanyRegistrationForm() {
   const handleChange = (e) => {
     const { name, value, type, files, checked } = e.target;
 
-    // Clear validation error for this field
+    // Clear validation error for this field 
     if (validationErrors[name]) {
       setValidationErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -268,7 +268,7 @@ function CompanyRegistrationForm() {
         };
       }
 
-      // Handle nested commission details (car_commission_details, bike_commission_details)
+      // Handle nested commission details (car_commission_details, bike_commission_details) 
       const nameParts = name.split('.');
       if (nameParts.length > 1) {
         const [parent, child] = nameParts;
@@ -279,7 +279,7 @@ function CompanyRegistrationForm() {
             [child]: value,
           },
         };
-      } else {
+      } else { 
         // Handle top-level state updates
         return {
           ...prev,
@@ -306,13 +306,13 @@ function CompanyRegistrationForm() {
     if (!formData.city.trim()) errors.city = 'City is required.';
     if (!formData.country.trim()) errors.country = 'Country is required.';
 
-    // Validate Car Commission Details (only if a type is selected, otherwise it's optional)
+    // Validate Car Commission Details (only if a type is selected, otherwise it's optional) 
     if (formData.car_commission_details.commission_type) {
         validateCommissionBlock(formData.car_commission_details, 'car_commission_details', errors);
     }
 
-    // Validate Bike Commission Details (only if a type is selected)
-    if (formData.bike_commission_details.commission_type) {
+    // Validate Bike Commission Details (only if a type is selected) 
+    if (formData.bike_commission_details.commission_type) { 
         validateCommissionBlock(formData.bike_commission_details, 'bike_commission_details', errors);
     }
 
@@ -333,17 +333,17 @@ function CompanyRegistrationForm() {
 
     const formPayload = new FormData();
 
-    // Append top-level form data
+    // Append top-level form data 
     for (const key in formData) {
       if (key === 'company_logo' && formData[key] instanceof File) {
         formPayload.append(key, formData[key]);
       } else if (
         key === 'car_commission_details' ||
-        key === 'bike_commission_details'
+        key === 'bike_commission_details' 
       ) {
-        // Only append commission details if a commission type is selected
-        // Backend expects the object for related fields, not stringified JSON for FormData
-        // If updating, include the 'id' of the existing commission detail object
+        // Only append commission details if a commission type is selected 
+        // Backend expects the object for related fields, not stringified JSON for FormData 
+        // If updating, include the 'id' of the existing commission detail object 
         const commissionData = formData[key];
         if (commissionData.commission_type) { // Only send if user has selected a commission type
             // Append each field of the commission detail object
@@ -355,7 +355,7 @@ function CompanyRegistrationForm() {
                 }
             }
         }
-      } else if (key === 'accessories') {
+      } else if (key === 'accessories') { 
         // Accessories will be sent as a JSON string to match the JSONField in Django
         formPayload.append(key, JSON.stringify(formData[key]));
       }
@@ -367,7 +367,7 @@ function CompanyRegistrationForm() {
 
     try {
       if (isEditMode) {
-        await axiosInstance.patch(`/companies/${id}/`, formPayload, { // Use PATCH for partial updates
+        await axiosInstance.patch(`/companies/${id}/`, formPayload, { // Use PATCH for partial updates 
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         toast.success('Company updated successfully!');
@@ -381,15 +381,15 @@ function CompanyRegistrationForm() {
     } catch (error) {
       console.error('Submission Error:', error.response?.data || error);
       const backendErrors = error.response?.data;
-      let errorMessage = 'An error occurred during submission. Please check your input.';
+      let errorMessage = 'An error occurred during submission. Please check your input.'; 
 
       if (backendErrors) {
-        // General errors from backend
+        // General errors from backend 
         if (backendErrors.detail) {
             errorMessage = backendErrors.detail;
         } else if (backendErrors.non_field_errors) {
             errorMessage = backendErrors.non_field_errors.join(', ');
-        } else {
+        } else { 
             // Detailed field errors
             const fieldErrors = Object.keys(backendErrors).map(key => {
                 if (Array.isArray(backendErrors[key])) {
@@ -423,89 +423,114 @@ function CompanyRegistrationForm() {
     );
   }
 
-  // Component to render commission fields for a specific vehicle type
-  const CommissionSection = ({ title, commissionDetails, validationErrors, onChange, prefix }) => (
+  // Component to render commission fields for a specific vehicle type 
+  const CommissionSection = ({ title, bikeCommissionDetails, carCommissionDetails, validationErrors, onChange }) => (
     <div className="mb-6 p-5 bg-white rounded-lg border border-gray-200 shadow-sm">
-      <h4 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-        {title} Commission
-      </h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor={`${prefix}_commission_type`} className="block text-sm font-medium text-gray-700 mb-2">
-            Commission Type
-          </label>
-          <select
-            id={`${prefix}_commission_type`}
-            name={`${prefix}.commission_type`} // Nested name for handleChange
-            value={commissionDetails.commission_type}
-            onChange={onChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          >
-            <option value="FIXED">Fixed Commission</option>
-            <option value="KM">KM Based</option>
-            <option value="ORDER">Order Based</option>
-          </select>
+        <h4 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            {title} Commission
+        </h4>
+        <div className="space-y-6">
+            {/* Bike Commission Inputs */}
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50"> 
+                <h5 className="text-lg font-medium text-gray-700 mb-3">Bike Commission</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                        label="Bike Fixed Commission Amount"
+                        name="bike.fixed_commission"
+                        type="number"
+                        value={bikeCommissionDetails.fixed_commission}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.bike_fixed_commission}
+                    />
+                    <Input
+                        label="Bike Rate per KM"
+                        name="bike.rate_per_km"
+                        type="number"
+                        value={bikeCommissionDetails.rate_per_km}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.bike_rate_per_km}
+                    />
+                    <Input
+                        label="Bike Minimum KM"
+                        name="bike.min_km"
+                        type="number"
+                        value={bikeCommissionDetails.min_km}
+                        onChange={onChange}
+                        placeholder="0"
+                        min="0"
+                        error={validationErrors.bike_min_km}
+                    />
+                    <Input
+                        label="Bike Rate per Order"
+                        name="bike.rate_per_order"
+                        type="number"
+                        value={bikeCommissionDetails.rate_per_order}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.bike_rate_per_order}
+                    />
+                </div>
+            </div>
+
+            {/* Car Commission Inputs */} 
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h5 className="text-lg font-medium text-gray-700 mb-3">Car Commission</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                        label="Car Fixed Commission Amount"
+                        name="car.fixed_commission"
+                        type="number"
+                        value={carCommissionDetails.fixed_commission}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.car_fixed_commission}
+                    />
+                    <Input
+                        label="Car Rate per KM"
+                        name="car.rate_per_km"
+                        type="number"
+                        value={carCommissionDetails.rate_per_km}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.car_rate_per_km}
+                    />
+                    <Input
+                        label="Car Minimum KM"
+                        name="car.min_km"
+                        type="number"
+                        value={carCommissionDetails.min_km}
+                        onChange={onChange}
+                        placeholder="0"
+                        min="0"
+                        error={validationErrors.car_min_km}
+                    />
+                    <Input
+                        label="Car Rate per Order"
+                        name="car.rate_per_order"
+                        type="number"
+                        value={carCommissionDetails.rate_per_order}
+                        onChange={onChange}
+                        placeholder="0.00"
+                        min="0"
+                        error={validationErrors.car_rate_per_order}
+                    />
+                </div>
+            </div>
         </div>
-
-        {commissionDetails.commission_type === 'KM' && (
-          <>
-            <Input
-              label="Rate per KM"
-              name={`${prefix}.rate_per_km`}
-              type="number"
-              value={commissionDetails.rate_per_km}
-              onChange={onChange}
-              placeholder="0.00"
-              min="0"
-              error={validationErrors[`${prefix}_rate_per_km`]}
-            />
-            <Input
-              label="Minimum KM"
-              name={`${prefix}.min_km`}
-              type="number"
-              value={commissionDetails.min_km}
-              onChange={onChange}
-              placeholder="0"
-              min="0"
-              error={validationErrors[`${prefix}_min_km`]}
-            />
-          </>
-        )}
-
-        {commissionDetails.commission_type === 'ORDER' && (
-          <Input
-            label="Rate per Order"
-            name={`${prefix}.rate_per_order`}
-            type="number"
-            value={commissionDetails.rate_per_order}
-            onChange={onChange}
-            placeholder="0.00"
-            min="0"
-            error={validationErrors[`${prefix}_rate_per_order`]}
-          />
-        )}
-
-        {commissionDetails.commission_type === 'FIXED' && (
-          <Input
-            label="Fixed Commission Amount"
-            name={`${prefix}.fixed_commission`}
-            type="number"
-            value={commissionDetails.fixed_commission}
-            onChange={onChange}
-            placeholder="0.00"
-            min="0"
-            error={validationErrors[`${prefix}_fixed_commission`]}
-          />
-        )}
-      </div>
     </div>
-  );
-
+);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Enhanced Light Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm p-6">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm p-6"> 
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button
@@ -527,7 +552,7 @@ function CompanyRegistrationForm() {
 
       {/* Enhanced Form Container */}
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto"> 
           <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-gray-200 overflow-hidden">
             {/* Form Header */}
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-8 text-white">
@@ -540,7 +565,7 @@ function CompanyRegistrationForm() {
             </div>
 
             {/* Enhanced Form Content */}
-            <form onSubmit={handleSubmit} className="p-8">
+            <form onSubmit={handleSubmit} className="p-8"> 
               {/* Basic Company Information */}
               <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
                 <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
@@ -723,25 +748,17 @@ function CompanyRegistrationForm() {
               </div>
 
               {/* Vehicle Specific Commission Sections */}
-              <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+              <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-sm"> 
                 <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
                   Vehicle-Specific Commissions
                 </h3>
 
                 <CommissionSection
-                  title="Car"
-                  commissionDetails={formData.car_commission_details}
-                  validationErrors={validationErrors}
-                  onChange={handleChange}
-                  prefix="car_commission_details"
-                />
-
-                <CommissionSection
                   title="Bike"
-                  commissionDetails={formData.bike_commission_details}
+                  bikeCommissionDetails={formData.bike_commission_details}
+                  carCommissionDetails={formData.car_commission_details}
                   validationErrors={validationErrors}
                   onChange={handleChange}
-                  prefix="bike_commission_details"
                 />
               </div>
 
@@ -867,7 +884,7 @@ function CompanyRegistrationForm() {
               </div>
 
               {/* Documents Section */}
-              <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+              <div className="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-100 shadow-sm"> 
                 <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
                   Company Documents
                 </h3>
@@ -883,7 +900,7 @@ function CompanyRegistrationForm() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200"> 
                 <button
                   type="button"
                   onClick={() => navigate('/company-list')}

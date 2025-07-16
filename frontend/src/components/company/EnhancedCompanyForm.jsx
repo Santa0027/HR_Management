@@ -42,12 +42,26 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
     contact_email: '',
     contact_person: '',
     registration_number: '',
+
+    // Car commission fields
+    car_commission_type: 'FIXED',
+    car_rate_per_km: '',
+    car_min_km: '',
+    car_rate_per_order: '',
+    car_fixed_commission: '',
+
+    // Bike commission fields
+    bike_commission_type: 'FIXED',
+    bike_rate_per_km: '',
+    bike_min_km: '',
+    bike_rate_per_order: '',
+    bike_fixed_commission: '',
   });
 
   const [companyAccessories, setCompanyAccessories] = useState([]);
   const [errors, setErrors] = useState({});
 
-  const steps = ['Company Information', 'Contact Details', 'Accessories Configuration'];
+  const steps = ['Company Information', 'Contact Details', 'Commission Configuration', 'Accessories Configuration'];
 
   const accessoryOptions = [
     {
@@ -223,7 +237,28 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
         if (!formData.contact_person) newErrors.contact_person = 'Contact person is required';
         if (!formData.address) newErrors.address = 'Address is required';
         break;
-      case 2: // Accessories - no validation needed
+      case 2: // Commission Configuration
+        // Validate car commission
+        if (formData.car_commission_type === 'KM') {
+          if (!formData.car_rate_per_km) newErrors.car_rate_per_km = 'Car rate per KM is required';
+          if (!formData.car_min_km) newErrors.car_min_km = 'Car minimum KM is required';
+        } else if (formData.car_commission_type === 'ORDER') {
+          if (!formData.car_rate_per_order) newErrors.car_rate_per_order = 'Car rate per order is required';
+        } else if (formData.car_commission_type === 'FIXED') {
+          if (!formData.car_fixed_commission) newErrors.car_fixed_commission = 'Car fixed commission is required';
+        }
+
+        // Validate bike commission
+        if (formData.bike_commission_type === 'KM') {
+          if (!formData.bike_rate_per_km) newErrors.bike_rate_per_km = 'Bike rate per KM is required';
+          if (!formData.bike_min_km) newErrors.bike_min_km = 'Bike minimum KM is required';
+        } else if (formData.bike_commission_type === 'ORDER') {
+          if (!formData.bike_rate_per_order) newErrors.bike_rate_per_order = 'Bike rate per order is required';
+        } else if (formData.bike_commission_type === 'FIXED') {
+          if (!formData.bike_fixed_commission) newErrors.bike_fixed_commission = 'Bike fixed commission is required';
+        }
+        break;
+      case 3: // Accessories - no validation needed
         break;
     }
     
@@ -361,6 +396,189 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
           error={!!errors.address}
           helperText={errors.address}
         />
+      </Grid>
+    </Grid>
+  );
+
+  const renderCommissionConfiguration = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12}>
+        <Typography variant="h6" gutterBottom>
+          💰 Commission Configuration
+        </Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Configure commission rates for different vehicle types. This will be displayed to drivers during registration.
+        </Alert>
+      </Grid>
+
+      {/* Car Commission Configuration */}
+      <Grid item xs={12}>
+        <Paper sx={{ p: 3, mb: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+          <Typography variant="h6" gutterBottom>
+            🚗 Car Commission Settings
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: 'inherit' }}>Commission Type</InputLabel>
+                <Select
+                  value={formData.car_commission_type}
+                  onChange={(e) => handleInputChange('car_commission_type', e.target.value)}
+                  label="Commission Type"
+                  sx={{ color: 'inherit', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' } }}
+                >
+                  <MenuItem value="KM">KM Based</MenuItem>
+                  <MenuItem value="ORDER">Order Based</MenuItem>
+                  <MenuItem value="FIXED">Fixed Commission</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {formData.car_commission_type === 'KM' && (
+              <>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Rate per KM"
+                    type="number"
+                    value={formData.car_rate_per_km}
+                    onChange={(e) => handleInputChange('car_rate_per_km', e.target.value)}
+                    error={!!errors.car_rate_per_km}
+                    helperText={errors.car_rate_per_km}
+                    sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Minimum KM"
+                    type="number"
+                    value={formData.car_min_km}
+                    onChange={(e) => handleInputChange('car_min_km', e.target.value)}
+                    error={!!errors.car_min_km}
+                    helperText={errors.car_min_km}
+                    sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {formData.car_commission_type === 'ORDER' && (
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Rate per Order"
+                  type="number"
+                  value={formData.car_rate_per_order}
+                  onChange={(e) => handleInputChange('car_rate_per_order', e.target.value)}
+                  error={!!errors.car_rate_per_order}
+                  helperText={errors.car_rate_per_order}
+                  sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                />
+              </Grid>
+            )}
+
+            {formData.car_commission_type === 'FIXED' && (
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Fixed Commission Amount"
+                  type="number"
+                  value={formData.car_fixed_commission}
+                  onChange={(e) => handleInputChange('car_fixed_commission', e.target.value)}
+                  error={!!errors.car_fixed_commission}
+                  helperText={errors.car_fixed_commission}
+                  sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                />
+              </Grid>
+            )}
+          </Grid>
+        </Paper>
+      </Grid>
+
+      {/* Bike Commission Configuration */}
+      <Grid item xs={12}>
+        <Paper sx={{ p: 3, bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
+          <Typography variant="h6" gutterBottom>
+            🏍️ Bike Commission Settings
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ color: 'inherit' }}>Commission Type</InputLabel>
+                <Select
+                  value={formData.bike_commission_type}
+                  onChange={(e) => handleInputChange('bike_commission_type', e.target.value)}
+                  label="Commission Type"
+                  sx={{ color: 'inherit', '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' } }}
+                >
+                  <MenuItem value="KM">KM Based</MenuItem>
+                  <MenuItem value="ORDER">Order Based</MenuItem>
+                  <MenuItem value="FIXED">Fixed Commission</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {formData.bike_commission_type === 'KM' && (
+              <>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Rate per KM"
+                    type="number"
+                    value={formData.bike_rate_per_km}
+                    onChange={(e) => handleInputChange('bike_rate_per_km', e.target.value)}
+                    error={!!errors.bike_rate_per_km}
+                    helperText={errors.bike_rate_per_km}
+                    sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Minimum KM"
+                    type="number"
+                    value={formData.bike_min_km}
+                    onChange={(e) => handleInputChange('bike_min_km', e.target.value)}
+                    error={!!errors.bike_min_km}
+                    helperText={errors.bike_min_km}
+                    sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {formData.bike_commission_type === 'ORDER' && (
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Rate per Order"
+                  type="number"
+                  value={formData.bike_rate_per_order}
+                  onChange={(e) => handleInputChange('bike_rate_per_order', e.target.value)}
+                  error={!!errors.bike_rate_per_order}
+                  helperText={errors.bike_rate_per_order}
+                  sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                />
+              </Grid>
+            )}
+
+            {formData.bike_commission_type === 'FIXED' && (
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Fixed Commission Amount"
+                  type="number"
+                  value={formData.bike_fixed_commission}
+                  onChange={(e) => handleInputChange('bike_fixed_commission', e.target.value)}
+                  error={!!errors.bike_fixed_commission}
+                  helperText={errors.bike_fixed_commission}
+                  sx={{ '& .MuiInputLabel-root': { color: 'inherit' }, '& .MuiOutlinedInput-root': { color: 'inherit' } }}
+                />
+              </Grid>
+            )}
+          </Grid>
+        </Paper>
       </Grid>
     </Grid>
   );
@@ -519,6 +737,8 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
       case 1:
         return renderContactDetails();
       case 2:
+        return renderCommissionConfiguration();
+      case 3:
         return renderAccessoriesConfiguration();
       default:
         return null;

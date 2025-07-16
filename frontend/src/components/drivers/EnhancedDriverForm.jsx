@@ -108,7 +108,8 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
   });
 
   const [companies, setCompanies] = useState([]);
-  const [selectedCompanyAccessories, setSelectedCompanyAccessories] = useState({});
+  const [selectedCompanyAccessories, setSelectedCompanyAccessories] = useState([]);
+  const [selectedCompanyCommission, setSelectedCompanyCommission] = useState(null);
   const [accessoryCounts, setAccessoryCounts] = useState({});
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -192,9 +193,9 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/companies/');
+      const response = await fetch('/api/companies-for-drivers/');
       const data = await response.json();
-      setCompanies(data.results || data);
+      setCompanies(data);
     } catch (error) {
       console.error('Error fetching companies:', error);
     }
@@ -204,20 +205,39 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     try {
       // Find the selected company
       const selectedCompany = companies.find(c => c.company_name === companyName);
-      if (selectedCompany && selectedCompany.employee_accessories) {
-        setSelectedCompanyAccessories(selectedCompany.employee_accessories);
+      if (selectedCompany) {
+        // Set accessories
+        if (selectedCompany.employee_accessories) {
+          setSelectedCompanyAccessories(selectedCompany.employee_accessories);
 
-        // Initialize accessory counts with default values
-        const initialCounts = {};
-        selectedCompany.employee_accessories.forEach(accessory => {
-          if (accessory.enabled) {
-            initialCounts[accessory.name] = accessory.default_quantity || 0;
-          }
+          // Initialize accessory counts with default values
+          const initialCounts = {};
+          selectedCompany.employee_accessories.forEach(accessory => {
+            if (accessory.enabled) {
+              initialCounts[accessory.name] = accessory.default_quantity || 0;
+            }
+          });
+          setAccessoryCounts(initialCounts);
+        } else {
+          setSelectedCompanyAccessories([]);
+          setAccessoryCounts({});
+        }
+
+        // Set commission info based on vehicle type
+        const vehicleType = formData.vehicle_type || 'car';
+        const commissionInfo = vehicleType.toLowerCase() === 'bike'
+          ? selectedCompany.bike_commission_info
+          : selectedCompany.car_commission_info;
+
+        setSelectedCompanyCommission({
+          company_name: companyName,
+          vehicle_type: vehicleType,
+          commission: commissionInfo
         });
-        setAccessoryCounts(initialCounts);
       } else {
         setSelectedCompanyAccessories([]);
         setAccessoryCounts({});
+        setSelectedCompanyCommission(null);
       }
     } catch (error) {
       console.error('Error handling company selection:', error);
@@ -753,7 +773,13 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 <InputLabel>Vehicle Type *</InputLabel>
                 <Select
                   value={formData.vehicle_type}
-                  onChange={(e) => handleInputChange('vehicle_type', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('vehicle_type', e.target.value);
+                    // Update commission info when vehicle type changes
+                    if (formData.company) {
+                      handleCompanySelection(formData.company);
+                    }
+                  }}
                   label="Vehicle Type *"
                 >
                   {vehicleTypeOptions.map(option => (
@@ -764,6 +790,48 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Commission Information Display */}
+            {selectedCompanyCommission && formData.vehicle_type && (
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                  <Typography variant="h6" gutterBottom>
+                    💰 Commission Information - {selectedCompanyCommission.company_name}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        Vehicle Type: {formData.vehicle_type.toUpperCase()}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        Commission Type: {selectedCompanyCommission.commission?.type || 'Not Set'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      {selectedCompanyCommission.commission?.type === 'KM' && (
+                        <Typography variant="body2">
+                          Rate: {selectedCompanyCommission.commission.rate_per_km || 0} per KM
+                          {selectedCompanyCommission.commission.min_km && ` (Min: ${selectedCompanyCommission.commission.min_km} KM)`}
+                        </Typography>
+                      )}
+                      {selectedCompanyCommission.commission?.type === 'ORDER' && (
+                        <Typography variant="body2">
+                          Rate: {selectedCompanyCommission.commission.rate_per_order || 0} per Order
+                        </Typography>
+                      )}
+                      {selectedCompanyCommission.commission?.type === 'FIXED' && (
+                        <Typography variant="body2">
+                          Fixed Amount: {selectedCompanyCommission.commission.fixed_commission || 0}
+                        </Typography>
+                      )}
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            )}
+
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
