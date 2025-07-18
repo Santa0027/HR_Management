@@ -7,17 +7,18 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
 
+    # Authentication endpoints
+    path('', include('core.urls')),  # This includes api/token/
 
-    # Other app routes
-    path('', include('drivers.urls')),  # if you have app-specific URLs
-    path('', include('core.urls')),
+    # API routes with /api/ prefix
+    path('', include('drivers.urls')),
     path('', include('vehicle.urls')),
     path('', include('company.urls')),
     path('', include('usermanagement.urls')),
     path('hr/', include('hr.urls')),
-    path('accounting/', include('accounting.urls')),  # Add accounting URLs
-    path('trips/', include('trips.urls')),  # Add trips URLs
-
+    path('accounting/', include('accounting.urls')),
+    path('trips/', include('trips.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

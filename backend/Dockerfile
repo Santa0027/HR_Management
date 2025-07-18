@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim-bullseye
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -12,25 +12,36 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        build-essential \
-        libpq-dev \
-        gettext \
-        curl \
+    postgresql-client \
+    build-essential \
+    libpq-dev \
+    gettext \
+    curl \
+    netcat-openbsd \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    libxml2 \
+    libgirepository-1.0-1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements.txt separately for better layer caching
 COPY requirements.txt /app/
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
+# Copy all project files
 COPY . /app/
 
 # Create directories for media and static files
 RUN mkdir -p /app/media /app/staticfiles
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Collect static files (ensure settings are correct and dependencies are installed)
+RUN python manage.py collectstatic --noinput || echo "Collectstatic failed during build, will retry at runtime if needed"
 
 # Create entrypoint script
 COPY docker-entrypoint.sh /app/

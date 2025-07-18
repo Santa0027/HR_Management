@@ -3,7 +3,7 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import dayjs from 'dayjs';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000/';
 const FRONTEND_LOGIN_URL = '/login';
 
 const axiosInstance = axios.create({

@@ -485,3 +485,14 @@ def submit_driver_form(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_companies_with_accessories(request):
+    """Get companies with their accessories for driver form"""
+    from company.models import Company
+    from company.serializers import CompanySerializer
+    companies = Company.objects.all()
+    serializer = CompanySerializer(companies, many=True)
+    return Response(serializer.data)

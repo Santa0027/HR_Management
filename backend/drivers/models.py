@@ -282,6 +282,16 @@ class NewDriverApplication(models.Model):
     vehicle_destination = models.CharField(max_length=200, blank=True)
     kuwait_entry_date = models.DateField()
 
+    # Employee Accessories/Uniform - Quantities requested during application
+    t_shirt_quantity = models.IntegerField(default=0, help_text="Number of T-shirts requested")
+    cap_quantity = models.IntegerField(default=0, help_text="Number of caps requested")
+    jackets_quantity = models.IntegerField(default=0, help_text="Number of jackets requested")
+    bag_quantity = models.IntegerField(default=0, help_text="Number of bags requested")
+    wristbands_quantity = models.IntegerField(default=0, help_text="Number of wristbands requested")
+    water_bottle_quantity = models.IntegerField(default=0, help_text="Number of water bottles requested")
+    safety_gear_quantity = models.IntegerField(default=0, help_text="Number of safety gear items requested")
+    helmet_quantity = models.IntegerField(default=0, help_text="Number of helmets requested")
+
     # Nominee Details
     nominee_name = models.CharField(max_length=255)
     nominee_relationship = models.CharField(max_length=20, choices=NOMINEE_RELATIONSHIP_CHOICES)
@@ -404,15 +414,15 @@ class WorkingDriver(models.Model):
     employment_status = models.CharField(max_length=20, choices=EMPLOYMENT_STATUS_CHOICES, default='active')
     joining_date = models.DateField()
 
-    # Employee Accessories/Uniform
-    t_shirt_issued = models.BooleanField(default=False)
-    cap_issued = models.BooleanField(default=False)
-    bag_issued = models.BooleanField(default=False)
-    vest_issued = models.BooleanField(default=False)
-    safety_equipment_issued = models.BooleanField(default=False)
-    helmet_issued = models.BooleanField(default=False)
-    cool_jacket_issued = models.BooleanField(default=False)
-    water_bottle_issued = models.BooleanField(default=False)
+    # Employee Accessories/Uniform - Quantities entered during driver registration
+    t_shirt_quantity = models.IntegerField(default=0, help_text="Number of T-shirts assigned to driver")
+    cap_quantity = models.IntegerField(default=0, help_text="Number of caps assigned to driver")
+    jackets_quantity = models.IntegerField(default=0, help_text="Number of jackets assigned to driver")
+    bag_quantity = models.IntegerField(default=0, help_text="Number of bags assigned to driver")
+    wristbands_quantity = models.IntegerField(default=0, help_text="Number of wristbands assigned to driver")
+    water_bottle_quantity = models.IntegerField(default=0, help_text="Number of water bottles assigned to driver")
+    safety_gear_quantity = models.IntegerField(default=0, help_text="Number of safety gear items assigned to driver")
+    helmet_quantity = models.IntegerField(default=0, help_text="Number of helmets assigned to driver")
 
     # Accessory Details
     t_shirt_size = models.CharField(max_length=5, choices=[
@@ -477,133 +487,3 @@ class WorkingDriver(models.Model):
         return all(mandatory_accessories)
 
 
-class WorkingDriver(models.Model):
-    """Working driver with employment details and document management"""
-
-    EMPLOYMENT_STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('inactive', 'Inactive'),
-        ('suspended', 'Suspended'),
-        ('terminated', 'Terminated'),
-    ]
-
-    DEPARTMENT_CHOICES = [
-        ('delivery', 'Delivery'),
-        ('transport', 'Transport'),
-        ('logistics', 'Logistics'),
-        ('maintenance', 'Maintenance'),
-        ('emergency', 'Emergency Services'),
-    ]
-
-    # Basic Information
-    employee_id = models.CharField(max_length=20, unique=True)
-    full_name = models.CharField(max_length=255)
-    gender = models.CharField(max_length=10, choices=NewDriverApplication.GENDER_CHOICES)
-    date_of_birth = models.DateField()
-    nationality = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20)
-
-    # Vehicle Information
-    vehicle_type = models.CharField(max_length=20, choices=NewDriverApplication.VEHICLE_TYPE_CHOICES)
-    vehicle_model = models.CharField(max_length=100)
-    vehicle_number = models.CharField(max_length=50, blank=True)
-    vehicle_expiry_date = models.DateField(null=True, blank=True)
-
-    # Employment Details
-    employment_status = models.CharField(max_length=20, choices=EMPLOYMENT_STATUS_CHOICES, default='active')
-    working_department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
-    joining_date = models.DateField(auto_now_add=True)
-
-    # Legal Documents
-    civil_id_number = models.CharField(max_length=50)
-    civil_id_expiry = models.DateField()
-    license_number = models.CharField(max_length=50)
-    license_expiry_date = models.DateField()
-    health_card_number = models.CharField(max_length=50, blank=True)
-    health_card_expiry = models.DateField(null=True, blank=True)
-
-    # Document Photos
-    civil_id_front = models.ImageField(upload_to='working_drivers/civil_id/', null=True, blank=True)
-    civil_id_back = models.ImageField(upload_to='working_drivers/civil_id/', null=True, blank=True)
-    license_front = models.ImageField(upload_to='working_drivers/license/', null=True, blank=True)
-    license_back = models.ImageField(upload_to='working_drivers/license/', null=True, blank=True)
-    vehicle_documents = models.FileField(upload_to='working_drivers/vehicle_docs/', null=True, blank=True)
-    driver_photo = models.ImageField(upload_to='working_drivers/photos/', null=True, blank=True)
-    health_card_document = models.FileField(upload_to='working_drivers/health/', null=True, blank=True)
-
-    # Vehicle Photos
-    vehicle_photo_front = models.ImageField(upload_to='working_drivers/vehicle_photos/', null=True, blank=True)
-    vehicle_photo_back = models.ImageField(upload_to='working_drivers/vehicle_photos/', null=True, blank=True)
-    vehicle_photo_left = models.ImageField(upload_to='working_drivers/vehicle_photos/', null=True, blank=True)
-    vehicle_photo_right = models.ImageField(upload_to='working_drivers/vehicle_photos/', null=True, blank=True)
-
-    # Accessories & Uniform
-    t_shirt_issued = models.BooleanField(default=False)
-    cap_issued = models.BooleanField(default=False)
-    bag_issued = models.BooleanField(default=False)
-    vest_issued = models.BooleanField(default=False)
-    safety_equipment_issued = models.BooleanField(default=False)
-    helmet_issued = models.BooleanField(default=False)
-    cool_jacket_issued = models.BooleanField(default=False)
-    water_bottle_issued = models.BooleanField(default=False)
-
-    # Performance Metrics
-    total_trips = models.IntegerField(default=0)
-    total_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
-
-    # Company relationship
-    company = models.ForeignKey('company.Company', on_delete=models.CASCADE, related_name='working_drivers')
-
-    # Metadata
-    created_by = models.CharField(max_length=100, default='System')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Working Driver"
-        verbose_name_plural = "Working Drivers"
-        ordering = ['-joining_date']
-
-    def __str__(self):
-        return f"{self.employee_id} - {self.full_name}"
-
-    @property
-    def age(self):
-        """Calculate age from date of birth"""
-        if self.date_of_birth:
-            from datetime import date
-            today = date.today()
-            return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
-        return None
-
-    @property
-    def documents_expiring_soon(self):
-        """Check if any documents are expiring within 30 days"""
-        from datetime import date, timedelta
-        thirty_days = date.today() + timedelta(days=30)
-
-        expiring = []
-        if self.civil_id_expiry and self.civil_id_expiry <= thirty_days:
-            expiring.append('Civil ID')
-        if self.license_expiry_date and self.license_expiry_date <= thirty_days:
-            expiring.append('License')
-        if self.vehicle_expiry_date and self.vehicle_expiry_date <= thirty_days:
-            expiring.append('Vehicle Registration')
-        if self.health_card_expiry and self.health_card_expiry <= thirty_days:
-            expiring.append('Health Card')
-
-        return expiring
-
-    @property
-    def all_accessories_issued(self):
-        """Check if all mandatory accessories are issued"""
-        mandatory_accessories = [
-            self.t_shirt_issued,
-            self.cap_issued,
-            self.bag_issued,
-            self.vest_issued,
-            self.safety_equipment_issued,
-            self.helmet_issued,
-        ]
-        return all(mandatory_accessories)

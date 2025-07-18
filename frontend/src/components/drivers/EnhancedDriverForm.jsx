@@ -15,6 +15,7 @@ import {
   Select,
   MenuItem,
   FormControlLabel,
+  FormHelperText,
   Switch,
   Chip,
   Alert,
@@ -36,6 +37,92 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
+// Country and City options
+const COUNTRIES = [
+  { value: 'Kuwait', label: 'Kuwait' },
+  { value: 'Saudi Arabia', label: 'Saudi Arabia' },
+  { value: 'UAE', label: 'United Arab Emirates' },
+  { value: 'Qatar', label: 'Qatar' },
+  { value: 'Bahrain', label: 'Bahrain' },
+  { value: 'Oman', label: 'Oman' },
+  { value: 'India', label: 'India' },
+  { value: 'Pakistan', label: 'Pakistan' },
+  { value: 'Bangladesh', label: 'Bangladesh' },
+  { value: 'Philippines', label: 'Philippines' },
+  { value: 'Egypt', label: 'Egypt' },
+  { value: 'Jordan', label: 'Jordan' },
+  { value: 'Lebanon', label: 'Lebanon' },
+  { value: 'Syria', label: 'Syria' },
+];
+
+const KUWAIT_CITIES = [
+  { value: 'Kuwait City', label: 'Kuwait City' },
+  { value: 'Hawalli', label: 'Hawalli' },
+  { value: 'Farwaniya', label: 'Farwaniya' },
+  { value: 'Ahmadi', label: 'Ahmadi' },
+  { value: 'Jahra', label: 'Jahra' },
+  { value: 'Mubarak Al-Kabeer', label: 'Mubarak Al-Kabeer' },
+  { value: 'Salmiya', label: 'Salmiya' },
+  { value: 'Fahaheel', label: 'Fahaheel' },
+  { value: 'Mangaf', label: 'Mangaf' },
+  { value: 'Mahboula', label: 'Mahboula' },
+  { value: 'Fintas', label: 'Fintas' },
+  { value: 'Khaitan', label: 'Khaitan' },
+  { value: 'Jleeb Al-Shuyoukh', label: 'Jleeb Al-Shuyoukh' },
+  { value: 'Abraq Khaitan', label: 'Abraq Khaitan' },
+];
+
+const getCitiesForCountry = (country) => {
+  switch (country) {
+    case 'Kuwait':
+      return KUWAIT_CITIES;
+    default:
+      return [{ value: 'Other', label: 'Other' }];
+  }
+};
+
+// Phone Input Component with Kuwait default
+const PhoneInput = ({ label, value, onChange, error, helperText, ...props }) => {
+  const handlePhoneChange = (e) => {
+    let phoneValue = e.target.value;
+
+    // If user starts typing without +965, add it automatically
+    if (phoneValue && !phoneValue.startsWith('+965')) {
+      phoneValue = '+965' + phoneValue.replace(/^\+?965?/, '');
+    }
+
+    // Create synthetic event
+    const syntheticEvent = {
+      target: {
+        value: phoneValue
+      }
+    };
+
+    onChange(syntheticEvent);
+  };
+
+  return (
+    <TextField
+      {...props}
+      label={label}
+      value={value || '+965'}
+      onChange={handlePhoneChange}
+      error={error}
+      helperText={helperText}
+      placeholder="+96512345678"
+      slotProps={{
+        input: {
+          startAdornment: (
+            <Box sx={{ mr: 1, color: 'text.secondary', fontSize: '0.875rem' }}>
+              🇰🇼
+            </Box>
+          ),
+        },
+      }}
+    />
+  );
+};
+
 const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
   const [driverType, setDriverType] = useState('new'); // 'new' or 'working'
   const [activeStep, setActiveStep] = useState(0);
@@ -45,7 +132,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     gender: '',
     date_of_birth: null,
     nationality: '',
-    phone_number: '',
+    phone_number: '+965',
     vehicle_type: '',
     
     // New Driver specific fields
@@ -61,17 +148,27 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
     marital_status: '',
     blood_group: '',
     home_country_address: '',
-    home_country_phone: '',
+    home_country_phone: '+965',
     nominee_name: '',
     nominee_relationship: '',
-    nominee_phone: '',
+    nominee_phone: '+965',
     nominee_address: '',
     t_shirt_size: '',
     weight: '',
     height: '',
     kuwait_entry_date: null,
     vehicle_destination: '',
-    
+
+    // Accessory Quantities (based on selected company)
+    t_shirt_quantity: 0,
+    cap_quantity: 0,
+    jackets_quantity: 0,
+    bag_quantity: 0,
+    wristbands_quantity: 0,
+    water_bottle_quantity: 0,
+    safety_gear_quantity: 0,
+    helmet_quantity: 0,
+
     // Working Driver specific fields
     vehicle_model: '',
     employee_id: '',
@@ -108,9 +205,12 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
   });
 
   const [companies, setCompanies] = useState([]);
-  const [selectedCompanyAccessories, setSelectedCompanyAccessories] = useState([]);
-  const [selectedCompanyCommission, setSelectedCompanyCommission] = useState(null);
-  const [accessoryCounts, setAccessoryCounts] = useState({});
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [dropdownOptions, setDropdownOptions] = useState({
+    countries: [],
+    cities: {},
+    vehicle_types: []
+  });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -193,61 +293,52 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/companies-for-drivers/');
-      const data = await response.json();
-      setCompanies(data);
+      // Fetch companies with accessories
+      const companiesResponse = await fetch('http://127.0.0.1:8000/companies-with-accessories/');
+      const companiesData = await companiesResponse.json();
+      setCompanies(companiesData);
+
+      // Fetch dropdown options
+      const dropdownResponse = await fetch('http://127.0.0.1:8000/dropdown-options/');
+      const dropdownData = await dropdownResponse.json();
+      setDropdownOptions(dropdownData);
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      console.error('Error fetching data:', error);
     }
   };
 
   const handleCompanySelection = async (companyName) => {
     try {
       // Find the selected company
-      const selectedCompany = companies.find(c => c.company_name === companyName);
-      if (selectedCompany) {
-        // Set accessories
-        if (selectedCompany.employee_accessories) {
-          setSelectedCompanyAccessories(selectedCompany.employee_accessories);
+      const company = companies.find(c => c.company_name === companyName);
+      if (company) {
+        setSelectedCompany(company);
 
-          // Initialize accessory counts with default values
-          const initialCounts = {};
-          selectedCompany.employee_accessories.forEach(accessory => {
-            if (accessory.enabled) {
-              initialCounts[accessory.name] = accessory.default_quantity || 0;
-            }
+        // Initialize accessory quantities to 0 for all available accessories
+        const accessoryQuantities = {};
+        if (company.employee_accessories) {
+          company.employee_accessories.forEach(accessory => {
+            const fieldName = accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity';
+            accessoryQuantities[fieldName] = 0;
           });
-          setAccessoryCounts(initialCounts);
-        } else {
-          setSelectedCompanyAccessories([]);
-          setAccessoryCounts({});
         }
 
-        // Set commission info based on vehicle type
-        const vehicleType = formData.vehicle_type || 'car';
-        const commissionInfo = vehicleType.toLowerCase() === 'bike'
-          ? selectedCompany.bike_commission_info
-          : selectedCompany.car_commission_info;
-
-        setSelectedCompanyCommission({
-          company_name: companyName,
-          vehicle_type: vehicleType,
-          commission: commissionInfo
-        });
-      } else {
-        setSelectedCompanyAccessories([]);
-        setAccessoryCounts({});
-        setSelectedCompanyCommission(null);
+        // Update form data with accessory quantities
+        setFormData(prev => ({
+          ...prev,
+          company: companyName,
+          ...accessoryQuantities
+        }));
       }
     } catch (error) {
       console.error('Error handling company selection:', error);
     }
   };
 
-  const handleAccessoryCountChange = (accessoryKey, newCount) => {
-    setAccessoryCounts(prev => ({
+  const handleAccessoryQuantityChange = (accessoryKey, newQuantity) => {
+    setFormData(prev => ({
       ...prev,
-      [accessoryKey]: Math.max(0, newCount)
+      [accessoryKey]: Math.max(0, newQuantity)
     }));
   };
 
@@ -540,14 +631,21 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Nationality *"
-                value={formData.nationality}
-                onChange={(e) => handleInputChange('nationality', e.target.value)}
-                error={!!errors.nationality}
-                helperText={errors.nationality}
-              />
+              <FormControl fullWidth error={!!errors.nationality}>
+                <InputLabel>Nationality *</InputLabel>
+                <Select
+                  value={formData.nationality}
+                  onChange={(e) => handleInputChange('nationality', e.target.value)}
+                  label="Nationality *"
+                >
+                  {dropdownOptions.countries.map((country) => (
+                    <MenuItem key={country.value} value={country.value}>
+                      {country.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.nationality && <FormHelperText>{errors.nationality}</FormHelperText>}
+              </FormControl>
             </Grid>
           </Grid>
         );
@@ -562,7 +660,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
+              <PhoneInput
                 fullWidth
                 label="Phone Number *"
                 value={formData.phone_number}
@@ -572,7 +670,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
+              <PhoneInput
                 fullWidth
                 label="Home Country Phone"
                 value={formData.home_country_phone}
@@ -580,14 +678,21 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="City *"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                error={!!errors.city}
-                helperText={errors.city}
-              />
+              <FormControl fullWidth error={!!errors.city}>
+                <InputLabel>City *</InputLabel>
+                <Select
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  label="City *"
+                >
+                  {(dropdownOptions.cities['Kuwait'] || dropdownOptions.cities.default || []).map(city => (
+                    <MenuItem key={city.value} value={city.value}>
+                      {city.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.city && <FormHelperText>{errors.city}</FormHelperText>}
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -720,7 +825,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
+              <PhoneInput
                 fullWidth
                 label="Nominee Phone"
                 value={formData.nominee_phone}
@@ -782,7 +887,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                   }}
                   label="Vehicle Type *"
                 >
-                  {vehicleTypeOptions.map(option => (
+                  {dropdownOptions.vehicle_types.map(option => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>
@@ -876,14 +981,14 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               )}
             </Grid>
 
-            {formData.company && selectedCompanyAccessories.length > 0 ? (
+            {formData.company && selectedCompany && selectedCompany.employee_accessories ? (
               <Grid item xs={12}>
                 <Paper sx={{ p: 2 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     Available Accessories from {formData.company}
                   </Typography>
                   <Grid container spacing={2}>
-                    {selectedCompanyAccessories
+                    {selectedCompany.employee_accessories
                       .filter(accessory => accessory.enabled)
                       .map((accessory, index) => (
                         <Grid item xs={12} sm={6} md={4} key={index}>
@@ -906,9 +1011,6 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                             <Typography variant="caption" display="block" sx={{ mb: 1, opacity: 0.8 }}>
                               {accessory.description}
                             </Typography>
-                            <Typography variant="caption" color="inherit" display="block" sx={{ mb: 2 }}>
-                              Company Default: {accessory.default_quantity}
-                            </Typography>
                             <Typography variant="caption" display="block" gutterBottom>
                               Quantity Needed:
                             </Typography>
@@ -916,8 +1018,11 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                               <Button
                                 size="small"
                                 variant="outlined"
-                                onClick={() => handleAccessoryCountChange(accessory.name, (accessoryCounts[accessory.name] || accessory.default_quantity) - 1)}
-                                disabled={(accessoryCounts[accessory.name] || accessory.default_quantity) <= 0}
+                                onClick={() => {
+                                  const fieldName = accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity';
+                                  handleAccessoryQuantityChange(fieldName, (formData[fieldName] || 0) - 1);
+                                }}
+                                disabled={(formData[accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity'] || 0) <= 0}
                                 sx={{
                                   bgcolor: 'rgba(255,255,255,0.2)',
                                   color: 'inherit',
@@ -929,8 +1034,11 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                               <TextField
                                 size="small"
                                 type="number"
-                                value={accessoryCounts[accessory.name] || accessory.default_quantity}
-                                onChange={(e) => handleAccessoryCountChange(accessory.name, parseInt(e.target.value) || 0)}
+                                value={formData[accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity'] || 0}
+                                onChange={(e) => {
+                                  const fieldName = accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity';
+                                  handleAccessoryQuantityChange(fieldName, parseInt(e.target.value) || 0);
+                                }}
                                 slotProps={{
                                   input: {
                                     style: { textAlign: 'center', width: '60px' },
@@ -947,7 +1055,10 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                               <Button
                                 size="small"
                                 variant="outlined"
-                                onClick={() => handleAccessoryCountChange(accessory.name, (accessoryCounts[accessory.name] || accessory.default_quantity) + 1)}
+                                onClick={() => {
+                                  const fieldName = accessory.name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_quantity';
+                                  handleAccessoryQuantityChange(fieldName, (formData[fieldName] || 0) + 1);
+                                }}
                                 sx={{
                                   bgcolor: 'rgba(255,255,255,0.2)',
                                   color: 'inherit',
@@ -1080,17 +1191,24 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Nationality *"
-                value={formData.nationality}
-                onChange={(e) => handleInputChange('nationality', e.target.value)}
-                error={!!errors.nationality}
-                helperText={errors.nationality}
-              />
+              <FormControl fullWidth error={!!errors.nationality}>
+                <InputLabel>Nationality *</InputLabel>
+                <Select
+                  value={formData.nationality}
+                  onChange={(e) => handleInputChange('nationality', e.target.value)}
+                  label="Nationality *"
+                >
+                  {dropdownOptions.countries.map((country) => (
+                    <MenuItem key={country.value} value={country.value}>
+                      {country.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.nationality && <FormHelperText>{errors.nationality}</FormHelperText>}
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
+              <PhoneInput
                 fullWidth
                 label="Phone Number *"
                 value={formData.phone_number}
@@ -1107,7 +1225,7 @@ const EnhancedDriverForm = ({ onSubmit, onCancel, editingDriver = null }) => {
                   onChange={(e) => handleInputChange('vehicle_type', e.target.value)}
                   label="Vehicle Type *"
                 >
-                  {vehicleTypeOptions.map(option => (
+                  {dropdownOptions.vehicle_types.map(option => (
                     <MenuItem key={option.value} value={option.value}>
                       {option.label}
                     </MenuItem>

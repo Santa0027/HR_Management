@@ -18,15 +18,12 @@ import {
   Checkbox,
   Paper,
   Alert,
-  Chip,
-  IconButton
+  Chip
 } from '@mui/material';
 import {
   Business,
   ContactPhone,
   Inventory,
-  Add,
-  Remove,
   CheckCircle
 } from '@mui/icons-material';
 
@@ -37,8 +34,8 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
     company_name: '',
     address: '',
     city: '',
-    country: 'Saudi Arabia',
-    contact_phone: '',
+    country: 'Kuwait',
+    contact_phone: '+965',
     contact_email: '',
     contact_person: '',
     registration_number: '',
@@ -56,128 +53,144 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
     bike_min_km: '',
     bike_rate_per_order: '',
     bike_fixed_commission: '',
+
+    // Accessories (boolean fields only)
+    t_shirt: false,
+    cap: false,
+    jackets: false,
+    bag: false,
+    wristbands: false,
+    water_bottle: false,
+    safety_gear: false,
+    helmet: false,
   });
 
-  const [companyAccessories, setCompanyAccessories] = useState([]);
+  const [dropdownOptions, setDropdownOptions] = useState({
+    countries: [],
+    cities: {},
+    vehicle_types: []
+  });
   const [errors, setErrors] = useState({});
 
   const steps = ['Company Information', 'Contact Details', 'Commission Configuration', 'Accessories Configuration'];
 
+  // Fetch dropdown options on component mount
+  useEffect(() => {
+    const fetchDropdownOptions = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/dropdown-options/');
+        if (response.ok) {
+          const data = await response.json();
+          setDropdownOptions(data);
+        }
+      } catch (error) {
+        console.error('Error fetching dropdown options:', error);
+      }
+    };
+
+    fetchDropdownOptions();
+  }, []);
+
+  // Handle editing company data
+  useEffect(() => {
+    if (editingCompany) {
+      setFormData({
+        company_name: editingCompany.company_name || '',
+        address: editingCompany.address || '',
+        city: editingCompany.city || '',
+        country: editingCompany.country || 'Kuwait',
+        contact_phone: editingCompany.contact_phone || '+965',
+        contact_email: editingCompany.contact_email || '',
+        contact_person: editingCompany.contact_person || '',
+        registration_number: editingCompany.registration_number || '',
+
+        // Car commission fields
+        car_commission_type: editingCompany.car_commission_type || 'FIXED',
+        car_rate_per_km: editingCompany.car_rate_per_km || '',
+        car_min_km: editingCompany.car_min_km || '',
+        car_rate_per_order: editingCompany.car_rate_per_order || '',
+        car_fixed_commission: editingCompany.car_fixed_commission || '',
+
+        // Bike commission fields
+        bike_commission_type: editingCompany.bike_commission_type || 'FIXED',
+        bike_rate_per_km: editingCompany.bike_rate_per_km || '',
+        bike_min_km: editingCompany.bike_min_km || '',
+        bike_rate_per_order: editingCompany.bike_rate_per_order || '',
+        bike_fixed_commission: editingCompany.bike_fixed_commission || '',
+
+        // Accessories (boolean fields)
+        t_shirt: editingCompany.t_shirt || false,
+        cap: editingCompany.cap || false,
+        jackets: editingCompany.jackets || false,
+        bag: editingCompany.bag || false,
+        wristbands: editingCompany.wristbands || false,
+        water_bottle: editingCompany.water_bottle || false,
+        safety_gear: editingCompany.safety_gear || false,
+        helmet: editingCompany.helmet || false,
+      });
+    }
+  }, [editingCompany]);
+
   const accessoryOptions = [
     {
+      key: 't_shirt',
       name: 'T-Shirt',
       category: 'uniform',
       icon: '👕',
-      description: 'Company branded t-shirts',
-      default_quantity: 2,
-      minimum_stock_level: 10
+      description: 'Company branded t-shirts'
     },
     {
+      key: 'cap',
       name: 'Cap',
       category: 'uniform',
       icon: '🧢',
-      description: 'Company branded caps',
-      default_quantity: 1,
-      minimum_stock_level: 5
+      description: 'Company branded caps'
     },
     {
+      key: 'jackets',
+      name: 'Jackets',
+      category: 'uniform',
+      icon: '🧥',
+      description: 'Work jackets for drivers'
+    },
+    {
+      key: 'bag',
       name: 'Work Bag',
       category: 'personal',
       icon: '🎒',
-      description: 'Work bags for drivers',
-      default_quantity: 1,
-      minimum_stock_level: 5
+      description: 'Work bags for drivers'
     },
     {
-      name: 'Safety Vest',
-      category: 'safety',
-      icon: '🦺',
-      description: 'High-visibility safety vests',
-      default_quantity: 1,
-      minimum_stock_level: 10
+      key: 'wristbands',
+      name: 'Wristbands',
+      category: 'personal',
+      icon: '⌚',
+      description: 'Company wristbands'
     },
     {
-      name: 'Safety Equipment',
-      category: 'safety',
-      icon: '⛑️',
-      description: 'General safety equipment',
-      default_quantity: 1,
-      minimum_stock_level: 5
-    },
-    {
-      name: 'Helmet',
-      category: 'safety',
-      icon: '🪖',
-      description: 'Safety helmets',
-      default_quantity: 1,
-      minimum_stock_level: 10
-    },
-    {
-      name: 'Cool Jacket',
-      category: 'uniform',
-      icon: '🧥',
-      description: 'Cooling jackets for hot weather',
-      default_quantity: 1,
-      minimum_stock_level: 5
-    },
-    {
+      key: 'water_bottle',
       name: 'Water Bottle',
       category: 'personal',
       icon: '🍼',
-      description: 'Insulated water bottles',
-      default_quantity: 2,
-      minimum_stock_level: 20
+      description: 'Company water bottles'
     },
     {
-      name: 'Safety Shoes',
+      key: 'safety_gear',
+      name: 'Safety Gear',
       category: 'safety',
-      icon: '👟',
-      description: 'Work safety shoes',
-      default_quantity: 1,
-      minimum_stock_level: 10
+      icon: '🦺',
+      description: 'General safety equipment'
     },
     {
-      name: 'Work Gloves',
+      key: 'helmet',
+      name: 'Helmet',
       category: 'safety',
-      icon: '🧤',
-      description: 'Protective work gloves',
-      default_quantity: 2,
-      minimum_stock_level: 20
-    },
-    {
-      name: 'ID Card',
-      category: 'personal',
-      icon: '🪪',
-      description: 'Employee identification cards',
-      default_quantity: 1,
-      minimum_stock_level: 5
-    },
-    {
-      name: 'Uniform Pants',
-      category: 'uniform',
-      icon: '👖',
-      description: 'Company uniform pants',
-      default_quantity: 2,
-      minimum_stock_level: 10
+      icon: '⛑️',
+      description: 'Safety helmets'
     }
   ];
 
-  useEffect(() => {
-    if (editingCompany) {
-      setFormData(editingCompany);
-      if (editingCompany.employee_accessories) {
-        setCompanyAccessories(editingCompany.employee_accessories);
-      }
-    } else {
-      // Initialize with default accessories
-      const defaultAccessories = accessoryOptions.map(accessory => ({
-        ...accessory,
-        enabled: false,
-        stock_quantity: 0
-      }));
-      setCompanyAccessories(defaultAccessories);
-    }
-  }, [editingCompany]);
+
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -193,35 +206,7 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
     }
   };
 
-  const handleAccessoryToggle = (accessoryIndex) => {
-    setCompanyAccessories(prev =>
-      prev.map((accessory, index) =>
-        index === accessoryIndex
-          ? { ...accessory, enabled: !accessory.enabled }
-          : accessory
-      )
-    );
-  };
 
-  const handleAccessoryStockChange = (accessoryIndex, newStock) => {
-    setCompanyAccessories(prev =>
-      prev.map((accessory, index) =>
-        index === accessoryIndex
-          ? { ...accessory, stock_quantity: Math.max(0, newStock) }
-          : accessory
-      )
-    );
-  };
-
-  const handleAccessoryDefaultChange = (accessoryIndex, newDefault) => {
-    setCompanyAccessories(prev =>
-      prev.map((accessory, index) =>
-        index === accessoryIndex
-          ? { ...accessory, default_quantity: Math.max(0, newDefault) }
-          : accessory
-      )
-    );
-  };
 
   const validateStep = (step) => {
     const newErrors = {};
@@ -280,11 +265,8 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
     if (!validateStep(activeStep)) return;
 
     try {
-      const submitData = {
-        ...formData,
-        employee_accessories: companyAccessories.filter(acc => acc.enabled)
-      };
-      await onSubmit(submitData);
+      // Submit form data directly - accessories are now boolean fields in formData
+      await onSubmit(formData);
     } catch (error) {
       console.error('Error submitting form:', error);
     }
@@ -319,14 +301,6 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
         />
       </Grid>
       <Grid item xs={12} md={6}>
-        <TextField
-          fullWidth
-          label="City"
-          value={formData.city}
-          onChange={(e) => handleInputChange('city', e.target.value)}
-        />
-      </Grid>
-      <Grid item xs={12} md={6}>
         <FormControl fullWidth>
           <InputLabel>Country</InputLabel>
           <Select
@@ -334,12 +308,27 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
             onChange={(e) => handleInputChange('country', e.target.value)}
             label="Country"
           >
-            <MenuItem value="Saudi Arabia">Saudi Arabia</MenuItem>
-            <MenuItem value="UAE">UAE</MenuItem>
-            <MenuItem value="Kuwait">Kuwait</MenuItem>
-            <MenuItem value="Qatar">Qatar</MenuItem>
-            <MenuItem value="Bahrain">Bahrain</MenuItem>
-            <MenuItem value="Oman">Oman</MenuItem>
+            {dropdownOptions.countries.map((country) => (
+              <MenuItem key={country.value} value={country.value}>
+                {country.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid item xs={12} md={6}>
+        <FormControl fullWidth>
+          <InputLabel>City</InputLabel>
+          <Select
+            value={formData.city}
+            onChange={(e) => handleInputChange('city', e.target.value)}
+            label="City"
+          >
+            {(dropdownOptions.cities[formData.country] || dropdownOptions.cities.default || []).map((city) => (
+              <MenuItem key={city.value} value={city.value}>
+                {city.label}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Grid>
@@ -591,7 +580,7 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
           Accessories Configuration
         </Typography>
         <Alert severity="info" sx={{ mb: 2 }}>
-          Select the accessories your company provides to drivers and set default quantities and stock levels.
+          Select the accessories your company provides to drivers. Quantities will be entered during driver registration.
         </Alert>
       </Grid>
 
@@ -601,15 +590,15 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
             Available Accessories
           </Typography>
           <Grid container spacing={2}>
-            {companyAccessories.map((accessory, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+            {accessoryOptions.map((accessory) => (
+              <Grid item xs={12} sm={6} md={4} key={accessory.key}>
                 <Card
                   sx={{
                     p: 2,
-                    border: accessory.enabled ? '2px solid' : '1px solid #ddd',
-                    borderColor: accessory.enabled ? 'primary.main' : '#ddd',
-                    bgcolor: accessory.enabled ? 'primary.light' : 'white',
-                    color: accessory.enabled ? 'primary.contrastText' : 'text.primary'
+                    border: formData[accessory.key] ? '2px solid' : '1px solid #ddd',
+                    borderColor: formData[accessory.key] ? 'primary.main' : '#ddd',
+                    bgcolor: formData[accessory.key] ? 'primary.light' : 'white',
+                    color: formData[accessory.key] ? 'primary.contrastText' : 'text.primary'
                   }}
                 >
                   <Box sx={{ textAlign: 'center', mb: 2 }}>
@@ -619,9 +608,9 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={accessory.enabled}
-                          onChange={() => handleAccessoryToggle(index)}
-                          sx={{ color: accessory.enabled ? 'inherit' : 'primary.main' }}
+                          checked={formData[accessory.key]}
+                          onChange={(e) => handleInputChange(accessory.key, e.target.checked)}
+                          sx={{ color: formData[accessory.key] ? 'inherit' : 'primary.main' }}
                         />
                       }
                       label={
@@ -633,66 +622,26 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
                     <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.8 }}>
                       {accessory.description}
                     </Typography>
+                    <Chip
+                      label={accessory.category}
+                      size="small"
+                      sx={{ mt: 1 }}
+                      color={formData[accessory.key] ? 'secondary' : 'default'}
+                    />
                   </Box>
 
-                  {accessory.enabled && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="caption" display="block" gutterBottom>
-                        Default Quantity per Driver:
+                  {formData[accessory.key] && (
+                    <Box sx={{ mt: 2, textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{
+                        bgcolor: 'rgba(255,255,255,0.9)',
+                        color: 'text.primary',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        display: 'inline-block'
+                      }}>
+                        ✓ Available for drivers
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleAccessoryDefaultChange(index, accessory.default_quantity - 1)}
-                          disabled={accessory.default_quantity <= 0}
-                          sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}
-                        >
-                          <Remove />
-                        </IconButton>
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={accessory.default_quantity}
-                          onChange={(e) => handleAccessoryDefaultChange(index, parseInt(e.target.value) || 0)}
-                          slotProps={{
-                            input: {
-                              style: { textAlign: 'center', width: '60px' },
-                              min: 0
-                            }
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              bgcolor: 'rgba(255,255,255,0.9)',
-                              color: 'text.primary'
-                            }
-                          }}
-                        />
-                        <IconButton
-                          size="small"
-                          onClick={() => handleAccessoryDefaultChange(index, accessory.default_quantity + 1)}
-                          sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}
-                        >
-                          <Add />
-                        </IconButton>
-                      </Box>
-
-                      <Typography variant="caption" display="block" gutterBottom>
-                        Initial Stock Quantity:
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        type="number"
-                        value={accessory.stock_quantity}
-                        onChange={(e) => handleAccessoryStockChange(index, parseInt(e.target.value) || 0)}
-                        placeholder="Enter stock quantity"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            bgcolor: 'rgba(255,255,255,0.9)',
-                            color: 'text.primary'
-                          }
-                        }}
-                      />
                     </Box>
                   )}
                 </Card>
@@ -709,18 +658,19 @@ const EnhancedCompanyForm = ({ onSubmit, onCancel, editingCompany = null }) => {
             Selected Accessories Summary
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-            {companyAccessories
-              .filter(accessory => accessory.enabled)
-              .map((accessory, index) => (
+            {accessoryOptions
+              .filter(accessory => formData[accessory.key])
+              .map((accessory) => (
                 <Chip
-                  key={index}
-                  label={`${accessory.name} (Default: ${accessory.default_quantity}, Stock: ${accessory.stock_quantity})`}
+                  key={accessory.key}
+                  label={`${accessory.icon} ${accessory.name}`}
                   variant="outlined"
                   size="small"
+                  sx={{ color: 'inherit' }}
                 />
               ))}
-            {companyAccessories.filter(acc => acc.enabled).length === 0 && (
-              <Typography variant="body2" color="text.secondary">
+            {accessoryOptions.filter(acc => formData[acc.key]).length === 0 && (
+              <Typography variant="body2" sx={{ color: 'inherit', opacity: 0.8 }}>
                 No accessories selected
               </Typography>
             )}

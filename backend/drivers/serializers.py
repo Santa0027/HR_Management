@@ -28,15 +28,8 @@ class DriverSerializer(serializers.ModelSerializer):
         allow_null=True
     )
 
-    company = CompanySerializer(read_only=True)
-
-    Company_id = serializers.PrimaryKeyRelatedField(
-        queryset=Company.objects.all(),
-        source='company',
-        write_only=True,
-        required=False,
-        allow_null=True
-    )
+    # Company is stored as CharField in Driver model, so we handle it as string
+    company_name = serializers.CharField(source='company', read_only=True)
 
     class Meta:
         model = Driver
@@ -246,6 +239,15 @@ class DriverChangePasswordSerializer(serializers.Serializer):
 class NewDriverApplicationSerializer(serializers.ModelSerializer):
     age_calculated = serializers.SerializerMethodField()
     application_status_display = serializers.CharField(source='get_status_display', read_only=True)
+    company_name = serializers.CharField(source='company.company_name', read_only=True)
+
+    # Handle company selection by name or ID
+    company_id = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(),
+        source='company',
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = NewDriverApplication
@@ -258,6 +260,17 @@ class NewDriverApplicationSerializer(serializers.ModelSerializer):
             today = date.today()
             return today.year - obj.date_of_birth.year - ((today.month, today.day) < (obj.date_of_birth.month, obj.date_of_birth.day))
         return None
+
+    def validate(self, data):
+        # Handle company selection by name if company_id not provided
+        if 'company' not in data and 'company_name' in self.initial_data:
+            try:
+                company = Company.objects.get(company_name=self.initial_data['company_name'])
+                data['company'] = company
+            except Company.DoesNotExist:
+                raise serializers.ValidationError(f"Company '{self.initial_data['company_name']}' not found")
+
+        return data
 
     def create(self, validated_data):
         # Auto-calculate age before saving
@@ -387,7 +400,17 @@ class DriverFormSubmissionSerializer(serializers.Serializer):
     health_card_expiry = serializers.DateField(required=False)
     working_department = serializers.CharField(max_length=20, required=False)
 
-    # Accessories
+    # Accessory Quantities (for both new and working drivers)
+    t_shirt_quantity = serializers.IntegerField(default=0, required=False)
+    cap_quantity = serializers.IntegerField(default=0, required=False)
+    jackets_quantity = serializers.IntegerField(default=0, required=False)
+    bag_quantity = serializers.IntegerField(default=0, required=False)
+    wristbands_quantity = serializers.IntegerField(default=0, required=False)
+    water_bottle_quantity = serializers.IntegerField(default=0, required=False)
+    safety_gear_quantity = serializers.IntegerField(default=0, required=False)
+    helmet_quantity = serializers.IntegerField(default=0, required=False)
+
+    # Working driver accessories (boolean fields for issued status)
     t_shirt_issued = serializers.BooleanField(required=False)
     cap_issued = serializers.BooleanField(required=False)
     bag_issued = serializers.BooleanField(required=False)
@@ -422,17 +445,34 @@ class DriverFormSubmissionSerializer(serializers.Serializer):
 
         if driver_type == 'new':
             # Create new driver application
-            company_name = validated_data.pop('company')
-            company = Company.objects.get(company_name=company_name)
-            validated_data['company'] = company
+            company_name = validated_data.pop('company', None)
+            if company_name:
+                try:
+                    company = Company.objects.get(company_name=company_name)
+                    validated_data['company'] = company
+                except Company.DoesNotExist:
+                    raise serializers.ValidationError(f"Company '{company_name}' not found")
+            else:
+                raise serializers.ValidationError("Company is required for new driver application")
 
             return NewDriverApplication.objects.create(**validated_data)
 
         elif driver_type == 'working':
             # Create working driver
-            # Assuming we get company from the request or set a default
-            company = Company.objects.first()
-            validated_data['company'] = company
+            company_name = validated_data.pop('company', None)
+            if company_name:
+                try:
+                    company = Company.objects.get(company_name=company_name)
+                    validated_data['company'] = company
+                except Company.DoesNotExist:
+                    raise serializers.ValidationError(f"Company '{company_name}' not found")
+            else:
+                # Default to first company if not specified
+                company = Company.objects.first()
+                if not company:
+                    raise serializers.ValidationError("No companies available")
+                validated_data['company'] = company
+
             validated_data['created_by'] = 'System'  # Should be from request.user
 
             return WorkingDriver.objects.create(**validated_data)

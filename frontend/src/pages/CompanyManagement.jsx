@@ -42,7 +42,7 @@ import {
   Inventory,
   MonetizationOn // New icon for commissions
 } from '@mui/icons-material';
-import EnhancedCompanyForm from './components/company/EnhancedCompanyForm'; // Adjust path if needed
+import EnhancedCompanyForm from '../components/company/EnhancedCompanyForm';
 
 const CompanyManagement = () => {
   const [companies, setCompanies] = useState([]);
@@ -61,7 +61,7 @@ const CompanyManagement = () => {
     try {
       // Simulate API call delay
       // await new Promise(resolve => setTimeout(resolve, 1000));
-      const response = await fetch('/api/companies/');
+      const response = await fetch('/companies/');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -87,8 +87,8 @@ const CompanyManagement = () => {
     setLoading(true); // Indicate loading during form submission
     try {
       const url = editingCompany
-        ? `/api/companies/${editingCompany.id}/`
-        : '/api/companies/';
+        ? `/companies/${editingCompany.id}/`
+        : '/companies/';
 
       const method = editingCompany ? 'PUT' : 'POST';
 
@@ -131,7 +131,7 @@ const CompanyManagement = () => {
     if (window.confirm('Are you sure you want to delete this company? This action cannot be undone.')) {
       setLoading(true); // Indicate loading during deletion
       try {
-        const response = await fetch(`/api/companies/${companyId}/`, {
+        const response = await fetch(`/companies/${companyId}/`, {
           method: 'DELETE',
         });
 
