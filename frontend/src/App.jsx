@@ -48,7 +48,7 @@ import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
-import EnhancedDriverManagement from './pages/EnhancedDriverManagement';
+import DriverFormContainer from './pages/Adddriverform';
 
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
@@ -167,7 +167,7 @@ function App() {
           <Route path="/driver-management/vehicle_information" element={<Driver_mange_vehicle_info />} />
           <Route path="/driver-management/attachments" element={<Driver_manage_attachment />} />
           <Route path="/driver-management/logs" element={<Driver_mange_logs />} />
-          <Route path="/adddriverform" element={<EnhancedDriverManagement />} />
+          <Route path="/adddriverform" element={<DriverFormContainer />} />
 
           {/* Vehicle Details */}
           <Route path="/vehicles/:id" element={<VehicleProfile />} />

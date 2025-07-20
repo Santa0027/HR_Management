@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-fill Test - Working Driver Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .driver-select {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Working Driver Form - Auto-fill Test</h1>
+        
+        <div class="driver-select">
+            <h3>Step 1: Select a New Driver Application</h3>
+            <div class="form-group">
+                <label for="driverSelect">Select New Driver:</label>
+                <select id="driverSelect">
+                    <option value="">Choose a driver...</option>
+                </select>
+            </div>
+            <button onclick="loadDrivers()">Load Available Drivers</button>
+            <button onclick="clearForm()">Clear Form</button>
+        </div>
+
+        <div id="status"></div>
+
+        <form id="workingDriverForm">
+            <h3>Step 2: Working Driver Details</h3>
+            
+            <div class="form-group">
+                <label for="employeeId">Employee ID:</label>
+                <input type="text" id="employeeId" name="employeeId" required>
+            </div>
+
+                    <div class="form-group">
+            <label for="employeeId">Employee ID:</label>
+            <input type="text" id="employeeId" name="employeeId" required>
+        </div>
+
+        <div class="form-group">
+            <label for="fullName">Full Name:</label>
+            <input type="text" id="fullName" name="fullName" required>
+        </div>
+
+            <div class="form-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dob">Date of Birth:</label>
+                <input type="date" id="dob" name="dob" required>
+            </div>
+
+            <div class="form-group">
+                <label for="nationality">Nationality:</label>
+                <input type="text" id="nationality" name="nationality" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phoneNumber">Phone Number:</label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" required>
+            </div>
+
+            <div class="form-group">
+                <label for="vehicleType">Vehicle Type:</label>
+                <select id="vehicleType" name="vehicleType" required>
+                    <option value="">Select Vehicle Type</option>
+                    <option value="bike">Bike/Motorcycle</option>
+                    <option value="car">Car</option>
+                    <option value="van">Van</option>
+                    <option value="truck">Truck</option>
+                    <option value="bus">Bus</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="vehicleModel">Vehicle Model:</label>
+                <input type="text" id="vehicleModel" name="vehicleModel" required>
+            </div>
+
+            <div class="form-group">
+                <label for="tShirtSize">T-shirt Size:</label>
+                <select id="tShirtSize" name="tShirtSize" required>
+                    <option value="">Select Size</option>
+                    <option value="XS">XS</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="XXL">XXL</option>
+                    <option value="XXXL">XXXL</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg):</label>
+                <input type="number" id="weight" name="weight" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label for="height">Height (cm):</label>
+                <input type="number" id="height" name="height" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label for="company">Company:</label>
+                <input type="text" id="company" name="company" required>
+            </div>
+
+            <button type="submit">Submit Working Driver Application</button>
+        </form>
+    </div>
+
+    <script>
+        let drivers = [];
+
+        async function loadDrivers() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="loading">Loading available drivers...</div>';
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/Register/new-driver-applications/');
+                const data = await response.json();
+                
+                drivers = data.results || [];
+                const select = document.getElementById('driverSelect');
+                
+                // Clear existing options except the first one
+                select.innerHTML = '<option value="">Choose a driver...</option>';
+                
+                drivers.forEach(driver => {
+                    const option = document.createElement('option');
+                    option.value = driver.id;
+                    option.textContent = `${driver.full_name} - ${driver.application_number} (${driver.company_name})`;
+                    select.appendChild(option);
+                });
+
+                statusDiv.innerHTML = `<div class="success">Loaded ${drivers.length} drivers successfully!</div>`;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Error loading drivers: ${error.message}</div>`;
+            }
+        }
+
+        async function autoFillForm(driverId) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<div class="loading">Auto-filling form with driver details...</div>';
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/new-driver-application/${driverId}/`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const driverData = result.data;
+                    
+                    // Auto-fill the form fields
+                    document.getElementById('employeeId').value = driverData.employee_id || '';
+                    document.getElementById('fullName').value = driverData.full_name || '';
+                    document.getElementById('gender').value = driverData.gender || '';
+                    document.getElementById('dob').value = driverData.date_of_birth || '';
+                    document.getElementById('nationality').value = driverData.nationality || '';
+                    document.getElementById('phoneNumber').value = driverData.phone_number || '';
+                    document.getElementById('vehicleType').value = driverData.vehicle_type || '';
+                    document.getElementById('tShirtSize').value = driverData.t_shirt_size || '';
+                    document.getElementById('weight').value = driverData.weight || '';
+                    document.getElementById('height').value = driverData.height || '';
+                    document.getElementById('company').value = driverData.company_name || '';
+
+                    statusDiv.innerHTML = `<div class="success">Form auto-filled successfully with ${driverData.full_name}'s details!</div>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">Failed to load driver details</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">Error auto-filling form: ${error.message}</div>`;
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('workingDriverForm').reset();
+            document.getElementById('status').innerHTML = '<div class="success">Form cleared!</div>';
+        }
+
+        // Event listeners
+        document.getElementById('driverSelect').addEventListener('change', function() {
+            if (this.value) {
+                autoFillForm(this.value);
+            }
+        });
+
+        document.getElementById('workingDriverForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            console.log('Form submitted with data:', data);
+            document.getElementById('status').innerHTML = '<div class="success">Form submitted successfully! (Check console for data)</div>';
+        });
+
+        // Load drivers on page load
+        window.addEventListener('load', loadDrivers);
+    </script>
+</body>
+</html> 

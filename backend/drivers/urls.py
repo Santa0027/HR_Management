@@ -5,7 +5,8 @@ from .views import (
     driver_login, driver_profile, driver_change_password,
     driver_logout, check_username_availability,
     NewDriverApplicationViewSet, WorkingDriverViewSet,
-    submit_driver_form, get_companies_with_accessories
+    submit_driver_form, get_companies_with_accessories,
+    get_new_driver_application
 )
 from . import views
 
@@ -36,5 +37,6 @@ urlpatterns = [
     # Enhanced Driver Form URLs
     path('submit-form/', submit_driver_form, name='submit-driver-form'),
     path('companies-with-accessories/', get_companies_with_accessories, name='companies-with-accessories'),
+    path('new-driver-application/<int:application_id>/', get_new_driver_application, name='get-new-driver-application'),
 ]
     

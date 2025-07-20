@@ -496,3 +496,31 @@ def get_companies_with_accessories(request):
     companies = Company.objects.all()
     serializer = CompanySerializer(companies, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_new_driver_application(request, application_id):
+    """Get a specific new driver application by ID for auto-filling working driver form"""
+    try:
+        from .models import NewDriverApplication
+        from .serializers import NewDriverApplicationSerializer
+        
+        application = NewDriverApplication.objects.get(id=application_id)
+        serializer = NewDriverApplicationSerializer(application)
+        
+        return Response({
+            'success': True,
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except NewDriverApplication.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'New driver application not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': f'Error fetching application: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

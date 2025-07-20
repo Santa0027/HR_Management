@@ -259,6 +259,7 @@ class NewDriverApplication(models.Model):
 
     # Personal Details
     full_name = models.CharField(max_length=255)
+    employee_id = models.CharField(max_length=20, blank=True, help_text="Employee ID (optional for new applications)")
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     date_of_birth = models.DateField()
     age = models.IntegerField(editable=False)  # Auto-calculated
@@ -381,38 +382,38 @@ class WorkingDriver(models.Model):
     # Vehicle Information
     vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES)
     vehicle_model = models.CharField(max_length=100)
-    vehicle_number = models.CharField(max_length=50)
-    vehicle_expiry_date = models.DateField()
+    vehicle_number = models.CharField(max_length=50, blank=True, null=True)
+    vehicle_expiry_date = models.DateField(blank=True, null=True)
 
     # Legal Documents Numbers & Expiry
-    civil_id_number = models.CharField(max_length=50, unique=True)
-    civil_id_expiry = models.DateField()
-    license_number = models.CharField(max_length=50)
-    license_expiry_date = models.DateField()
+    civil_id_number = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    civil_id_expiry = models.DateField(blank=True, null=True)
+    license_number = models.CharField(max_length=50, blank=True, null=True)
+    license_expiry_date = models.DateField(blank=True, null=True)
     health_card_number = models.CharField(max_length=50, blank=True)
     health_card_expiry = models.DateField(null=True, blank=True)
 
     # Document Files
-    civil_id_front = models.ImageField(upload_to='working_drivers/civil_id/', help_text="Civil ID Front")
-    civil_id_back = models.ImageField(upload_to='working_drivers/civil_id/', help_text="Civil ID Back")
-    license_front = models.ImageField(upload_to='working_drivers/license/', help_text="License Front")
-    license_back = models.ImageField(upload_to='working_drivers/license/', help_text="License Back")
-    vehicle_registration = models.FileField(upload_to='working_drivers/vehicle_docs/', help_text="Vehicle Registration")
-    vehicle_insurance = models.FileField(upload_to='working_drivers/vehicle_docs/', help_text="Vehicle Insurance")
-    driver_photo = models.ImageField(upload_to='working_drivers/photos/', help_text="Driver Photo")
-    health_card_document = models.FileField(upload_to='working_drivers/health/', blank=True, help_text="Health Card")
+    civil_id_front = models.ImageField(upload_to='working_drivers/civil_id/', blank=True, null=True, help_text="Civil ID Front")
+    civil_id_back = models.ImageField(upload_to='working_drivers/civil_id/', blank=True, null=True, help_text="Civil ID Back")
+    license_front = models.ImageField(upload_to='working_drivers/license/', blank=True, null=True, help_text="License Front")
+    license_back = models.ImageField(upload_to='working_drivers/license/', blank=True, null=True, help_text="License Back")
+    vehicle_registration = models.FileField(upload_to='working_drivers/vehicle_docs/', blank=True, null=True, help_text="Vehicle Registration")
+    vehicle_insurance = models.FileField(upload_to='working_drivers/vehicle_docs/', blank=True, null=True, help_text="Vehicle Insurance")
+    driver_photo = models.ImageField(upload_to='working_drivers/photos/', blank=True, null=True, help_text="Driver Photo")
+    health_card_document = models.FileField(upload_to='working_drivers/health/', blank=True, null=True, help_text="Health Card")
 
     # Vehicle Photos (4 sides)
-    vehicle_photo_front = models.ImageField(upload_to='working_drivers/vehicle_photos/', help_text="Vehicle Front")
-    vehicle_photo_back = models.ImageField(upload_to='working_drivers/vehicle_photos/', help_text="Vehicle Back")
-    vehicle_photo_left = models.ImageField(upload_to='working_drivers/vehicle_photos/', help_text="Vehicle Left Side")
-    vehicle_photo_right = models.ImageField(upload_to='working_drivers/vehicle_photos/', help_text="Vehicle Right Side")
+    vehicle_photo_front = models.ImageField(upload_to='working_drivers/vehicle_photos/', blank=True, null=True, help_text="Vehicle Front")
+    vehicle_photo_back = models.ImageField(upload_to='working_drivers/vehicle_photos/', blank=True, null=True, help_text="Vehicle Back")
+    vehicle_photo_left = models.ImageField(upload_to='working_drivers/vehicle_photos/', blank=True, null=True, help_text="Vehicle Left Side")
+    vehicle_photo_right = models.ImageField(upload_to='working_drivers/vehicle_photos/', blank=True, null=True, help_text="Vehicle Right Side")
 
     # Employment Details
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='working_drivers')
     working_department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
     employment_status = models.CharField(max_length=20, choices=EMPLOYMENT_STATUS_CHOICES, default='active')
-    joining_date = models.DateField()
+    joining_date = models.DateField(blank=True, null=True)
 
     # Employee Accessories/Uniform - Quantities entered during driver registration
     t_shirt_quantity = models.IntegerField(default=0, help_text="Number of T-shirts assigned to driver")
