@@ -48,7 +48,9 @@ import Driver_mange_DrProfile from './pages/Driver_mange_DrProfile';
 import Driver_mange_vehicle_info from './pages/Driver_mange_vehicle_info';
 import Driver_manage_attachment from './pages/Driver_manage_attachment';
 import Driver_mange_logs from './pages/Driver_mange_logs';
-import DriverFormContainer from './pages/Adddriverform';
+// import EnhancedDriverManagement from './pages/EnhancedDriverManagement';
+import DriverFormContainer from './pages/AddDriverForm'; // Assuming this is the correct import for AddDriverForm
+
 
 // Vehicle Details
 import VehicleProfile from './pages/VehicleProfile';
@@ -146,21 +148,74 @@ function App() {
             }
           />
 
-          {/* Registration Management */}
-          <Route path="/registration-management" element={<Reg_ma_new_request />} />
-          <Route path="/registration-management/aproval_status" element={<Reg_ma_aprovel />} />
-          <Route path="/registration-management/aproval_status/driver/:id" element={<DriverApproval />} />
-          <Route path="/profileedit/:driverId" element={<DriverProfileEditDelete />} />
-          <Route path="/vehicle-registration" element={<Reg_ma_vehicle_registration />} />
-          <Route path="/vehicle-registration/:id" element={<Reg_ma_vehicle_registration />} />
-          <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
-          <Route path="/platform-list" element={<Reg_ma_platform_list />} />
-          <Route path="/company-list" element={<Reg_ma_platform_list />} />
-          <Route path="/company-profile/:id" element={<CompanyProfile />} />
-          <Route path="/company-registration" element={<CompanyRegistrationForm />} />
-          <Route path="/company-registration/:id" element={<CompanyRegistrationForm />} />
-          <Route path="/company/:id/edit" element={<EditCompany />} />
+            {/* Registration Management */}
+            <Route
+              path="/registration-management"
+              element={<Reg_ma_new_request />}
+            />
+            <Route
+              path="/registration-management/aproval_status"
+              element={<Reg_ma_aprovel />}
+            />
+            <Route
+              path="/registration-management/aproval_status/driver/:id"
+              element={<DriverApproval />}
+            />
+            <Route
+              path="/profileedit/:driverId"
+              element={<DriverProfileEditDelete />}
+            />
+            <Route
+              path="/vehicle-registration"
+              element={<Reg_ma_vehicle_registration />}
+            />
+            <Route
+              path="/vehicle-registration/:id"
+              element={<Reg_ma_vehicle_registration />}
+            />
+            <Route path="/vehicle-list" element={<Reg_ma_vehicle_list />} />
+            <Route path="/platform-list" element={<Reg_ma_platform_list />} />
+            <Route path="/company-list" element={<Reg_ma_platform_list />} />
+            <Route path="/company-profile/:id" element={<CompanyProfile />} />
+            <Route
+              path="/company-registration"
+              element={<CompanyRegistrationForm />}
+            />
+            <Route
+              path="/company-registration/:id"
+              element={<CompanyRegistrationForm />}
+            />
+            <Route path="/company/:id/edit" element={<EditCompany />} />
+            <Route
+              path="/registration-management/Add-driver"
+              element={<DriverFormContainer />}
+            />
 
+            {/* Driver Management */}
+            <Route
+              path="/driver-management/Driver_profile/:id"
+              element={<Driver_mange_DrProfile />}
+            />
+            <Route
+              path="/driver-profile/:id"
+              element={<Driver_mange_DrProfile />}
+            />
+            <Route
+              path="/driver-management/vehicle_information"
+              element={<Driver_mange_vehicle_info />}
+            />
+            <Route
+              path="/driver-management/attachments"
+              element={<Driver_manage_attachment />}
+            />
+            <Route
+              path="/driver-management/logs"
+              element={<Driver_mange_logs />}
+            />
+            {/* <Route
+              path="/adddriverform"
+              element={<EnhancedDriverManagement />}
+            /> */}
           {/* Driver Management */}
           <Route path="/driver-management/Driver_profile/:id" element={<Driver_mange_DrProfile />} />
           <Route path="/driver-profile/:id" element={<Driver_mange_DrProfile />} />
