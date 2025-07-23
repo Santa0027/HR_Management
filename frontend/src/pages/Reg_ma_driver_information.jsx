@@ -267,8 +267,29 @@ function DriverProfileEditDelete() {
       try {
         // Fetch driver data
         const driverRes = await axiosInstance.get(`/Register/drivers/${driverId}/`);
-        setDriverData(driverRes.data);
-        setInitialDriverData(driverRes.data);
+        const rawDriverData = driverRes.data;
+
+        // Process and normalize driver data
+        const processedDriverData = {
+          ...rawDriverData,
+          // Ensure consistent field names for editing
+          driver_name: rawDriverData.driver_name || rawDriverData.full_name || '',
+          mobile: rawDriverData.mobile || rawDriverData.phone_number || '',
+          iqama: rawDriverData.iqama || rawDriverData.civil_id_number || '',
+          city: rawDriverData.city || '',
+          nationality: rawDriverData.nationality || '',
+          dob: rawDriverData.dob || rawDriverData.date_of_birth || '',
+          gender: rawDriverData.gender || '',
+          // Format dates for input fields
+          iqama_expiry: rawDriverData.iqama_expiry ? rawDriverData.iqama_expiry.split('T')[0] : '',
+          passport_expiry: rawDriverData.passport_expiry ? rawDriverData.passport_expiry.split('T')[0] : '',
+          license_expiry: rawDriverData.license_expiry ? rawDriverData.license_expiry.split('T')[0] : '',
+          visa_expiry: rawDriverData.visa_expiry ? rawDriverData.visa_expiry.split('T')[0] : '',
+          medical_expiry: rawDriverData.medical_expiry ? rawDriverData.medical_expiry.split('T')[0] : '',
+        };
+
+        setDriverData(processedDriverData);
+        setInitialDriverData(processedDriverData);
 
         // Fetch companies and vehicles for dropdowns
         const [companiesRes, vehiclesRes] = await Promise.all([
@@ -284,8 +305,11 @@ function DriverProfileEditDelete() {
 
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError('Failed to load driver data. Please try again.');
-        toast.error('Failed to load driver data');
+        const errorMessage = err.response?.data?.detail ||
+                           err.response?.data?.message ||
+                           'Failed to load driver data. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -354,8 +378,23 @@ function DriverProfileEditDelete() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setDriverData(res.data);
-      setInitialDriverData(res.data);
+      // Process the response data similar to initial fetch
+      const updatedData = {
+        ...res.data,
+        // Ensure consistent field names
+        driver_name: res.data.driver_name || res.data.full_name || '',
+        mobile: res.data.mobile || res.data.phone_number || '',
+        iqama: res.data.iqama || res.data.civil_id_number || '',
+        // Format dates for display
+        iqama_expiry: res.data.iqama_expiry ? res.data.iqama_expiry.split('T')[0] : '',
+        passport_expiry: res.data.passport_expiry ? res.data.passport_expiry.split('T')[0] : '',
+        license_expiry: res.data.license_expiry ? res.data.license_expiry.split('T')[0] : '',
+        visa_expiry: res.data.visa_expiry ? res.data.visa_expiry.split('T')[0] : '',
+        medical_expiry: res.data.medical_expiry ? res.data.medical_expiry.split('T')[0] : '',
+      };
+
+      setDriverData(updatedData);
+      setInitialDriverData(updatedData);
       setIsEditing(false);
       setValidationErrors({});
 
@@ -376,7 +415,7 @@ function DriverProfileEditDelete() {
             }
           });
           setValidationErrors(backendErrors);
-          toast.error('Please fix the validation errors');
+          toast.error('Please fix the validation errors before saving');
         } else {
           toast.error(err.response.data);
         }
@@ -651,10 +690,89 @@ function DriverProfileEditDelete() {
                   )}
                 </div>
 
+                {/* Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="gender"
+                      value={driverData.gender || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.gender ? driverData.gender.charAt(0).toUpperCase() + driverData.gender.slice(1) : 'N/A'}
+                    </div>
+                  )}
+                  {validationErrors.gender && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      {validationErrors.gender}
+                    </p>
+                  )}
+                </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="dob"
+                      value={driverData.dob || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.dob ? new Date(driverData.dob).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                  {validationErrors.dob && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                      {validationErrors.dob}
+                    </p>
+                  )}
+                </div>
+
+                {/* Age */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Age
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      name="age"
+                      value={driverData.age || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter age"
+                      min="18"
+                      max="70"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.age || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
                 {/* Mobile Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number
+                    Mobile Number <span className="text-red-500">*</span>
                   </label>
                   {isEditing ? (
                     <input
@@ -784,6 +902,261 @@ function DriverProfileEditDelete() {
                     </p>
                   )}
                 </div>
+
+                {/* Age */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Age
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      name="age"
+                      value={driverData.age || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter age"
+                      min="18"
+                      max="70"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.age || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Home Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Home Phone
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      name="home_phone"
+                      value={driverData.home_phone || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter home phone number"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.home_phone || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Apartment/Area */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Apartment/Area
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="apartment_area"
+                      value={driverData.apartment_area || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter apartment/area"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.apartment_area || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Home Country Address */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Home Country Address
+                  </label>
+                  {isEditing ? (
+                    <textarea
+                      name="home_country_address"
+                      value={driverData.home_country_address || ''}
+                      onChange={handleChange}
+                      rows="3"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter home country address"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.home_country_address || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Kuwait Entry Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kuwait Entry Date
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="kuwait_entry_date"
+                      value={driverData.kuwait_entry_date || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.kuwait_entry_date ? new Date(driverData.kuwait_entry_date).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Marital Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Marital Status
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="marital_status"
+                      value={driverData.marital_status || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Marital Status</option>
+                      <option value="single">Single</option>
+                      <option value="married">Married</option>
+                      <option value="divorced">Divorced</option>
+                      <option value="widowed">Widowed</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.marital_status ? driverData.marital_status.charAt(0).toUpperCase() + driverData.marital_status.slice(1) : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Blood Group */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Blood Group
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="blood_group"
+                      value={driverData.blood_group || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Blood Group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.blood_group || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* T-Shirt Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    T-Shirt Size
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="t_shirt_size"
+                      value={driverData.t_shirt_size || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Size</option>
+                      <option value="XS">XS</option>
+                      <option value="S">S</option>
+                      <option value="M">M</option>
+                      <option value="L">L</option>
+                      <option value="XL">XL</option>
+                      <option value="XXL">XXL</option>
+                      <option value="XXXL">XXXL</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.t_shirt_size || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Weight */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Weight (kg)
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      name="weight"
+                      value={driverData.weight || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter weight in kg"
+                      min="40"
+                      max="200"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.weight ? `${driverData.weight} kg` : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Height */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Height (cm)
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      name="height"
+                      value={driverData.height || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter height in cm"
+                      min="140"
+                      max="220"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.height ? `${driverData.height} cm` : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Nominee */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nominee/Emergency Contact
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="nominee"
+                      value={driverData.nominee || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter nominee name"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.nominee || 'N/A'}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -854,6 +1227,431 @@ function DriverProfileEditDelete() {
                         `${driverData.vehicle.vehicle_name} - ${driverData.vehicle.vehicle_number || 'No Number'}` :
                         'No Vehicle Assigned'
                       }
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Working Details Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <Car className="h-6 w-6 mr-3 text-blue-600" />
+                Working Details
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Employee ID */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Employee ID
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="emp_id"
+                      value={driverData.emp_id || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter employee ID"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.emp_id || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Vehicle Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Type
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="vehicle_type"
+                      value={driverData.vehicle_type || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Vehicle Type</option>
+                      <option value="bike">Bike/Motorcycle</option>
+                      <option value="car">Car</option>
+                      <option value="van">Van</option>
+                      <option value="truck">Truck</option>
+                      <option value="bus">Bus</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.vehicle_type || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Vehicle Model */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Model
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="vehicle_model"
+                      value={driverData.vehicle_model || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter vehicle model"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.vehicle_model || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Vehicle Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Number
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="vehicle_number"
+                      value={driverData.vehicle_number || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter vehicle number"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.vehicle_number || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Vehicle Destination */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Destination
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="vehicle_destination"
+                      value={driverData.vehicle_destination || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter vehicle destination"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.vehicle_destination || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Working Department */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Working Department
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="working_dept"
+                      value={driverData.working_dept || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      <option value="">Select Department</option>
+                      <option value="delivery">Delivery</option>
+                      <option value="transport">Transport</option>
+                      <option value="logistics">Logistics</option>
+                      <option value="maintenance">Maintenance</option>
+                      <option value="emergency">Emergency Services</option>
+                    </select>
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.working_dept || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Civil ID Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Civil ID Number
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="civil_id_number"
+                      value={driverData.civil_id_number || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter civil ID number"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.civil_id_number || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Civil ID Expiry */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Civil ID Expiry
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="civil_id_expiry"
+                      value={driverData.civil_id_expiry || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.civil_id_expiry ? new Date(driverData.civil_id_expiry).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* License Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    License Number
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="licence_number"
+                      value={driverData.licence_number || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter license number"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.licence_number || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* License Expiry */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    License Expiry
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="licence_expiry"
+                      value={driverData.licence_expiry || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.licence_expiry ? new Date(driverData.licence_expiry).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Vehicle Expiry */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Vehicle Registration Expiry
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="vehicle_expiry"
+                      value={driverData.vehicle_expiry || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.vehicle_expiry ? new Date(driverData.vehicle_expiry).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Health Card Expiry */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Health Card Expiry
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      name="health_card_expiry"
+                      value={driverData.health_card_expiry || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.health_card_expiry ? new Date(driverData.health_card_expiry).toLocaleDateString() : 'N/A'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Accessories Section */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <FileText className="h-6 w-6 mr-3 text-blue-600" />
+                Accessories & Equipment
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Cap */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cap
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="cap"
+                      value={driverData.cap || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter cap details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.cap || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bag */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bag
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="bag"
+                      value={driverData.bag || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter bag details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.bag || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Waist */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Waist Belt
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="waist"
+                      value={driverData.waist || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter waist belt details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.waist || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Safety Equipment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Safety Equipment
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="safeties"
+                      value={driverData.safeties || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter safety equipment details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.safeties || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Helmet */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Helmet
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="helmet"
+                      value={driverData.helmet || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter helmet details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.helmet || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Cool Jackets */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cool Jackets
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="cool_jackets"
+                      value={driverData.cool_jackets || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter cool jacket details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.cool_jackets || 'N/A'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Water Bottle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Water Bottle
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="water_bottle"
+                      value={driverData.water_bottle || ''}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="Enter water bottle details"
+                    />
+                  ) : (
+                    <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                      {driverData.water_bottle || 'N/A'}
                     </div>
                   )}
                 </div>

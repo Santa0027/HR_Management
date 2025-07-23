@@ -28,20 +28,36 @@ function Driver_mange_DrProfile() {
       setLoadingDriverData(true);
       setError(null);
       try {
+        // Fetch driver data
         const driverResponse = await axiosInstance.get(`/Register/drivers/${id}/`);
         const driverData = driverResponse.data;
-        setDriverData(driverData);
 
+        // Ensure we have the correct data structure
+        const processedDriverData = {
+          ...driverData,
+          // Ensure consistent field names
+          driver_name: driverData.driver_name || driverData.full_name || '',
+          mobile: driverData.mobile || driverData.phone_number || '',
+          iqama: driverData.iqama || driverData.civil_id_number || '',
+          city: driverData.city || '',
+          nationality: driverData.nationality || '',
+          dob: driverData.dob || driverData.date_of_birth || '',
+          gender: driverData.gender || '',
+          status: driverData.status || 'pending'
+        };
 
+        setDriverData(processedDriverData);
 
-        // Set profile picture
-        if (driverData.driver_profile_img || driverData.profile_picture_url) {
-          setDriverProfilePicture(driverData.driver_profile_img || driverData.profile_picture_url);
-        }
+        // Set profile picture with fallback
+        const profileImg = driverData.driver_profile_img ||
+                          driverData.profile_picture_url ||
+                          driverData.driver_photo ||
+                          'https://placehold.co/100x100/535c9b/ffffff?text=Avatar';
+        setDriverProfilePicture(profileImg);
 
-        // Handle vehicle data - the vehicle should be included in the driver data as a nested object
+        // Handle vehicle data with better error handling
         if (driverData.vehicle && typeof driverData.vehicle === 'object') {
-          // Vehicle is already included as a nested object in the driver data
+          // Vehicle is already included as a nested object
           setAssignedVehicle(driverData.vehicle);
           setLoadingVehicleData(false);
         } else if (driverData.vehicle && typeof driverData.vehicle === 'number') {
@@ -53,6 +69,7 @@ function Driver_mange_DrProfile() {
           } catch (vehicleError) {
             console.error('Failed to fetch assigned vehicle data:', vehicleError);
             setAssignedVehicle(null);
+            toast.warning('Could not load vehicle information');
           } finally {
             setLoadingVehicleData(false);
           }
@@ -63,10 +80,13 @@ function Driver_mange_DrProfile() {
         }
       } catch (error) {
         console.error('Failed to fetch driver data:', error);
-        setError('Failed to load driver information. Please try again.');
+        const errorMessage = error.response?.data?.detail ||
+                           error.response?.data?.message ||
+                           'Failed to load driver information. Please try again.';
+        setError(errorMessage);
         setDriverData({});
         setAssignedVehicle(null);
-        toast.error('Failed to load driver information');
+        toast.error(errorMessage);
       } finally {
         setLoadingDriverData(false);
       }
@@ -159,6 +179,65 @@ function Driver_mange_DrProfile() {
       return 'Invalid Date';
     }
   };
+
+  // Loading state
+  if (loadingDriverData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center bg-white rounded-xl shadow-lg p-8">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-700 font-medium">Loading driver information...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait while we fetch the profile data</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center bg-white rounded-xl shadow-lg p-8 max-w-md">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Profile</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <div className="flex space-x-3 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/registration-management')}
+              className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!driverData || Object.keys(driverData).length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center bg-white rounded-xl shadow-lg p-8 max-w-md">
+          <User className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Driver Not Found</h2>
+          <p className="text-gray-600 mb-6">The requested driver profile could not be found.</p>
+          <button
+            onClick={() => navigate('/registration-management')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Driver List
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -417,6 +496,178 @@ function Driver_mange_DrProfile() {
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <label className="text-sm font-medium text-gray-600 mb-2 block">Driver ID</label>
                   <p className="text-gray-800 font-semibold">#{driverData.id}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Physical Information Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <User className="h-6 w-6 mr-3 text-orange-600" />
+                Physical Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-orange-600 mb-2 block">Age</label>
+                  <p className="text-gray-800 font-semibold">{driverData.age || 'N/A'}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-red-600 mb-2 block">Blood Group</label>
+                  <p className="text-gray-800 font-semibold">{driverData.blood_group || 'N/A'}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-blue-600 mb-2 block">Height</label>
+                  <p className="text-gray-800 font-semibold">{driverData.height ? `${driverData.height} cm` : 'N/A'}</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-green-600 mb-2 block">Weight</label>
+                  <p className="text-gray-800 font-semibold">{driverData.weight ? `${driverData.weight} kg` : 'N/A'}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-purple-600 mb-2 block">T-Shirt Size</label>
+                  <p className="text-gray-800 font-semibold">{driverData.t_shirt_size || 'N/A'}</p>
+                </div>
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-indigo-600 mb-2 block">Marital Status</label>
+                  <p className="text-gray-800 font-semibold">{driverData.marital_status ? driverData.marital_status.charAt(0).toUpperCase() + driverData.marital_status.slice(1) : 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Address Information Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <MapPin className="h-6 w-6 mr-3 text-green-600" />
+                Address Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-green-600 mb-2 block">Apartment/Area</label>
+                  <p className="text-gray-800 font-semibold">{driverData.apartment_area || 'N/A'}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-blue-600 mb-2 block">Home Phone</label>
+                  <p className="text-gray-800 font-semibold">{driverData.home_phone || 'N/A'}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 md:col-span-2">
+                  <label className="text-sm font-medium text-purple-600 mb-2 block">Home Country Address</label>
+                  <p className="text-gray-800 font-semibold">{driverData.home_country_address || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Working Details Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <Car className="h-6 w-6 mr-3 text-blue-600" />
+                Working Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-blue-600 mb-2 block">Employee ID</label>
+                  <p className="text-gray-800 font-semibold">{driverData.emp_id || 'N/A'}</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-green-600 mb-2 block">Vehicle Type</label>
+                  <p className="text-gray-800 font-semibold">{driverData.vehicle_type || 'N/A'}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-purple-600 mb-2 block">Vehicle Model</label>
+                  <p className="text-gray-800 font-semibold">{driverData.vehicle_model || 'N/A'}</p>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-orange-600 mb-2 block">Vehicle Number</label>
+                  <p className="text-gray-800 font-semibold">{driverData.vehicle_number || 'N/A'}</p>
+                </div>
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-indigo-600 mb-2 block">Working Department</label>
+                  <p className="text-gray-800 font-semibold">{driverData.working_dept || 'N/A'}</p>
+                </div>
+                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-pink-600 mb-2 block">Vehicle Destination</label>
+                  <p className="text-gray-800 font-semibold">{driverData.vehicle_destination || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Important Dates Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <Calendar className="h-6 w-6 mr-3 text-red-600" />
+                Important Dates
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-red-600 mb-2 block">Kuwait Entry Date</label>
+                  <p className="text-gray-800 font-semibold">{driverData.kuwait_entry_date ? formatDate(driverData.kuwait_entry_date) : 'N/A'}</p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-yellow-600 mb-2 block">Civil ID Expiry</label>
+                  <p className="text-gray-800 font-semibold">{driverData.civil_id_expiry ? formatDate(driverData.civil_id_expiry) : 'N/A'}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-blue-600 mb-2 block">License Expiry</label>
+                  <p className="text-gray-800 font-semibold">{driverData.licence_expiry ? formatDate(driverData.licence_expiry) : 'N/A'}</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-green-600 mb-2 block">Vehicle Registration Expiry</label>
+                  <p className="text-gray-800 font-semibold">{driverData.vehicle_expiry ? formatDate(driverData.vehicle_expiry) : 'N/A'}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-purple-600 mb-2 block">Health Card Expiry</label>
+                  <p className="text-gray-800 font-semibold">{driverData.health_card_expiry ? formatDate(driverData.health_card_expiry) : 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Accessories & Equipment Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <FileText className="h-6 w-6 mr-3 text-indigo-600" />
+                Accessories & Equipment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-indigo-600 mb-2 block">Cap</label>
+                  <p className="text-gray-800 font-semibold">{driverData.cap || 'N/A'}</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-green-600 mb-2 block">Bag</label>
+                  <p className="text-gray-800 font-semibold">{driverData.bag || 'N/A'}</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-blue-600 mb-2 block">Waist Belt</label>
+                  <p className="text-gray-800 font-semibold">{driverData.waist || 'N/A'}</p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-red-600 mb-2 block">Safety Equipment</label>
+                  <p className="text-gray-800 font-semibold">{driverData.safeties || 'N/A'}</p>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-yellow-600 mb-2 block">Helmet</label>
+                  <p className="text-gray-800 font-semibold">{driverData.helmet || 'N/A'}</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-purple-600 mb-2 block">Cool Jackets</label>
+                  <p className="text-gray-800 font-semibold">{driverData.cool_jackets || 'N/A'}</p>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-orange-600 mb-2 block">Water Bottle</label>
+                  <p className="text-gray-800 font-semibold">{driverData.water_bottle || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact Section */}
+            <div>
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <Phone className="h-6 w-6 mr-3 text-red-600" />
+                Emergency Contact
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <label className="text-sm font-medium text-red-600 mb-2 block">Nominee/Emergency Contact</label>
+                  <p className="text-gray-800 font-semibold">{driverData.nominee || 'N/A'}</p>
                 </div>
               </div>
             </div>
