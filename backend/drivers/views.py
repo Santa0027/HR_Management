@@ -78,17 +78,20 @@ def get_drivers_by_company(request, company_id):
     Returns drivers filtered by company ID
     """
     try:
-        # 1. Get the queryset of Driver objects without .values()
-        drivers = Driver.objects.filter(company_id=company_id)
+        # Corrected: If 'company' is a CharField, filter directly on its value
+        drivers = Driver.objects.filter(company=company_id)
 
-        # 2. Pass the queryset to your DriverSerializer
-        #    'many=True' is crucial because you're serializing a list of drivers
-        serializer = DriverSerializer(drivers, many=True) # <--- USE YOUR DRIVERSERIALIZER HERE!
+        # Pass the queryset to your DriverSerializer
+        # 'many=True' is crucial because you're serializing a list of drivers
+        # Make sure DriverSerializer is imported and correctly defined
+        serializer = DriverSerializer(drivers, many=True)
 
-        # 3. Return the serialized data using DRF's Response
+        # Return the serialized data using DRF's Response
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e: # Catch any potential errors, e.g., company_id not found or database issues
+        # It's good practice to log the full exception for debugging on the server side
+        print(f"Error in get_drivers_by_company: {e}")
         return Response({"detail": f"Error fetching drivers: {str(e)}"},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

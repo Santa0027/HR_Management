@@ -382,7 +382,7 @@ function DriverProfileEditDelete() {
       const updatedData = {
         ...res.data,
         // Ensure consistent field names
-        driver_name: res.data.driver_name || res.data.full_name || '',
+        driver_name: res.data.driver_name  || '',
         mobile: res.data.mobile || res.data.phone_number || '',
         iqama: res.data.iqama || res.data.civil_id_number || '',
         // Format dates for display

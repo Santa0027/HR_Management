@@ -23,6 +23,7 @@ class Driver(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
     # Personal Details
+    # profile_image = models.imageField(upload_to='drivers/profile_images/', blank=True, null=True, help_text="Profile image of the driver")
     full_name = models.CharField(max_length=255, default='')
     gender = models.CharField(max_length=10, default='')
     dob = models.DateField(null=True, blank=True)

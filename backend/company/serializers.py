@@ -74,11 +74,7 @@ class CompanyListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Company
-        fields = [
-            'id', 'company_name', 'contact_person', 'contact_phone',
-            'contact_email', 'city', 'country', 'driver_count',
-            'accessories_count', 'created_at'
-        ]
+        fields = '__all__'
 
     def get_accessories_count(self, obj):
         """Get count of enabled accessories"""

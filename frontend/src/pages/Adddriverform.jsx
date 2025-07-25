@@ -13,9 +13,6 @@ import {
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 
-// Remove Firebase imports as they're not needed for this form
-
-
 // Placeholder FormInput component
 const FormInput = ({
   type = "text",
@@ -28,6 +25,7 @@ const FormInput = ({
   autoComplete,
   min,
   max,
+  readOnly = false, // Added readOnly prop
 }) => (
   <input
     type={type}
@@ -40,6 +38,7 @@ const FormInput = ({
     autoComplete={autoComplete}
     min={min}
     max={max}
+    readOnly={readOnly} // Apply readOnly prop
   />
 );
 
@@ -204,7 +203,6 @@ const Step1NewDriverPersonal = ({
   handleChange,
   handleNext,
   errors,
-  companies = [],
   dropdownOptions = { countries: [], cities: {}, vehicle_types: [] },
   loading = false,
 }) => {
@@ -221,7 +219,7 @@ const Step1NewDriverPersonal = ({
           errors={errors}
         />
         <MemoizedInputField
-          id="employeeId"
+          id="emp_Id"
           label="Employee ID"
           type="text"
           formData={formData}
@@ -324,35 +322,6 @@ const Step1NewDriverPersonal = ({
           {errors.city && (
             <p className="text-sm text-red-600 mt-1" role="alert">
               {errors.city}
-            </p>
-          )}
-        </div>
-
-        {/* Company Dropdown */}
-        <div>
-          <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-            Company
-          </label>
-          <FormSelect
-            id="company"
-            name="company"
-            value={formData.company ?? ""}
-            onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.company ? "border-red-500" : "border-gray-300"
-            }`}
-            required
-          >
-            <option value="">Select Company</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.company_name}>
-                {company.company_name}
-              </option>
-            ))}
-          </FormSelect>
-          {errors.company && (
-            <p className="text-sm text-red-600 mt-1" role="alert">
-              {errors.company}
             </p>
           )}
         </div>
@@ -535,13 +504,47 @@ const Step2NewDriverVehicle = ({
   errors,
   companies = [],
   dropdownOptions = { countries: [], cities: {}, vehicle_types: [] },
+  selectedCompanyCommissionRules = null, // Re-added this prop
   loading = false,
 }) => {
+  const currentVehicleType = formData.vehicleType;
+  const commissionTypeFieldName = `${currentVehicleType}CommissionType`;
 
+  // Determine the commission type to display based on fetched rules
+  const displayedCommissionType = selectedCompanyCommissionRules?.[currentVehicleType]?.commission_type || '';
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Company Dropdown - Moved here */}
+        <div>
+          <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+            Company
+          </label>
+          <FormSelect
+            id="company"
+            name="company"
+            value={formData.company ?? ""}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
+              errors.company ? "border-red-500" : "border-gray-300"
+            }`}
+            required
+          >
+            <option value="">Select Company</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.company_name}>
+                {company.company_name}
+              </option>
+            ))}
+          </FormSelect>
+          {errors.company && (
+            <p className="text-sm text-red-600 mt-1" role="alert">
+              {errors.company}
+            </p>
+          )}
+        </div>
+
         <div>
           <label
             htmlFor="vehicleType"
@@ -650,6 +653,81 @@ const Step2NewDriverVehicle = ({
           errors={errors}
         />
       </div>
+
+      {/* Commission Details Section */}
+      {currentVehicleType && displayedCommissionType && (
+        <div className="mt-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+            Commission Details ({currentVehicleType.toUpperCase()})
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor={commissionTypeFieldName} className="block text-sm font-medium text-gray-700">
+                Commission Type
+              </label>
+              <FormInput
+                type="text"
+                id={commissionTypeFieldName}
+                name={commissionTypeFieldName}
+                value={displayedCommissionType} // Display fetched value
+                readOnly // Make it read-only
+                className="mt-1 block w-full rounded-md border p-2 shadow-sm bg-gray-100 cursor-not-allowed sm:text-sm"
+              />
+            </div>
+
+            {displayedCommissionType === "PER_KM" && (
+              <>
+                <MemoizedInputField
+                  id={`${currentVehicleType}RatePerKm`}
+                  label="Rate per KM"
+                  type="number"
+                  formData={formData}
+                  handleChange={handleChange}
+                  errors={errors}
+                />
+                <MemoizedInputField
+                  id={`${currentVehicleType}MinKm`}
+                  label="Minimum KM"
+                  type="number"
+                  formData={formData}
+                  handleChange={handleChange}
+                  errors={errors}
+                />
+              </>
+            )}
+            {displayedCommissionType === "PER_ORDER" && (
+              <MemoizedInputField
+                id={`${currentVehicleType}RatePerOrder`}
+                label="Rate per Order"
+                type="number"
+                formData={formData}
+                handleChange={handleChange}
+                errors={errors}
+              />
+            )}
+            {displayedCommissionType === "FIXED" && (
+              <MemoizedInputField
+                id={`${currentVehicleType}FixedCommission`}
+                label="Fixed Commission"
+                type="number"
+                formData={formData}
+                handleChange={handleChange}
+                errors={errors}
+              />
+            )}
+          </div>
+        </div>
+      )}
+      {currentVehicleType && formData.company && !displayedCommissionType && (
+          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
+            <p className="flex items-center">
+              <InformationCircleIcon className="h-5 w-5 mr-2" />
+              No commission rules found for the selected vehicle type ({currentVehicleType}) and company ({formData.company}).
+            </p>
+          </div>
+        )
+      }
+
 
       <div className="flex justify-between mt-8">
         <button
@@ -797,7 +875,9 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
     cities: {},
     vehicle_types: []
   });
+  const [selectedCompanyCommissionRules, setSelectedCompanyCommissionRules] = useState(null); // Re-added state
   const [loading, setLoading] = useState(true);
+  const [messageBox, setMessageBox] = useState(null); // State for message box
   const totalSteps = 3;
 
   // Fetch companies and dropdown options on component mount
@@ -811,6 +891,9 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
         if (companiesResponse.ok) {
           const companiesData = await companiesResponse.json();
           setCompanies(companiesData);
+        } else {
+            console.error('Failed to fetch companies:', companiesResponse.statusText);
+            setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
         }
 
         // Fetch dropdown options
@@ -818,9 +901,13 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
         if (dropdownResponse.ok) {
           const dropdownData = await dropdownResponse.json();
           setDropdownOptions(dropdownData);
+        } else {
+            console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
+            setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setMessageBox({ message: `An error occurred while fetching initial data: ${error.message}`, type: "error" });
       } finally {
         setLoading(false);
       }
@@ -829,6 +916,83 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
     fetchData();
   }, []);
 
+  // Effect to update selected company's commission rules when company or vehicle type selection changes
+  useEffect(() => {
+    if (formData.company && formData.vehicleType) {
+      const company = companies.find(c => c.company_name === formData.company);
+      if (company) {
+        // Construct commission rules object based on vehicle type
+        const commissionRules = {
+          car: {
+            commission_type: company.car_commission_type,
+            rate_per_km: company.car_rate_per_km,
+            min_km: company.car_min_km,
+            rate_per_order: company.car_rate_per_order,
+            fixed_commission: company.car_fixed_commission,
+          },
+          bike: {
+            commission_type: company.bike_commission_type,
+            rate_per_km: company.bike_rate_per_km,
+            min_km: company.bike_min_km,
+            rate_per_order: company.bike_rate_per_order,
+            fixed_commission: company.bike_fixed_commission,
+          },
+        };
+
+        setSelectedCompanyCommissionRules(commissionRules);
+
+        setFormData(prev => {
+          const newFormData = { ...prev };
+          const vehicleTypePrefix = prev.vehicleType;
+          const vehicleTypeRules = commissionRules[vehicleTypePrefix];
+
+          // Set the commission type from fetched rules, make it read-only for the user
+          newFormData[`${vehicleTypePrefix}CommissionType`] = vehicleTypeRules?.commission_type || '';
+
+          // Initialize other commission fields based on fetched values or 0 if not present
+          newFormData[`${vehicleTypePrefix}RatePerKm`] = vehicleTypeRules?.rate_per_km || 0;
+          newFormData[`${vehicleTypePrefix}MinKm`] = vehicleTypeRules?.min_km || 0;
+          newFormData[`${vehicleTypePrefix}RatePerOrder`] = vehicleTypeRules?.rate_per_order || 0;
+          newFormData[`${vehicleTypePrefix}FixedCommission`] = vehicleTypeRules?.fixed_commission || 0;
+
+          return newFormData;
+        });
+      } else {
+        setSelectedCompanyCommissionRules(null);
+        // Clear all commission fields if no rules or no company selected
+        setFormData(prev => ({
+          ...prev,
+          carCommissionType: '',
+          carRatePerKm: 0,
+          carMinKm: 0,
+          carRatePerOrder: 0,
+          carFixedCommission: 0,
+          bikeCommissionType: '',
+          bikeRatePerKm: 0,
+          bikeMinKm: 0,
+          bikeRatePerOrder: 0,
+          bikeFixedCommission: 0,
+        }));
+      }
+    } else {
+      setSelectedCompanyCommissionRules(null);
+      // Clear all commission fields if no company or vehicle type selected
+      setFormData(prev => ({
+        ...prev,
+        carCommissionType: '',
+        carRatePerKm: 0,
+        carMinKm: 0,
+        carRatePerOrder: 0,
+        carFixedCommission: 0,
+        bikeCommissionType: '',
+        bikeRatePerKm: 0,
+        bikeMinKm: 0,
+        bikeRatePerOrder: 0,
+        bikeFixedCommission: 0,
+      }));
+    }
+  }, [formData.company, formData.vehicleType, companies]); // Added formData.vehicleType as a dependency
+
   const steps = [
     {
       name: "Personal Details",
@@ -836,12 +1000,11 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
       component: Step1NewDriverPersonal,
       requiredFields: [
         "fullName",
-        "employeeId",
+        "emp_Id",
         "gender",
         "dob",
         "nationality",
         "city",
-        "company",
         "apartmentArea",
         "phoneNumber",
         "age",
@@ -856,6 +1019,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
       icon: TruckIcon,
       component: Step2NewDriverVehicle,
       requiredFields: [
+        "company", // Moved company here
         "vehicleType",
         "vehicleDestination",
         "tShirtSize",
@@ -863,6 +1027,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
         "height",
         "kuwaitEntryDate",
       ],
+      // Dynamic required fields for commission will be handled in validateStep
     },
     {
       name: "Document Uploads",
@@ -897,14 +1062,41 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
     (stepIndex) => {
       let currentErrors = {};
       let isValid = true;
-      const requiredFields = steps[stepIndex].requiredFields;
+      let requiredFieldsForStep = [...steps[stepIndex].requiredFields];
 
-      requiredFields.forEach((field) => {
+      // Add dynamic required fields for commission in Step 2
+      if (stepIndex === 1 && formData.vehicleType) {
+        const vehicleTypePrefix = formData.vehicleType; // 'car' or 'bike'
+        // Commission type is now derived from selectedCompanyCommissionRules
+        const commissionRule = selectedCompanyCommissionRules?.[vehicleTypePrefix];
+        const commissionType = commissionRule?.commission_type; // Get the fetched commission type
+
+        if (commissionType) {
+          // The commission type field itself is now read-only and filled from fetched data,
+          // so we only need to validate if the specific rate fields are present.
+          if (commissionType === "PER_KM") {
+            requiredFieldsForStep.push(`${vehicleTypePrefix}RatePerKm`);
+            requiredFieldsForStep.push(`${vehicleTypePrefix}MinKm`);
+          } else if (commissionType === "PER_ORDER") {
+            requiredFieldsForStep.push(`${vehicleTypePrefix}RatePerOrder`);
+          } else if (commissionType === "FIXED") {
+            requiredFieldsForStep.push(`${vehicleTypePrefix}FixedCommission`);
+          }
+        } else if (formData.company) { // If company selected but no rules for vehicle type
+           // This case is now handled by displaying an info message in the UI,
+           // but we still need to ensure the form is valid if no commission fields appear.
+           // If no commission type is found, then no commission fields are required.
+           // No explicit error needs to be added here for missing commission type if it's not found.
+        }
+      }
+
+      requiredFieldsForStep.forEach((field) => {
         if (
           !formData[field] ||
           (typeof formData[field] === "string" &&
             formData[field].trim() === "") ||
-          (formData[field] instanceof File && !formData[field].name)
+          (formData[field] instanceof File && !formData[field].name) ||
+          (typeof formData[field] === 'number' && isNaN(formData[field])) // Check for NaN for number inputs
         ) {
           currentErrors[field] = "This field is required";
           isValid = false;
@@ -914,7 +1106,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
       setErrors(currentErrors);
       return isValid;
     },
-    [formData, steps]
+    [formData, steps, selectedCompanyCommissionRules] // Added selectedCompanyCommissionRules to dependencies
   );
 
   const handleNext = useCallback(() => {
@@ -947,128 +1139,142 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           const dataToSubmit = new FormData();
 
           // Mapping New Driver Form fields to module.py backend fields
-          dataToSubmit.append('full_name', formData.fullName || '');
-          dataToSubmit.append('employee_id', formData.employeeId || '');
+          dataToSubmit.append('driver_type', 'new'); // Add driver_type as a form field
+          dataToSubmit.append('driver_name', formData.fullName || '');
+          dataToSubmit.append('emp_id', formData.emp_Id || '');
           dataToSubmit.append('gender', formData.gender || '');
-          dataToSubmit.append('dob', formData.dob || ''); // Date format might need adjustment for backend
+          dataToSubmit.append('dob', formData.dob || '');
           dataToSubmit.append('nationality', formData.nationality || '');
           dataToSubmit.append('city', formData.city || '');
-          dataToSubmit.append('company', formData.company || '');
+          dataToSubmit.append('company', formData.company || ''); // Company field
           dataToSubmit.append('apartment_area', formData.apartmentArea || '');
           dataToSubmit.append('phone_number', formData.phoneNumber || '');
           dataToSubmit.append('age', formData.age || '');
           dataToSubmit.append('marital_status', formData.maritalStatus || '');
           dataToSubmit.append('blood_group', formData.bloodGroup || '');
           dataToSubmit.append('home_country_address', formData.homeCountryAddress || '');
-          dataToSubmit.append('nominee', formData.nomineeWife || ''); // Assuming nomineeWife maps to nominee
-          // nomineePhone is not directly mapped in module.py, could be combined with nominee or omitted
+          dataToSubmit.append('nominee', formData.nomineeWife || '');
+          dataToSubmit.append('nominee_phone', formData.nomineePhone || ''); // Nominee phone
           dataToSubmit.append('vehicle_type', formData.vehicleType || '');
           dataToSubmit.append('vehicle_destination', formData.vehicleDestination || '');
           dataToSubmit.append('t_shirt_size', formData.tShirtSize || '');
           dataToSubmit.append('weight', formData.weight || '');
           dataToSubmit.append('height', formData.height || '');
-          dataToSubmit.append('kuwait_entry_date', formData.kuwaitEntryDate || ''); // Date format might need adjustment
+          dataToSubmit.append('kuwait_entry_date', formData.kuwaitEntryDate || '');
+
+          // Append commission details based on vehicle type from formData
+          if (formData.vehicleType && selectedCompanyCommissionRules) {
+            const vehicleTypePrefix = formData.vehicleType;
+            const commissionRule = selectedCompanyCommissionRules[vehicleTypePrefix];
+
+            if (commissionRule) {
+                // Use the commission_type from the fetched rule, not from formData directly
+                dataToSubmit.append(`${vehicleTypePrefix}_commission_type`, commissionRule.commission_type || '');
+                // Ensure numerical values are sent, default to 0 if not present or invalid
+                dataToSubmit.append(`${vehicleTypePrefix}_rate_per_km`, parseFloat(formData[`${vehicleTypePrefix}RatePerKm`]) || 0);
+                dataToSubmit.append(`${vehicleTypePrefix}_min_km`, parseFloat(formData[`${vehicleTypePrefix}MinKm`]) || 0);
+                dataToSubmit.append(`${vehicleTypePrefix}_rate_per_order`, parseFloat(formData[`${vehicleTypePrefix}RatePerOrder`]) || 0);
+                dataToSubmit.append(`${vehicleTypePrefix}_fixed_commission`, parseFloat(formData[`${vehicleTypePrefix}FixedCommission`]) || 0);
+            }
+          }
 
           // Append file fields if they exist
           if (formData.passport) dataToSubmit.append('passport', formData.passport);
           if (formData.visa) dataToSubmit.append('visa', formData.visa);
           if (formData.policeCer) dataToSubmit.append('police_cer', formData.policeCer);
-          if (formData.pasPhot) dataToSubmit.append('passport_photo', formData.pasPhot); // Corrected mapping
+          if (formData.pasPhot) dataToSubmit.append('passport_photo', formData.pasPhot);
           if (formData.medicalCer) dataToSubmit.append('medical_cer', formData.medicalCer);
 
-          console.log('New Driver Form Data to Backend:', Object.fromEntries(dataToSubmit.entries()));
-
-          // Submit to the correct backend endpoint
-          const response = await fetch('http://127.0.0.1:8000/submit-form/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              driver_type: 'new',
-              full_name: formData.fullName || '',
-              employee_id: formData.employeeId || '',
-              gender: formData.gender || '',
-              date_of_birth: formData.dob || '',
-              nationality: formData.nationality || '',
-              phone_number: formData.phoneNumber || '',
-              city: formData.city || '',
-              apartment_area: formData.apartmentArea || '',
-              home_country_address: formData.homeCountryAddress || '',
-              home_country_phone: formData.homeCountryPhone || '',
-              company: formData.company || '',
-              vehicle_type: formData.vehicleType || '',
-              vehicle_destination: formData.vehicleDestination || '',
-              kuwait_entry_date: formData.kuwaitEntryDate || '',
-              marital_status: formData.maritalStatus || '',
-              blood_group: formData.bloodGroup || '',
-              t_shirt_size: formData.tShirtSize || '',
-              weight: formData.weight || '',
-              height: formData.height || '',
-              nominee_name: formData.nomineeWife || '',
-              nominee_relationship: 'spouse',
-              nominee_phone: formData.nomineePhone || '',
-              nominee_address: formData.nomineeAddress || '',
-              // Add accessory quantities if needed
-              t_shirt_quantity: formData.tShirtQuantity || 0,
-              cap_quantity: formData.capQuantity || 0,
-              helmet_quantity: formData.helmetQuantity || 0,
-              bag_quantity: formData.bagQuantity || 0,
-              safety_gear_quantity: formData.safetyGearQuantity || 0
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          // Log FormData entries for debugging
+          for (let pair of dataToSubmit.entries()) {
+            console.log(pair[0]+ ', ' + pair[1]);
           }
 
-          const result = await response.json();
-          console.log('Backend response:', result);
-          onReset('success', 'New Driver Application submitted successfully!');
+          const response = await fetch('http://127.0.0.1:8000/Register/drivers/', {
+            method: 'POST',
+            // Do NOT set Content-Type header manually when sending FormData
+            body: dataToSubmit,
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log("Submission successful:", result);
+            // Call the parent onSubmit prop
+            if (onSubmit) onSubmit(formData);
+            // Show success message
+            setMessageBox({ message: "Driver registered successfully!", type: "success" });
+            // Reset form
+            setFormData({});
+            setErrors({});
+            setCurrentStep(0);
+            if (onReset) onReset('success', 'New Driver Application submitted successfully!'); // Call parent onReset if provided
+          } else {
+            const errorData = await response.json();
+            console.error("Submission failed:", errorData);
+            // Show error message
+            setMessageBox({ message: `Submission failed: ${errorData.detail || JSON.stringify(errorData) || 'Unknown error'}`, type: "error" });
+          }
         } catch (error) {
-          console.error("Submission error:", error);
-          onReset('error', `Failed to submit New Driver Application: ${error.message}`);
+          console.error("Error during submission:", error);
+          // Show error message
+          setMessageBox({ message: `An unexpected error occurred: ${error.message}`, type: "error" });
         } finally {
           setIsSubmitting(false);
           setSubmitTrigger(false); // Reset trigger
         }
       };
+
       submitForm();
     }
-  }, [submitTrigger, formData, onSubmit, onReset]); // Dependencies for useEffect
+  }, [submitTrigger, formData, onSubmit, onReset, selectedCompanyCommissionRules]);
 
-  const CurrentFormComponent = steps[currentStep].component;
+
+  const CurrentStepComponent = steps[currentStep].component;
 
   return (
-    <div className="min-h-full p-6 bg-gray-100 min-w-[700px] rounded-lg shadow-lg">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">
-        New Driver Application
-      </h2>
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 font-sans">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-6 sm:p-8">
+        <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-8">
+          New Driver Registration
+        </h2>
 
-      <Stepper
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        stepNames={steps.map((s) => s.name)}
-        stepIcons={steps.map((s) => s.icon)}
-      />
-
-      <div className="min-h-[500px] bg-white p-8 rounded-lg shadow-md">
-        <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4">
-          {steps[currentStep].name}
-        </h3>
-        <CurrentFormComponent
-          formData={formData}
-          handleChange={handleChange}
-          handleNext={handleNext}
-          handlePrevious={handlePrevious}
-          handleSubmit={handleSubmit}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          companies={companies}
-          dropdownOptions={dropdownOptions}
-          loading={loading}
+        <Stepper
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          stepNames={steps.map((step) => step.name)}
+          stepIcons={steps.map((step) => step.icon)}
         />
+
+        {loading ? (
+          <div className="flex items-center justify-center py-10 text-blue-600">
+            <svg className="animate-spin h-8 w-8 text-blue-500 mr-3" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-lg font-medium">Loading form data...</span>
+          </div>
+        ) : (
+          <CurrentStepComponent
+            formData={formData}
+            handleChange={handleChange}
+            handleNext={handleNext}
+            handlePrevious={handlePrevious}
+            handleSubmit={handleSubmit}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            companies={companies}
+            dropdownOptions={dropdownOptions}
+            loading={loading}
+            selectedCompanyCommissionRules={selectedCompanyCommissionRules} // Pass commission rules
+          />
+        )}
       </div>
+
+      <MessageBox
+        message={messageBox?.message}
+        type={messageBox?.type}
+        onClose={() => setMessageBox(null)}
+      />
     </div>
   );
 };
@@ -1128,30 +1334,30 @@ const Step1WorkingPersonalInfo = ({
         {/* Employee ID Field */}
         <div>
           <label
-            htmlFor="employeeId"
+            htmlFor="emp_Id"
             className="block text-sm font-medium text-gray-700"
           >
             Employee ID
           </label>
           <FormInput
             type="text"
-            id="employeeId"
-            name="employeeId"
-            value={formData.employeeId ?? ""}
+            id="emp_Id"
+            name="emp_Id"
+            value={formData.emp_Id ?? ""}
             onChange={handleChange}
             className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.employeeId ? "border-red-500" : "border-gray-300"
+              errors.emp_Id ? "border-red-500" : "border-gray-300"
             }`}
             required
-            aria-describedby={errors.employeeId ? `employeeId-error` : undefined}
+            aria-describedby={errors.emp_Id ? `emp_Id-error` : undefined}
           />
-          {errors.employeeId && (
+          {errors.emp_Id && (
             <p
-              id="employeeId-error"
+              id="emp_Id-error"
               className="text-sm text-red-600 mt-1"
               role="alert"
             >
-              {errors.employeeId}
+              {errors.emp__Id}
             </p>
           )}
         </div>
@@ -1426,32 +1632,32 @@ const Step2WorkingDocuments = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div>
           <label
-            htmlFor="employeeId"
+            htmlFor="emp_Id"
             className="block text-sm font-medium text-gray-700"
           >
             Employee ID
           </label>
           <FormInput
             type="text"
-            id="employeeId"
-            name="employeeId"
-            value={formData.employeeId ?? ""}
+            id="emp_Id"
+            name="emp_Id"
+            value={formData.emp_Id ?? ""}
             onChange={handleChange}
             className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.employeeId ? "border-red-500" : "border-gray-300"
+              errors.emp_Id ? "border-red-500" : "border-gray-300"
             }`}
             required
             aria-describedby={
-              errors.employeeId ? `employeeId-error` : undefined
+              errors.emp_Id ? `emp_Id-error` : undefined
             }
           />
-          {errors.employeeId && (
+          {errors.emp_Id && (
             <p
-              id="employeeId-error"
+              id="emp_Id-error"
               className="text-sm text-red-600 mt-1"
               role="alert"
             >
-              {errors.employeeId}
+              {errors.emp_Id}
             </p>
           )}
         </div>
@@ -1779,6 +1985,7 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
   const [newDrivers, setNewDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [autoFilling, setAutoFilling] = useState(false);
+  const [messageBox, setMessageBox] = useState(null); // State for message box
   const totalSteps = 4;
 
   // Fetch companies and dropdown options on component mount
@@ -1792,6 +1999,9 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         if (companiesResponse.ok) {
           const companiesData = await companiesResponse.json();
           setCompanies(companiesData);
+        } else {
+            console.error('Failed to fetch companies:', companiesResponse.statusText);
+            setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
         }
 
         // Fetch dropdown options
@@ -1799,6 +2009,9 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         if (dropdownResponse.ok) {
           const dropdownData = await dropdownResponse.json();
           setDropdownOptions(dropdownData);
+        } else {
+            console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
+            setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
         }
 
         // Fetch new driver applications
@@ -1806,9 +2019,13 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         if (newDriversResponse.ok) {
           const newDriversData = await newDriversResponse.json();
           setNewDrivers(newDriversData.results || []);
+        } else {
+            console.error('Failed to fetch new driver applications:', newDriversResponse.statusText);
+            setMessageBox({ message: `Failed to load new driver applications: ${newDriversResponse.statusText}`, type: "error" });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setMessageBox({ message: `An error occurred while fetching initial data: ${error.message}`, type: "error" });
       } finally {
         setLoading(false);
       }
@@ -1824,7 +2041,7 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
       component: Step1WorkingPersonalInfo,
       requiredFields: [
         "selectedNewDriver",
-        "employeeId",
+        "emp_Id",
         "vehicleType",
         "vehicleModel",
       ],
@@ -1834,7 +2051,7 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
       icon: PaperClipIcon,
       component: Step2WorkingDocuments,
       requiredFields: [
-        "employeeId",
+        "emp_Id",
         "civilIdDoc",
         "licenseDocs",
         "vehicleDocs",
@@ -1929,7 +2146,7 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
   };
 
   // Function to handle driver selection and auto-fill form
-  const handleDriverSelect = async (driverId) => {
+  const handleDriverSelect = useCallback(async (driverId) => {
     try {
       setAutoFilling(true);
       console.log('Fetching driver details for ID:', driverId);
@@ -1948,173 +2165,175 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         // Auto-fill the form with existing driver data
         setFormData(prevData => ({
           ...prevData,
+          selectedNewDriver: driverId, // Keep the selected driver ID
           // Personal details
-          fullName: driverData.full_name || '',
-          employeeId: driverData.employee_id || '',
+          fullName: driverData.driver_name || '',
+          emp_Id: driverData.emp_id || '',
           gender: driverData.gender || '',
-          dob: driverData.date_of_birth || '',
+          dob: driverData.date_of_birth || '', // Assuming backend sends 'date_of_birth'
           nationality: driverData.nationality || '',
           phoneNumber: driverData.phone_number || '',
           company: driverData.company_name || '',
+          city: driverData.city || '', // Added city from new_driver_application
+          apartmentArea: driverData.apartment_area || '', // Added apartmentArea
+          age: driverData.age || '', // Added age
+          maritalStatus: driverData.marital_status || '', // Added maritalStatus
+          bloodGroup: driverData.blood_group || '', // Added bloodGroup
+          homeCountryAddress: driverData.home_country_address || '', // Added homeCountryAddress
+          nomineeWife: driverData.nominee_name || '', // Assuming nominee_name maps to nomineeWife
+          nomineePhone: driverData.nominee_phone || '', // Assuming nominee_phone maps to nomineePhone
+          nomineeAddress: driverData.nominee_address || '', // Added nomineeAddress
           
           // Vehicle details
           vehicleType: driverData.vehicle_type || '',
           vehicleDestination: driverData.vehicle_destination || '',
           
-          // Physical details
+          // Physical details (these might not be in new-driver-application, but included for completeness)
           tShirtSize: driverData.t_shirt_size || '',
           weight: driverData.weight || '',
           height: driverData.height || '',
+          kuwaitEntryDate: driverData.kuwait_entry_date || '', // Added kuwaitEntryDate
           
-          // Additional details that might be useful
-          city: driverData.city || '',
-          apartmentArea: driverData.apartment_area || '',
-          homeCountryAddress: driverData.home_country_address || '',
-          homeCountryPhone: driverData.home_country_phone || '',
-          maritalStatus: driverData.marital_status || '',
-          bloodGroup: driverData.blood_group || '',
-          kuwaitEntryDate: driverData.kuwait_entry_date || '',
-          
-          // Nominee details
-          nomineeWife: driverData.nominee_name || '',
-          nomineePhone: driverData.nominee_phone || '',
-          nomineeAddress: driverData.nominee_address || '',
+          // Files are not auto-filled as they need to be re-uploaded for security/freshness
+          civilIdDoc: null,
+          fnbDocs: null,
+          licenseDocs: null,
+          vehicleDocs: null,
+          photo: null,
+          healthCardDoc: null,
+          vehiclePhotoFront: null,
+          vehiclePhotoBack: null,
+          vehiclePhotoLeft: null,
+          vehiclePhotoRight: null,
         }));
         
         console.log('Form auto-filled with driver data');
-        // Show success message
-        onReset('success', 'Driver details loaded successfully! Please review and complete the remaining fields.');
+        setMessageBox({ message: 'Driver details loaded successfully! Please review and complete the remaining fields.', type: "success" });
+      } else {
+        setMessageBox({ message: 'Failed to load driver details: No data found.', type: "error" });
       }
     } catch (error) {
       console.error('Error fetching driver details:', error);
-      onReset('error', `Failed to load driver details: ${error.message}`);
+      setMessageBox({ message: `Failed to load driver details: ${error.message}`, type: "error" });
     } finally {
       setAutoFilling(false);
     }
-  };
+  }, [newDrivers, setFormData, setMessageBox]);
 
-  // useEffect to handle form submission
+
+  // useEffect to handle form submission for WorkingDriverForm
   useEffect(() => {
     if (submitTrigger) {
       const submitForm = async () => {
         setIsSubmitting(true);
         try {
-          // Construct FormData for backend submission
           const dataToSubmit = new FormData();
 
-          // Mapping Working Driver Form fields to module.py backend fields
-          dataToSubmit.append('full_name', formData.fullName || '');
+          // Add driver_type
+          dataToSubmit.append('driver_type', 'working');
+          dataToSubmit.append('new_driver_application_id', formData.selectedNewDriver || '');
+
+          // Personal & Vehicle Info (from Step 1)
+          dataToSubmit.append("emp_id", formData.emp_id || "");
+          dataToSubmit.append('driver_name', formData.driver_name || '');
           dataToSubmit.append('gender', formData.gender || '');
-          dataToSubmit.append('dob', formData.dob || '');
+          dataToSubmit.append('date_of_birth', formData.dob || ''); // Mapped to date_of_birth
           dataToSubmit.append('nationality', formData.nationality || '');
           dataToSubmit.append('phone_number', formData.phoneNumber || '');
           dataToSubmit.append('vehicle_type', formData.vehicleType || '');
           dataToSubmit.append('vehicle_model', formData.vehicleModel || '');
-          dataToSubmit.append('emp_id', formData.employeeId || '');
+          dataToSubmit.append('city', formData.city || ''); // Added city
+          dataToSubmit.append('company', formData.company || ''); // Added company
+          dataToSubmit.append('apartment_area', formData.apartmentArea || ''); // Added apartment_area
+          dataToSubmit.append('age', formData.age || ''); // Added age
+          dataToSubmit.append('marital_status', formData.maritalStatus || ''); // Added marital_status
+          dataToSubmit.append('blood_group', formData.bloodGroup || ''); // Added blood_group
+          dataToSubmit.append('home_country_address', formData.homeCountryAddress || ''); // Added home_country_address
+          dataToSubmit.append('nominee_name', formData.nomineeWife || ''); // Mapped nomineeWife to nominee_name
+          dataToSubmit.append('nominee_phone', formData.nomineePhone || ''); // Mapped nomineePhone to nominee_phone
+          dataToSubmit.append('nominee_address', formData.nomineeAddress || ''); // Added nominee_address
 
-          // Append file fields if they exist
+          // Vehicle details from new driver form (if applicable)
+          dataToSubmit.append('vehicle_destination', formData.vehicleDestination || '');
+          dataToSubmit.append('kuwait_entry_date', formData.kuwaitEntryDate || '');
+
+
+          // Documents (from Step 2)
           if (formData.civilIdDoc) dataToSubmit.append('civil_id_doc', formData.civilIdDoc);
-          // fnbDocs is in form but not directly in module.py, omitting for now
+          if (formData.fnbDocs) dataToSubmit.append('fnb_docs', formData.fnbDocs);
           if (formData.licenseDocs) dataToSubmit.append('licence_doc', formData.licenseDocs); // Corrected mapping
           if (formData.vehicleDocs) dataToSubmit.append('vehicle_doc', formData.vehicleDocs);
           if (formData.photo) dataToSubmit.append('driver_photo', formData.photo); // Corrected mapping
           if (formData.healthCardDoc) dataToSubmit.append('health_card_doc', formData.healthCardDoc);
+          if (formData.vehiclePhotoFront) dataToSubmit.append('vehicle_photo_front', formData.vehiclePhotoFront);
+          if (formData.vehiclePhotoBack) dataToSubmit.append('vehicle_photo_back', formData.vehiclePhotoBack);
+          if (formData.vehiclePhotoLeft) dataToSubmit.append('vehicle_photo_left', formData.vehiclePhotoLeft);
+          if (formData.vehiclePhotoRight) dataToSubmit.append('vehicle_photo_right', formData.vehiclePhotoRight);
 
-          // Handle multiple vehicle photos (module.py has a single FileField 'vehicle_photos')
-          // For simplicity, we'll send the first available photo. A more robust solution
-          // would involve a separate backend endpoint or a list of FileFields.
-          if (formData.vehiclePhotoFront) {
-            dataToSubmit.append('vehicle_photos', formData.vehiclePhotoFront);
-          } else if (formData.vehiclePhotoBack) {
-            dataToSubmit.append('vehicle_photos', formData.vehiclePhotoBack);
-          } else if (formData.vehiclePhotoLeft) {
-            dataToSubmit.append('vehicle_photos', formData.vehiclePhotoLeft);
-          } else if (formData.vehiclePhotoRight) {
-            dataToSubmit.append('vehicle_photos', formData.vehiclePhotoRight);
-          }
-
-
+          // Expiry Dates (from Step 3)
           dataToSubmit.append('civil_id_number', formData.civilIdNumber || '');
           dataToSubmit.append('civil_id_expiry', formData.civilIdExpiryDate || '');
           dataToSubmit.append('licence_number', formData.licenseNumber || ''); // Corrected mapping
           dataToSubmit.append('licence_expiry', formData.licenseExpiryDate || ''); // Corrected mapping
           dataToSubmit.append('vehicle_number', formData.vehicleNumber || '');
           dataToSubmit.append('vehicle_expiry', formData.vehicleExpiryDate || '');
-          // healthCardNumber is in form but not directly in module.py, omitting for now
+          dataToSubmit.append('health_card_number', formData.healthCardNumber || ''); // Added health_card_number
           dataToSubmit.append('health_card_expiry', formData.healthCardExpiryDate || '');
-          dataToSubmit.append('working_dept', formData.workingDepartment || ''); // Corrected mapping
+
+          // Equipment & Department (from Step 4)
+          dataToSubmit.append('working_department', formData.workingDepartment || '');
           dataToSubmit.append('t_shirt_size', formData.tShirtSize || '');
 
-          // Convert boolean checkboxes for equipment to 'Yes'/'No' strings
-          dataToSubmit.append('cap', formData.cap ? 'Yes' : 'No');
-          dataToSubmit.append('bag', formData.bag ? 'Yes' : 'No');
-          dataToSubmit.append('waist', formData.vest ? 'Yes' : 'No'); // Assuming 'vest' maps to 'waist'
-          dataToSubmit.append('safeties', formData.safeties ? 'Yes' : 'No');
-          dataToSubmit.append('helmet', formData.helmet ? 'Yes' : 'No');
-          dataToSubmit.append('cool_jackets', formData.coolJackets ? 'Yes' : 'No'); // Corrected mapping
-          dataToSubmit.append('water_bottle', formData.waterBottle ? 'Yes' : 'No'); // Corrected mapping
+          // Append checkbox values for equipment (convert boolean to string 'true'/'false' or 1/0 as backend expects)
+          dataToSubmit.append('cap', formData.cap ? 'true' : 'false');
+          dataToSubmit.append('bag', formData.bag ? 'true' : 'false');
+          dataToSubmit.append('vest', formData.vest ? 'true' : 'false'); // Assuming 'vest' maps to 'vest'
+          dataToSubmit.append('safeties', formData.safeties ? 'true' : 'false');
+          dataToSubmit.append('helmet', formData.helmet ? 'true' : 'false');
+          dataToSubmit.append('cool_jackets', formData.coolJackets ? 'true' : 'false'); // Corrected mapping
+          dataToSubmit.append('water_bottle', formData.waterBottle ? 'true' : 'false'); // Corrected mapping
 
-          console.log('Working Driver Form Data to Backend:', Object.fromEntries(dataToSubmit.entries()));
-
-          // Submit to the correct backend endpoint
-          const response = await fetch('http://127.0.0.1:8000/submit-form/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              driver_type: 'working',
-              employee_id: formData.employeeId || '',
-              full_name: formData.fullName || '',
-              gender: formData.gender || '',
-              date_of_birth: formData.dob || '',
-              nationality: formData.nationality || '',
-              phone_number: formData.phoneNumber || '',
-              vehicle_type: formData.vehicleType || '',
-              vehicle_model: formData.vehicleModel || '',
-              vehicle_number: formData.vehicleNumber || '',
-              vehicle_expiry_date: formData.vehicleExpiryDate || '',
-              working_department: formData.workingDepartment || '',
-              civil_id_number: formData.civilIdNumber || '',
-              civil_id_expiry: formData.civilIdExpiryDate || '',
-              license_number: formData.licenseNumber || '',
-              license_expiry_date: formData.licenseExpiryDate || '',
-              health_card_expiry: formData.healthCardExpiryDate || '',
-              company: formData.company || '',
-              // Add accessory quantities
-              t_shirt_quantity: formData.tShirtQuantity || 0,
-              cap_quantity: formData.capQuantity || 0,
-              helmet_quantity: formData.helmetQuantity || 0,
-              bag_quantity: formData.bagQuantity || 0,
-              safety_gear_quantity: formData.safetyGearQuantity || 0
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+          // Log FormData entries for debugging
+          for (let pair of dataToSubmit.entries()) {
+            console.log(pair[0]+ ', ' + pair[1]);
           }
 
-          const result = await response.json();
-          console.log('Backend response:', result);
-          onReset('success', 'Working Driver Application submitted successfully!');
+          const response = await fetch('http://127.0.0.1:8000/Register/drivers/', { // Changed endpoint to /Register/drivers/
+            method: 'POST',
+            body: dataToSubmit, // Use FormData directly
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log("Working Driver Submission successful:", result);
+            setMessageBox({ message: "Working Driver registered successfully!", type: "success" });
+            setFormData({});
+            setErrors({});
+            setCurrentStep(0);
+            if (onReset) onReset('success', 'Working Driver Application submitted successfully!');
+          } else {
+            const errorData = await response.json();
+            console.error("Working Driver Submission failed:", errorData);
+            setMessageBox({ message: `Submission failed: ${errorData.detail || JSON.stringify(errorData) || 'Unknown error'}`, type: "error" });
+          }
         } catch (error) {
-          console.error("Submission error:", error);
-          onReset('error', `Failed to submit Working Driver Application: ${error.message}`);
+          console.error("Error during Working Driver submission:", error);
+          setMessageBox({ message: `An unexpected error occurred: ${error.message}`, type: "error" });
         } finally {
           setIsSubmitting(false);
-          setSubmitTrigger(false); // Reset trigger
+          setSubmitTrigger(false);
         }
       };
       submitForm();
     }
-  }, [submitTrigger, formData, onSubmit, onReset]); // Dependencies for useEffect
+  }, [submitTrigger, formData, onReset]); // Dependencies for useEffect
 
   const CurrentFormComponent = steps[currentStep].component;
 
   return (
     <div className="min-h-full p-6 bg-gray-100 min-w-[700px] rounded-lg shadow-lg">
       <h2 className="text-3xl font-extrabold text-gray-900 mb-6 text-center">
-        Working Driver Application
+        Working Driver Registration
       </h2>
 
       <Stepper

@@ -98,7 +98,7 @@ function Reg_ma_new_request() {
       const matchesSearch = !searchTerm ||
         driver.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         driver.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.phone?.includes(searchTerm) ||
+        driver.phone_number?.includes(searchTerm) ||
         String(driver.id).includes(searchTerm);
 
       const matchesVehicleType = !filterVehicleType ||
@@ -486,12 +486,12 @@ function Reg_ma_new_request() {
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-900">{driver.driver_name}</div>
-                            <div className="text-sm text-gray-500">ID: {driver.iqama}</div>
+                            <div className="text-sm text-gray-500">ID: {driver.emp_id}</div>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900">{driver.email || 'N/A'}</td>
-                      <td className="py-4 px-6 text-sm text-gray-900">{driver.mobile || driver.phone}</td>
+                      <td className="py-4 px-6 text-sm text-gray-900">{ driver.phone_number}</td>
                       <td className="py-4 px-6 text-sm text-gray-900">
                         {driver.company?.company_name || 'No Company'}
                       </td>
@@ -595,7 +595,7 @@ function Reg_ma_new_request() {
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Phone:</span>
-                    <span className="ml-2 text-gray-900">{selectedDriver.mobile || selectedDriver.phone}</span>
+                    <span className="ml-2 text-gray-900">{selectedDriver.phone_number}</span>
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">City:</span>
