@@ -455,6 +455,14 @@ class DriverFormSubmissionSerializer(serializers.Serializer):
             else:
                 raise serializers.ValidationError("Company is required for new driver application")
 
+            # Remove working driver specific fields that don't belong to NewDriverApplication
+            working_driver_fields = [
+                't_shirt_issued', 'cap_issued', 'bag_issued', 'vest_issued',
+                'safety_equipment_issued', 'helmet_issued', 'cool_jacket_issued', 'water_bottle_issued'
+            ]
+            for field in working_driver_fields:
+                validated_data.pop(field, None)
+
             return NewDriverApplication.objects.create(**validated_data)
 
         elif driver_type == 'working':

@@ -5,12 +5,12 @@ from .models import Company
 class CompanyAdmin(admin.ModelAdmin):
     list_display = [
         'company_name', 'registration_number', 'contact_person', 'contact_email',
-        'car_commission_type', 'car_rate_per_km', 'car_fixed_commission',
-        'bike_commission_type', 'bike_rate_per_km', 'bike_fixed_commission',
+        'car_rate_per_km', 'car_fixed_commission',
+         'bike_rate_per_km', 'bike_fixed_commission',
         'city', 'country'
     ]
     list_filter = [
-        'car_commission_type', 'bike_commission_type',
+    
         'country', 'city', 't_shirt', 'cap', 'helmet', 'safety_gear'
     ]
     search_fields = ['company_name', 'registration_number', 'contact_person', 'contact_email']
@@ -31,11 +31,11 @@ class CompanyAdmin(admin.ModelAdmin):
             'fields': ('bank_name', 'account_number', 'ifsc_code', 'swift_code', 'iban_code')
         }),
         ('Car Commission Settings', {
-            'fields': ('car_commission_type', 'car_rate_per_km', 'car_min_km',
+            'fields': ( 'car_rate_per_km', 'car_min_km',
                       'car_rate_per_order', 'car_fixed_commission')
         }),
         ('Bike Commission Settings', {
-            'fields': ('bike_commission_type', 'bike_rate_per_km', 'bike_min_km',
+            'fields': ( 'bike_rate_per_km', 'bike_min_km',
                       'bike_rate_per_order', 'bike_fixed_commission')
         }),
         ('Employee Accessories', {

@@ -503,6 +503,67 @@ def get_companies_with_accessories(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def get_company_details(request, company_id):
+    """Get detailed company information including commission and accessories"""
+    try:
+        from company.models import Company
+
+        company = Company.objects.get(id=company_id)
+
+        # Get accessories (boolean fields that are True)
+        accessories = []
+        accessory_fields = [
+            't_shirt', 'cap', 'jackets', 'bag', 'wristbands',
+            'water_bottle', 'safety_gear', 'helmet'
+        ]
+
+        for field in accessory_fields:
+            if getattr(company, field, False):
+                accessories.append({
+                    'name': field.replace('_', ' ').title(),
+                    'field_name': field
+                })
+
+        # Get commission data for both vehicle types
+        commission_data = {
+            'car': {
+                'rate_per_km': float(company.car_rate_per_km) if company.car_rate_per_km else None,
+                'min_km': company.car_min_km,
+                'rate_per_order': float(company.car_rate_per_order) if company.car_rate_per_order else None,
+                'fixed_commission': float(company.car_fixed_commission) if company.car_fixed_commission else None,
+            },
+            'bike': {
+                'rate_per_km': float(company.bike_rate_per_km) if company.bike_rate_per_km else None,
+                'min_km': company.bike_min_km,
+                'rate_per_order': float(company.bike_rate_per_order) if company.bike_rate_per_order else None,
+                'fixed_commission': float(company.bike_fixed_commission) if company.bike_fixed_commission else None,
+            }
+        }
+
+        return Response({
+            'success': True,
+            'company': {
+                'id': company.id,
+                'name': company.company_name,
+                'accessories': accessories,
+                'commission': commission_data
+            }
+        })
+
+    except Company.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Company not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def get_new_driver_application(request, application_id):
     """Get a specific new driver application by ID for auto-filling working driver form"""
     try:
@@ -527,3 +588,69 @@ def get_new_driver_application(request, application_id):
             'success': False,
             'error': f'Error fetching application: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def new_driver_applications_list(request):
+    """Get list of all new driver applications"""
+    try:
+        from .models import NewDriverApplication
+        from .serializers import NewDriverApplicationListSerializer
+
+        applications = NewDriverApplication.objects.all().order_by('-created_at')
+        serializer = NewDriverApplicationListSerializer(applications, many=True)
+        return Response({
+            'success': True,
+            'data': serializer.data,
+            'count': applications.count()
+        })
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([AllowAny])
+def new_driver_application_detail(request, application_id):
+    """Get, update, or delete a specific new driver application"""
+    try:
+        from .models import NewDriverApplication
+        from .serializers import NewDriverApplicationSerializer
+
+        application = NewDriverApplication.objects.get(id=application_id)
+    except NewDriverApplication.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Application not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = NewDriverApplicationSerializer(application)
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+
+    elif request.method == 'PUT':
+        serializer = NewDriverApplicationSerializer(application, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'Application updated successfully',
+                'data': serializer.data
+            })
+        return Response({
+            'success': False,
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        application.delete()
+        return Response({
+            'success': True,
+            'message': 'Application deleted successfully'
+        }, status=status.HTTP_204_NO_CONTENT)

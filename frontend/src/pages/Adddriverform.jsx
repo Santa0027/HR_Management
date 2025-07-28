@@ -509,12 +509,28 @@ const Step2NewDriverVehicle = ({
   dropdownOptions = { countries: [], cities: {}, vehicle_types: [] },
   selectedCompanyCommissionRules = null, // Re-added this prop
   loading = false,
+  // Enhanced props for dynamic commission
+  companyCommission = null,
+  companyAccessories = [],
+  accessoryQuantities = {},
+  onAccessoryQuantityChange = () => {},
 }) => {
   const currentVehicleType = formData.vehicleType;
   const commissionTypeFieldName = `${currentVehicleType}CommissionType`;
 
   // Determine the commission type to display based on fetched rules
   const displayedCommissionType = selectedCompanyCommissionRules?.[currentVehicleType]?.commission_type || '';
+
+  // Get current commission data for the selected vehicle type
+  const currentCommission = companyCommission && currentVehicleType ? companyCommission[currentVehicleType] : null;
+
+  // Debug logging
+  console.log('Commission Debug:', {
+    currentVehicleType,
+    companyCommission,
+    currentCommission,
+    hasCommission: !!currentCommission
+  });
 
   return (
     <>
@@ -657,79 +673,87 @@ const Step2NewDriverVehicle = ({
         />
       </div>
 
-      {/* Commission Details Section */}
-      {currentVehicleType && displayedCommissionType && (
-        <div className="mt-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">
+      {/* Enhanced Commission Details Section */}
+      {currentVehicleType && currentCommission && (
+        <div className="mt-8 p-6 border border-blue-200 rounded-lg bg-blue-50">
+          <h4 className="text-lg font-semibold text-blue-800 mb-4">
             Commission Details ({currentVehicleType.toUpperCase()})
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor={commissionTypeFieldName} className="block text-sm font-medium text-gray-700">
-                Commission Type
-              </label>
-              <FormInput
-                type="text"
-                id={commissionTypeFieldName}
-                name={commissionTypeFieldName}
-                value={displayedCommissionType} // Display fetched value
-                readOnly // Make it read-only
-                className="mt-1 block w-full rounded-md border p-2 shadow-sm bg-gray-100 cursor-not-allowed sm:text-sm"
-              />
-            </div>
-
-            {displayedCommissionType === "PER_KM" && (
-              <>
-                <MemoizedInputField
-                  id={`${currentVehicleType}RatePerKm`}
-                  label="Rate per KM"
-                  type="number"
-                  formData={formData}
-                  handleChange={handleChange}
-                  errors={errors}
-                />
-                <MemoizedInputField
-                  id={`${currentVehicleType}MinKm`}
-                  label="Minimum KM"
-                  type="number"
-                  formData={formData}
-                  handleChange={handleChange}
-                  errors={errors}
-                />
-              </>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(currentCommission.rate_per_km !== undefined && currentCommission.rate_per_km !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rate per KM</label>
+                <div className="text-lg font-semibold text-green-600">
+                  ${currentCommission.rate_per_km}
+                </div>
+              </div>
             )}
-            {displayedCommissionType === "PER_ORDER" && (
-              <MemoizedInputField
-                id={`${currentVehicleType}RatePerOrder`}
-                label="Rate per Order"
-                type="number"
-                formData={formData}
-                handleChange={handleChange}
-                errors={errors}
-              />
+            {(currentCommission.min_km !== undefined && currentCommission.min_km !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum KM</label>
+                <div className="text-lg font-semibold text-blue-600">
+                  {currentCommission.min_km} km
+                </div>
+              </div>
             )}
-            {displayedCommissionType === "FIXED" && (
-              <MemoizedInputField
-                id={`${currentVehicleType}FixedCommission`}
-                label="Fixed Commission"
-                type="number"
-                formData={formData}
-                handleChange={handleChange}
-                errors={errors}
-              />
+            {(currentCommission.rate_per_order !== undefined && currentCommission.rate_per_order !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rate per Order</label>
+                <div className="text-lg font-semibold text-purple-600">
+                  ${currentCommission.rate_per_order}
+                </div>
+              </div>
+            )}
+            {(currentCommission.fixed_commission !== undefined && currentCommission.fixed_commission !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Commission</label>
+                <div className="text-lg font-semibold text-orange-600">
+                  ${currentCommission.fixed_commission}
+                </div>
+              </div>
             )}
           </div>
         </div>
       )}
-      {currentVehicleType && formData.company && !displayedCommissionType && (
-          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
-            <p className="flex items-center">
-              <InformationCircleIcon className="h-5 w-5 mr-2" />
-              No commission rules found for the selected vehicle type ({currentVehicleType}) and company ({formData.company}).
-            </p>
+
+      {/* Commission Not Available Message */}
+      {currentVehicleType && formData.company && !currentCommission && (
+        <div className="mt-8 p-6 border border-yellow-200 rounded-lg bg-yellow-50">
+          <h4 className="text-lg font-semibold text-yellow-800 mb-2">
+            Commission Information
+          </h4>
+          <p className="text-yellow-700">
+            No commission data available for {currentVehicleType.toUpperCase()} vehicles at {formData.company}.
+            Please contact administration to set up commission rates.
+          </p>
+        </div>
+      )}
+
+      {/* Accessories Section */}
+      {companyAccessories.length > 0 && (
+        <div className="mt-8 p-6 border border-green-200 rounded-lg bg-green-50">
+          <h4 className="text-lg font-semibold text-green-800 mb-4">
+            Company Accessories
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {companyAccessories.map(accessory => (
+              <div key={accessory.field_name} className="bg-white p-4 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {accessory.name}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={accessoryQuantities[accessory.field_name] || 0}
+                  onChange={(e) => onAccessoryQuantityChange(accessory.field_name, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter quantity"
+                />
+              </div>
+            ))}
           </div>
-        )
-      }
+        </div>
+      )}
 
 
       <div className="flex justify-between mt-8">
@@ -878,7 +902,13 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
     cities: {},
     vehicle_types: []
   });
-  const [selectedCompanyCommissionRules, setSelectedCompanyCommissionRules] = useState(null); // Re-added state
+  const [selectedCompanyCommissionRules, setSelectedCompanyCommissionRules] = useState(null);
+
+  // Enhanced state for company selection and commission
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companyCommission, setCompanyCommission] = useState(null);
+  const [companyAccessories, setCompanyAccessories] = useState([]);
+  const [accessoryQuantities, setAccessoryQuantities] = useState({}); // Re-added state
   const [loading, setLoading] = useState(true);
   const [messageBox, setMessageBox] = useState(null); // State for message box
   const totalSteps = 3;
@@ -927,14 +957,14 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
         // Construct commission rules object based on vehicle type
         const commissionRules = {
           car: {
-            commission_type: company.car_commission_type,
+            // commission_type: company.car_commission_type,
             rate_per_km: company.car_rate_per_km,
             min_km: company.car_min_km,
             rate_per_order: company.car_rate_per_order,
             fixed_commission: company.car_fixed_commission,
           },
           bike: {
-            commission_type: company.bike_commission_type,
+            // commission_type: company.bike_commission_type,
             rate_per_km: company.bike_rate_per_km,
             min_km: company.bike_min_km,
             rate_per_order: company.bike_rate_per_order,
@@ -1057,9 +1087,78 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: null }));
       }
+
+      // Handle company selection
+      if (name === 'company') {
+        handleCompanySelection(value);
+      }
+
+      // Handle vehicle type change
+      if (name === 'vehicleType' && companyCommission) {
+        updateCommissionDisplay(value, companyCommission);
+      }
     },
-    [errors]
+    [errors, companyCommission]
   );
+
+  // Enhanced company selection handler
+  const handleCompanySelection = async (companyName) => {
+    if (!companyName) {
+      setSelectedCompany(null);
+      setCompanyCommission(null);
+      setCompanyAccessories([]);
+      setAccessoryQuantities({});
+      return;
+    }
+
+    try {
+      // Find the company by name to get its ID
+      const company = companies.find(c => c.company_name === companyName);
+      if (!company) return;
+
+      // Fetch detailed company information
+      const response = await fetch(`http://127.0.0.1:8000/company-details/${company.id}/`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSelectedCompany(data.company);
+        setCompanyCommission(data.company.commission);
+        setCompanyAccessories(data.company.accessories);
+
+        // Initialize accessory quantities
+        const initialQuantities = {};
+        data.company.accessories.forEach(accessory => {
+          initialQuantities[accessory.field_name] = 0;
+        });
+        setAccessoryQuantities(initialQuantities);
+
+        // Update commission display if vehicle type is selected
+        if (formData.vehicleType) {
+          updateCommissionDisplay(formData.vehicleType, data.company.commission);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+    }
+  };
+
+  // Update commission display based on vehicle type
+  const updateCommissionDisplay = (vehicleType, commission) => {
+    if (commission && commission[vehicleType]) {
+      setFormData(prev => ({
+        ...prev,
+        currentCommission: commission[vehicleType]
+      }));
+    }
+  };
+
+  // Handle accessory quantity changes
+  const handleAccessoryQuantityChange = (accessoryField, quantity) => {
+    setAccessoryQuantities(prev => ({
+      ...prev,
+      [accessoryField]: parseInt(quantity) || 0
+    }));
+  };
 
   const validateStep = useCallback(
     (stepIndex) => {
@@ -1141,52 +1240,81 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           // Construct FormData for backend submission
           const dataToSubmit = new FormData();
 
-          // Mapping New Driver Form fields to module.py backend fields
-          dataToSubmit.append('driver_type', 'new'); // Add driver_type as a form field
-          dataToSubmit.append('driver_name', formData.fullName || '');
+          // Mapping New Driver Form fields to backend expected field names
+          dataToSubmit.append('driver_type', 'new'); // Required field
+          dataToSubmit.append('full_name', formData.fullName || ''); // Backend expects 'full_name'
           dataToSubmit.append('emp_id', formData.emp_Id || '');
-          dataToSubmit.append('gender', formData.gender || '');
-          dataToSubmit.append('dob', formData.dob || '');
-          dataToSubmit.append('nationality', formData.nationality || '');
+          dataToSubmit.append('gender', formData.gender || ''); // Required field
+          dataToSubmit.append('date_of_birth', formData.dob || ''); // Backend expects 'date_of_birth'
+          dataToSubmit.append('nationality', formData.nationality || ''); // Required field
           dataToSubmit.append('city', formData.city || '');
           dataToSubmit.append('company', formData.company || ''); // Company field
           dataToSubmit.append('apartment_area', formData.apartmentArea || '');
-          dataToSubmit.append('phone_number', formData.phoneNumber || '');
+          dataToSubmit.append('phone_number', formData.phoneNumber || ''); // Backend expects 'phone_number'
           dataToSubmit.append('age', formData.age || '');
           dataToSubmit.append('marital_status', formData.maritalStatus || '');
           dataToSubmit.append('blood_group', formData.bloodGroup || '');
           dataToSubmit.append('home_country_address', formData.homeCountryAddress || '');
-          dataToSubmit.append('nominee', formData.nomineeWife || '');
-          dataToSubmit.append('nominee_phone', formData.nomineePhone || ''); // Nominee phone
-          dataToSubmit.append('vehicle_type', formData.vehicleType || '');
+          // Required nominee fields
+          dataToSubmit.append('nominee_name', formData.nomineeWife || formData.nominee || 'Not Specified');
+          dataToSubmit.append('nominee_phone', formData.nomineePhone || '+96500000000');
+          dataToSubmit.append('nominee_relationship', formData.nomineeRelationship || 'other');
+          dataToSubmit.append('nominee_address', formData.nomineeAddress || 'Not Specified');
+
+          // Required physical details
+          dataToSubmit.append('marital_status', formData.maritalStatus || 'single');
+          dataToSubmit.append('blood_group', formData.bloodGroup || 'O+');
+          dataToSubmit.append('t_shirt_size', formData.tShirtSize || 'M');
+          dataToSubmit.append('weight', formData.weight || '70.00'); // Required DecimalField
+          dataToSubmit.append('height', formData.height || '170.00'); // Required DecimalField
+
+          // Vehicle and other details
+          dataToSubmit.append('vehicle_type', formData.vehicleType || ''); // Required field
           dataToSubmit.append('vehicle_destination', formData.vehicleDestination || '');
-          dataToSubmit.append('t_shirt_size', formData.tShirtSize || '');
-          dataToSubmit.append('weight', formData.weight || '');
-          dataToSubmit.append('height', formData.height || '');
           dataToSubmit.append('kuwait_entry_date', formData.kuwaitEntryDate || '');
 
-          // Append commission details based on vehicle type from formData
-          if (formData.vehicleType && selectedCompanyCommissionRules) {
-            const vehicleTypePrefix = formData.vehicleType;
-            const commissionRule = selectedCompanyCommissionRules[vehicleTypePrefix];
+          // Add accessory quantities if available
+          if (accessoryQuantities && Object.keys(accessoryQuantities).length > 0) {
+            Object.entries(accessoryQuantities).forEach(([accessoryField, quantity]) => {
+              dataToSubmit.append(`accessory_${accessoryField}`, quantity || 0);
+            });
+          }
 
-            if (commissionRule) {
-                // Use the commission_type from the fetched rule, not from formData directly
-                dataToSubmit.append(`${vehicleTypePrefix}_commission_type`, commissionRule.commission_type || '');
-                // Ensure numerical values are sent, default to 0 if not present or invalid
-                dataToSubmit.append(`${vehicleTypePrefix}_rate_per_km`, parseFloat(formData[`${vehicleTypePrefix}RatePerKm`]) || 0);
-                dataToSubmit.append(`${vehicleTypePrefix}_min_km`, parseFloat(formData[`${vehicleTypePrefix}MinKm`]) || 0);
-                dataToSubmit.append(`${vehicleTypePrefix}_rate_per_order`, parseFloat(formData[`${vehicleTypePrefix}RatePerOrder`]) || 0);
-                dataToSubmit.append(`${vehicleTypePrefix}_fixed_commission`, parseFloat(formData[`${vehicleTypePrefix}FixedCommission`]) || 0);
+          // Append commission details based on vehicle type and company commission data
+          if (formData.vehicleType && companyCommission) {
+            const vehicleType = formData.vehicleType;
+            const commission = companyCommission[vehicleType];
+
+            if (commission) {
+                // Send commission data with proper field names
+                dataToSubmit.append(`${vehicleType}_rate_per_km`, commission.rate_per_km || 0);
+                dataToSubmit.append(`${vehicleType}_min_km`, commission.min_km || 0);
+                dataToSubmit.append(`${vehicleType}_rate_per_order`, commission.rate_per_order || 0);
+                dataToSubmit.append(`${vehicleType}_fixed_commission`, commission.fixed_commission || 0);
+
+                // Also send the commission type if available
+                if (commission.commission_type) {
+                  dataToSubmit.append(`${vehicleType}_commission_type`, commission.commission_type);
+                }
             }
           }
 
-          // Append file fields if they exist
-          if (formData.passport) dataToSubmit.append('passport', formData.passport);
-          if (formData.visa) dataToSubmit.append('visa', formData.visa);
-          if (formData.policeCer) dataToSubmit.append('police_cer', formData.policeCer);
-          if (formData.pasPhot) dataToSubmit.append('passport_photo', formData.pasPhot);
-          if (formData.medicalCer) dataToSubmit.append('medical_cer', formData.medicalCer);
+          // Append file fields only if they exist and are valid files (using correct backend field names)
+          if (formData.passport && formData.passport instanceof File) {
+            dataToSubmit.append('passport_document', formData.passport);
+          }
+          if (formData.visa && formData.visa instanceof File) {
+            dataToSubmit.append('visa_document', formData.visa);
+          }
+          if (formData.policeCer && formData.policeCer instanceof File) {
+            dataToSubmit.append('police_certificate', formData.policeCer);
+          }
+          if (formData.pasPhot && formData.pasPhot instanceof File) {
+            dataToSubmit.append('passport_photo', formData.pasPhot);
+          }
+          if (formData.medicalCer && formData.medicalCer instanceof File) {
+            dataToSubmit.append('medical_certificate', formData.medicalCer);
+          }
 
           // Log FormData entries for debugging
           for (let pair of dataToSubmit.entries()) {
@@ -1194,14 +1322,14 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           }
 
           // Submit to the correct backend endpoint
-          const response = await axiosInstance.get('/submit-form/', {
-            method: 'POST',
-            // Do NOT set Content-Type header manually when sending FormData
-            body: dataToSubmit,
+          const response = await axiosInstance.post('/submit-form/', dataToSubmit, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
           });
 
-          if (response.ok) {
-            const result = await response.json();
+          if (response.status === 200 || response.status === 201) {
+            const result = response.data;
             console.log("Submission successful:", result);
             // Call the parent onSubmit prop
             if (onSubmit) onSubmit(formData);
@@ -1213,10 +1341,9 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
             setCurrentStep(0);
             if (onReset) onReset('success', 'New Driver Application submitted successfully!'); // Call parent onReset if provided
           } else {
-            const errorData = await response.json();
-            console.error("Submission failed:", errorData);
+            console.error("Submission failed:", response.data);
             // Show error message
-            setMessageBox({ message: `Submission failed: ${errorData.detail || JSON.stringify(errorData) || 'Unknown error'}`, type: "error" });
+            setMessageBox({ message: `Submission failed: ${response.data?.detail || JSON.stringify(response.data) || 'Unknown error'}`, type: "error" });
           }
         } catch (error) {
           console.error("Error during submission:", error);
@@ -1270,6 +1397,11 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
             dropdownOptions={dropdownOptions}
             loading={loading}
             selectedCompanyCommissionRules={selectedCompanyCommissionRules} // Pass commission rules
+            // Enhanced props for dynamic commission and accessories
+            companyCommission={companyCommission}
+            companyAccessories={companyAccessories}
+            accessoryQuantities={accessoryQuantities}
+            onAccessoryQuantityChange={handleAccessoryQuantityChange}
           />
         )}
       </div>
@@ -2126,6 +2258,12 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
   const [loading, setLoading] = useState(true);
   const [autoFilling, setAutoFilling] = useState(false);
   const [messageBox, setMessageBox] = useState(null); // State for message box
+
+  // Enhanced state for company selection and commission
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [companyCommission, setCompanyCommission] = useState(null);
+  const [companyAccessories, setCompanyAccessories] = useState([]);
+  const [accessoryQuantities, setAccessoryQuantities] = useState({});
   const totalSteps = 4;
 
   // Fetch companies and dropdown options on component mount
@@ -2245,9 +2383,78 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: null }));
       }
+
+      // Handle company selection
+      if (name === 'company') {
+        handleCompanySelection(value);
+      }
+
+      // Handle vehicle type change
+      if (name === 'vehicleType' && companyCommission) {
+        updateCommissionDisplay(value, companyCommission);
+      }
     },
-    [errors]
+    [errors, companyCommission]
   );
+
+  // Enhanced company selection handler
+  const handleCompanySelection = async (companyName) => {
+    if (!companyName) {
+      setSelectedCompany(null);
+      setCompanyCommission(null);
+      setCompanyAccessories([]);
+      setAccessoryQuantities({});
+      return;
+    }
+
+    try {
+      // Find the company by name to get its ID
+      const company = companies.find(c => c.company_name === companyName);
+      if (!company) return;
+
+      // Fetch detailed company information
+      const response = await fetch(`http://127.0.0.1:8000/company-details/${company.id}/`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSelectedCompany(data.company);
+        setCompanyCommission(data.company.commission);
+        setCompanyAccessories(data.company.accessories);
+
+        // Initialize accessory quantities
+        const initialQuantities = {};
+        data.company.accessories.forEach(accessory => {
+          initialQuantities[accessory.field_name] = 0;
+        });
+        setAccessoryQuantities(initialQuantities);
+
+        // Update commission display if vehicle type is selected
+        if (formData.vehicleType) {
+          updateCommissionDisplay(formData.vehicleType, data.company.commission);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+    }
+  };
+
+  // Update commission display based on vehicle type
+  const updateCommissionDisplay = (vehicleType, commission) => {
+    if (commission && commission[vehicleType]) {
+      setFormData(prev => ({
+        ...prev,
+        currentCommission: commission[vehicleType]
+      }));
+    }
+  };
+
+  // Handle accessory quantity changes
+  const handleAccessoryQuantityChange = (accessoryField, quantity) => {
+    setAccessoryQuantities(prev => ({
+      ...prev,
+      [accessoryField]: parseInt(quantity) || 0
+    }));
+  };
 
   const validateStep = useCallback(
     (stepIndex) => {
@@ -2381,14 +2588,14 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           dataToSubmit.append('driver_type', 'working');
           dataToSubmit.append('new_driver_application_id', formData.selectedNewDriver || '');
 
-          // Personal & Vehicle Info (from Step 1)
+          // Personal & Vehicle Info (from Step 1) - Using correct backend field names
           dataToSubmit.append("emp_id", formData.emp_id || "");
-          dataToSubmit.append('driver_name', formData.driver_name || '');
-          dataToSubmit.append('gender', formData.gender || '');
-          dataToSubmit.append('date_of_birth', formData.dob || ''); // Mapped to date_of_birth
-          dataToSubmit.append('nationality', formData.nationality || '');
-          dataToSubmit.append('phone_number', formData.phoneNumber || '');
-          dataToSubmit.append('vehicle_type', formData.vehicleType || '');
+          dataToSubmit.append('full_name', formData.driver_name || ''); // Backend expects 'full_name'
+          dataToSubmit.append('gender', formData.gender || ''); // Required field
+          dataToSubmit.append('date_of_birth', formData.dob || ''); // Backend expects 'date_of_birth'
+          dataToSubmit.append('nationality', formData.nationality || ''); // Required field
+          dataToSubmit.append('phone_number', formData.phoneNumber || ''); // Backend expects 'phone_number'
+          dataToSubmit.append('vehicle_type', formData.vehicleType || ''); // Required field
           dataToSubmit.append('vehicle_model', formData.vehicleModel || '');
           dataToSubmit.append('city', formData.city || ''); // Added city
           dataToSubmit.append('company', formData.company || ''); // Added company
@@ -2440,6 +2647,13 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           dataToSubmit.append('helmet', formData.helmet ? 'true' : 'false');
           dataToSubmit.append('cool_jackets', formData.coolJackets ? 'true' : 'false'); // Corrected mapping
           dataToSubmit.append('water_bottle', formData.waterBottle ? 'true' : 'false'); // Corrected mapping
+
+          // Add accessory quantities if available
+          if (accessoryQuantities && Object.keys(accessoryQuantities).length > 0) {
+            Object.entries(accessoryQuantities).forEach(([accessoryField, quantity]) => {
+              dataToSubmit.append(`accessory_${accessoryField}`, quantity || 0);
+            });
+          }
 
           // Log FormData entries for debugging
           for (let pair of dataToSubmit.entries()) {
@@ -2519,6 +2733,11 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           newDrivers={newDrivers}
           loading={loading}
           onDriverSelect={handleDriverSelect}
+          // Enhanced props for dynamic commission and accessories
+          companyCommission={companyCommission}
+          companyAccessories={companyAccessories}
+          accessoryQuantities={accessoryQuantities}
+          onAccessoryQuantityChange={handleAccessoryQuantityChange}
         />
       </div>
     </div>

@@ -7,6 +7,21 @@ from decimal import Decimal
 from company.models import Company
 from vehicle.models import VehicleRegistration
 
+
+class Accessory(models.Model):
+    """Model for accessories that can be assigned to drivers"""
+    name = models.CharField(max_length=100, unique=True, help_text="Name of the accessory")
+    description = models.TextField(blank=True, help_text="Description of the accessory")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Accessories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
 class Driver(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -22,8 +37,40 @@ class Driver(models.Model):
     mobile = models.CharField(max_length=20, default='', help_text="Mobile phone number")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
+    # Company and Commission Information
+    assigned_company = models.ForeignKey(
+        Company,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='drivers',
+        help_text="Company assigned to this driver"
+    )
+    vehicle_type = models.CharField(
+        max_length=20,
+        choices=[('car', 'Car'), ('bike', 'Bike')],
+        default='car',
+        help_text="Type of vehicle assigned to driver"
+    )
+    commission_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Commission rate for this driver based on company and vehicle type"
+    )
+
+    # Many-to-many relationship with accessories through DriverAccessory
+    accessories = models.ManyToManyField(
+        Accessory,
+        through='DriverAccessory',
+        blank=True,
+        help_text="Accessories assigned to this driver"
+    )
+
     # Personal Details
-    # profile_image = models.imageField(upload_to='drivers/profile_images/', blank=True, null=True, help_text="Profile image of the driver")
+    
+    profile_image = models.FileField(upload_to='drivers/profile_images/', blank=True, null=True, help_text="Profile image of the driver")
     full_name = models.CharField(max_length=255, default='')
     gender = models.CharField(max_length=10, default='')
     dob = models.DateField(null=True, blank=True)
@@ -50,7 +97,7 @@ class Driver(models.Model):
     visa = models.FileField(upload_to='documents/', blank=True, null=True)
     police_cer = models.FileField(upload_to='documents/', blank=True, null=True)
     medical_cer = models.FileField(upload_to='documents/', blank=True, null=True)
-    passport_photo = models.FileField(upload_to='documents/', blank=True, null=True)
+    passport_photo = models.ImageField(upload_to='documents/', blank=True, null=True)
 
     # Working Details
     emp_id = models.CharField(max_length=100, blank=True)
@@ -300,12 +347,12 @@ class NewDriverApplication(models.Model):
     nominee_phone = models.CharField(max_length=20)
     nominee_address = models.TextField()
 
-    # Documents
-    passport_document = models.FileField(upload_to='new_drivers/documents/', help_text="Passport copy")
-    visa_document = models.FileField(upload_to='new_drivers/documents/', help_text="Visa copy")
-    police_certificate = models.FileField(upload_to='new_drivers/documents/', help_text="Police clearance certificate")
-    medical_certificate = models.FileField(upload_to='new_drivers/documents/', help_text="Medical certificate")
-    passport_photo = models.ImageField(upload_to='new_drivers/photos/', help_text="Passport size photo")
+    # Documents (Optional - can be uploaded later)
+    passport_document = models.FileField(upload_to='new_drivers/documents/', blank=True, null=True, help_text="Passport copy")
+    visa_document = models.FileField(upload_to='new_drivers/documents/', blank=True, null=True, help_text="Visa copy")
+    police_certificate = models.FileField(upload_to='new_drivers/documents/', blank=True, null=True, help_text="Police clearance certificate")
+    medical_certificate = models.FileField(upload_to='new_drivers/documents/', blank=True, null=True, help_text="Medical certificate")
+    passport_photo = models.ImageField(upload_to='new_drivers/photos/', blank=True, null=True, help_text="Passport size photo")
 
     # Review Notes
     review_notes = models.TextField(blank=True)
@@ -325,7 +372,15 @@ class NewDriverApplication(models.Model):
         # Auto-generate application number
         if not self.application_number:
             from datetime import datetime
-            self.application_number = f"NDA{datetime.now().strftime('%Y%m%d')}{self.pk or '001'}"
+            today_str = datetime.now().strftime('%Y%m%d')
+
+            # Get the count of applications created today
+            today_count = NewDriverApplication.objects.filter(
+                application_date__date=datetime.now().date()
+            ).count()
+
+            # Generate unique application number
+            self.application_number = f"NDA{today_str}{str(today_count + 1).zfill(3)}"
 
         # Auto-calculate age
         if self.date_of_birth:
@@ -489,3 +544,18 @@ class WorkingDriver(models.Model):
         return all(mandatory_accessories)
 
 
+class DriverAccessory(models.Model):
+    """Through model for Driver-Accessory relationship with count"""
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='driver_accessories')
+    accessory = models.ForeignKey(Accessory, on_delete=models.CASCADE, related_name='driver_accessories')
+    count = models.PositiveIntegerField(default=1, help_text="Number of this accessory assigned to the driver")
+    assigned_date = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, help_text="Additional notes about this accessory assignment")
+
+    class Meta:
+        unique_together = ('driver', 'accessory')
+        verbose_name = "Driver Accessory"
+        verbose_name_plural = "Driver Accessories"
+
+    def __str__(self):
+        return f"{self.driver.driver_name} - {self.accessory.name} ({self.count})"

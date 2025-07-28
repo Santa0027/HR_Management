@@ -7,19 +7,8 @@ from decimal import Decimal
 # --- Simplified Company Model with all fields integrated ---
 class Company(models.Model):
     # Car commission fields
-    CAR_COMMISSION_TYPE_CHOICES = [
-        ('KM', 'KM Based'),
-        ('ORDER', 'Order Based'),
-        ('FIXED', 'Fixed Commission'),
-    ]
-    car_commission_type = models.CharField(
-        max_length=10,
-        choices=CAR_COMMISSION_TYPE_CHOICES,
-        default='FIXED',
-        help_text="Type of commission for car (e.g., KM Based, Order Based, Fixed).",
-        null=True,
-        blank=True,
-    )
+
+ 
     car_rate_per_km = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -47,20 +36,7 @@ class Company(models.Model):
         help_text="Car: Fixed commission amount (applicable for Fixed Commission)."
     )
 
-    # Bike commission fields
-    BIKE_COMMISSION_TYPE_CHOICES = [
-        ('KM', 'KM Based'),
-        ('ORDER', 'Order Based'),
-        ('FIXED', 'Fixed Commission'),
-    ]
-    bike_commission_type = models.CharField(
-        max_length=10,
-        choices=BIKE_COMMISSION_TYPE_CHOICES,
-        default='FIXED',
-        help_text="Type of commission for bike (e.g., KM Based, Order Based, Fixed).",
-        null=True,
-        blank=True,
-    )
+ 
     bike_rate_per_km = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -155,6 +131,13 @@ class Company(models.Model):
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Many-to-many relationship with accessories
+    accessories = models.ManyToManyField(
+        'drivers.Accessory',
+        blank=True,
+        help_text="Accessories available for this company's drivers"
+    )
 
     class Meta:
         verbose_name = "Company"

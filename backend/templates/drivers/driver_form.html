@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Registration Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .section-title {
+            color: #007bff;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .accessory-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        .accessory-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .commission-display {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #0056b3, #004085);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Driver Registration Form
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="driverForm">
+                            <!-- Basic Information Section -->
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-user me-2"></i>
+                                    Basic Information
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="driver_name" class="form-label">Driver Name *</label>
+                                        <input type="text" class="form-control" id="driver_name" name="driver_name" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="iqama" class="form-label">Iqama Number *</label>
+                                        <input type="text" class="form-control" id="iqama" name="iqama" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="mobile" class="form-label">Mobile Number *</label>
+                                        <input type="tel" class="form-control" id="mobile" name="mobile" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="gender" class="form-label">Gender *</label>
+                                        <select class="form-select" id="gender" name="gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="nationality" class="form-label">Nationality</label>
+                                        <input type="text" class="form-control" id="nationality" name="nationality">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="city" class="form-label">City</label>
+                                        <input type="text" class="form-control" id="city" name="city">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Company and Vehicle Section -->
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-building me-2"></i>
+                                    Company & Vehicle Assignment
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="company" class="form-label">Select Company *</label>
+                                        <select class="form-select" id="company" name="company" required>
+                                            <option value="">Choose a company...</option>
+                                            {% for company in companies %}
+                                            <option value="{{ company.id }}">{{ company.company_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="loading-spinner mt-2">
+                                            <i class="fas fa-spinner fa-spin"></i> Loading company data...
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="vehicle_type" class="form-label">Vehicle Type *</label>
+                                        <select class="form-select" id="vehicle_type" name="vehicle_type" required>
+                                            <option value="">Select Vehicle Type</option>
+                                            <option value="car">Car</option>
+                                            <option value="bike">Bike</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Commission Display -->
+                                <div id="commissionDisplay" class="commission-display" style="display: none;">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="fas fa-money-bill-wave me-2"></i>
+                                        Commission Information
+                                    </h6>
+                                    <div class="row" id="commissionDetails">
+                                        <!-- Commission details will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Accessories Section -->
+                            <div class="form-section">
+                                <h5 class="section-title">
+                                    <i class="fas fa-tools me-2"></i>
+                                    Accessories Assignment
+                                </h5>
+                                <div id="accessoriesContainer">
+                                    <p class="text-muted">Please select a company first to load available accessories.</p>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="fas fa-save me-2"></i>
+                                    Register Driver
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Success
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="successMessage">Driver registered successfully!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage">An error occurred. Please try again.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            let currentCompanyData = null;
+
+            // Handle company selection
+            $('#company').change(function() {
+                const companyId = $(this).val();
+                if (companyId) {
+                    loadCompanyData(companyId);
+                } else {
+                    clearCompanyData();
+                }
+            });
+
+            // Handle vehicle type selection
+            $('#vehicle_type').change(function() {
+                updateCommissionDisplay();
+            });
+
+            // Load company data via Ajax
+            function loadCompanyData(companyId) {
+                $('.loading-spinner').show();
+                $('#commissionDisplay').hide();
+                $('#accessoriesContainer').html('<p class="text-muted">Loading accessories...</p>');
+
+                $.ajax({
+                    url: `/drivers/api/company/${companyId}/`,
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            currentCompanyData = response;
+                            updateCommissionDisplay();
+                            loadAccessories(response.accessories);
+                        } else {
+                            showError('Failed to load company data: ' + response.error);
+                        }
+                    },
+                    error: function(xhr) {
+                        showError('Error loading company data. Please try again.');
+                    },
+                    complete: function() {
+                        $('.loading-spinner').hide();
+                    }
+                });
+            }
+
+            // Update commission display based on vehicle type
+            function updateCommissionDisplay() {
+                if (!currentCompanyData) return;
+
+                const vehicleType = $('#vehicle_type').val();
+                if (!vehicleType) {
+                    $('#commissionDisplay').hide();
+                    return;
+                }
+
+                const commission = currentCompanyData.commission[vehicleType];
+                let commissionHtml = '';
+
+                if (commission.fixed_commission) {
+                    commissionHtml += `
+                        <div class="col-md-6">
+                            <strong>Fixed Commission:</strong> $${commission.fixed_commission}
+                        </div>
+                    `;
+                }
+
+                if (commission.rate_per_km) {
+                    commissionHtml += `
+                        <div class="col-md-6">
+                            <strong>Rate per KM:</strong> $${commission.rate_per_km}
+                        </div>
+                    `;
+                    if (commission.min_km) {
+                        commissionHtml += `
+                            <div class="col-md-6">
+                                <strong>Minimum KM:</strong> ${commission.min_km}
+                            </div>
+                        `;
+                    }
+                }
+
+                if (commission.rate_per_order) {
+                    commissionHtml += `
+                        <div class="col-md-6">
+                            <strong>Rate per Order:</strong> $${commission.rate_per_order}
+                        </div>
+                    `;
+                }
+
+                if (commissionHtml) {
+                    $('#commissionDetails').html(commissionHtml);
+                    $('#commissionDisplay').show();
+                } else {
+                    $('#commissionDisplay').hide();
+                }
+            }
+
+            // Load accessories for the selected company
+            function loadAccessories(accessories) {
+                if (accessories.length === 0) {
+                    $('#accessoriesContainer').html('<p class="text-muted">No accessories available for this company.</p>');
+                    return;
+                }
+
+                let accessoriesHtml = '';
+                accessories.forEach(function(accessory) {
+                    accessoriesHtml += `
+                        <div class="accessory-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">${accessory.name}</h6>
+                                    <small class="text-muted">${accessory.description || 'No description'}</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="accessory_${accessory.id}" class="form-label">Quantity</label>
+                                    <input type="number"
+                                           class="form-control accessory-count"
+                                           id="accessory_${accessory.id}"
+                                           data-accessory-id="${accessory.id}"
+                                           min="0"
+                                           value="0"
+                                           placeholder="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="notes_${accessory.id}" class="form-label">Notes</label>
+                                    <input type="text"
+                                           class="form-control accessory-notes"
+                                           id="notes_${accessory.id}"
+                                           data-accessory-id="${accessory.id}"
+                                           placeholder="Optional notes">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                $('#accessoriesContainer').html(accessoriesHtml);
+            }
+
+            // Clear company data
+            function clearCompanyData() {
+                currentCompanyData = null;
+                $('#commissionDisplay').hide();
+                $('#accessoriesContainer').html('<p class="text-muted">Please select a company first to load available accessories.</p>');
+            }
+
+            // Handle form submission
+            $('#driverForm').submit(function(e) {
+                e.preventDefault();
+
+                // Collect form data
+                const formData = {
+                    driver_name: $('#driver_name').val(),
+                    iqama: $('#iqama').val(),
+                    mobile: $('#mobile').val(),
+                    gender: $('#gender').val(),
+                    nationality: $('#nationality').val(),
+                    city: $('#city').val(),
+                    company_id: $('#company').val(),
+                    vehicle_type: $('#vehicle_type').val(),
+                    accessories: []
+                };
+
+                // Collect accessories data
+                $('.accessory-count').each(function() {
+                    const count = parseInt($(this).val()) || 0;
+                    if (count > 0) {
+                        const accessoryId = $(this).data('accessory-id');
+                        const notes = $(`.accessory-notes[data-accessory-id="${accessoryId}"]`).val();
+
+                        formData.accessories.push({
+                            accessory_id: accessoryId,
+                            count: count,
+                            notes: notes
+                        });
+                    }
+                });
+
+                // Set commission rate based on vehicle type and company data
+                if (currentCompanyData && formData.vehicle_type) {
+                    const commission = currentCompanyData.commission[formData.vehicle_type];
+                    if (commission.fixed_commission) {
+                        formData.commission_rate = commission.fixed_commission;
+                    } else if (commission.rate_per_km) {
+                        formData.commission_rate = commission.rate_per_km;
+                    } else if (commission.rate_per_order) {
+                        formData.commission_rate = commission.rate_per_order;
+                    }
+                }
+
+                // Submit form data
+                $.ajax({
+                    url: '/drivers/api/save/',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        if (response.success) {
+                            showSuccess(response.message);
+                            $('#driverForm')[0].reset();
+                            clearCompanyData();
+                        } else {
+                            showError(response.error);
+                        }
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON;
+                        showError(response ? response.error : 'An error occurred while saving the driver.');
+                    }
+                });
+            });
+
+            // Show success message
+            function showSuccess(message) {
+                $('#successMessage').text(message);
+                $('#successModal').modal('show');
+            }
+
+            // Show error message
+            function showError(message) {
+                $('#errorMessage').text(message);
+                $('#errorModal').modal('show');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -6,11 +6,7 @@ from .models import Company
 class CompanySerializer(serializers.ModelSerializer):
     driver_count = serializers.IntegerField(read_only=True)
 
-    # Commission data for cars
-    car_commission_info = serializers.SerializerMethodField()
-
-    # Commission data for bikes
-    bike_commission_info = serializers.SerializerMethodField()
+ 
 
     # Employee accessories data
     employee_accessories = serializers.SerializerMethodField()
@@ -19,25 +15,8 @@ class CompanySerializer(serializers.ModelSerializer):
         model = Company
         fields = '__all__'
 
-    def get_car_commission_info(self, obj):
-        """Get car commission information"""
-        return {
-            'type': obj.car_commission_type,
-            'rate_per_km': obj.car_rate_per_km,
-            'min_km': obj.car_min_km,
-            'rate_per_order': obj.car_rate_per_order,
-            'fixed_commission': obj.car_fixed_commission,
-        }
 
-    def get_bike_commission_info(self, obj):
-        """Get bike commission information"""
-        return {
-            'type': obj.bike_commission_type,
-            'rate_per_km': obj.bike_rate_per_km,
-            'min_km': obj.bike_min_km,
-            'rate_per_order': obj.bike_rate_per_order,
-            'fixed_commission': obj.bike_fixed_commission,
-        }
+
 
     def get_employee_accessories(self, obj):
         """Get employee accessories from company fields"""
