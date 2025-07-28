@@ -12,6 +12,9 @@ import {
   ExclamationCircleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
+import axiosInstance from "../api/axiosInstance"
+// Remove Firebase imports as they're not needed for this form
+
 
 // Placeholder FormInput component
 const FormInput = ({
@@ -1190,7 +1193,8 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
             console.log(pair[0]+ ', ' + pair[1]);
           }
 
-          const response = await fetch('http://127.0.0.1:8000/Register/drivers/', {
+          // Submit to the correct backend endpoint
+          const response = await axiosInstance.get('/submit-form/', {
             method: 'POST',
             // Do NOT set Content-Type header manually when sending FormData
             body: dataToSubmit,
@@ -1706,6 +1710,142 @@ const Step2WorkingDocuments = ({
   );
 };
 
+
+const Step4CompanyDetails = ({ formData, setFormData, handleNext, handlePrevious }) => {
+  const [companies, setCompanies] = useState([]);
+  const [commission, setCommission] = useState('');
+  const [accessories, setAccessories] = useState([]);
+  const [accessoryCounts, setAccessoryCounts] = useState({});
+
+  useEffect(() => {
+    axiosInstance.get('/companies/')
+      .then(res => setCompanies(res.data))
+      .catch(err => console.error('Failed to fetch companies', err));
+  }, []);
+
+  const handleCompanyChange = async (e) => {
+    const companyId = e.target.value;
+    setFormData(prev => ({ ...prev, company_id: companyId }));
+
+    if (!companyId) return;
+
+    try {
+      const res = await axiosInstance.get(`/companies/${companyId}/`);
+      setCommission(res.data.commission);
+      setAccessories(res.data.accessories);
+
+      // Reset accessory counts
+      const initialCounts = {};
+      res.data.accessories.forEach(acc => {
+        initialCounts[acc.id] = 0;
+      });
+      setAccessoryCounts(initialCounts);
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+    }
+  };
+
+  const handleAccessoryCountChange = (id, value) => {
+    setAccessoryCounts(prev => ({
+      ...prev,
+      [id]: parseInt(value) || 0,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    const postData = {
+      full_name: formData.full_name || 'Unnamed Driver',
+      company_id: formData.company_id,
+      ...Object.keys(accessoryCounts).reduce((acc, key) => {
+        acc[`accessory_${key}`] = accessoryCounts[key];
+        return acc;
+      }, {}),
+    };
+
+    try {
+      const res = await axiosInstance.post('/api/save-driver/', postData);
+      alert('Driver saved successfully!');
+      handleNext();
+    } catch (err) {
+      console.error('Failed to save driver', err);
+      alert('Error saving driver');
+    }
+  };
+
+  return (
+    <div className="p-6 bg-white rounded-lg shadow">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Company Details</h2>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Select Company</label>
+        <select
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          value={formData.company_id || ''}
+          onChange={handleCompanyChange}
+        >
+          <option value="">-- Select Company --</option>
+          {companies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {formData.company_id && (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">Commission</label>
+            <input
+              type="text"
+              value={commission}
+              readOnly
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Accessories Assigned</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {accessories.map((accessory) => (
+                <div key={accessory.id}>
+                  <label className="block text-sm text-gray-600">{accessory.name}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={accessoryCounts[accessory.id] || 0}
+                    onChange={(e) =>
+                      handleAccessoryCountChange(accessory.id, e.target.value)
+                    }
+                    className="mt-1 w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-between mt-6">
+        <button
+          type="button"
+          onClick={handlePrevious}
+          className="px-6 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-50"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="px-6 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Step 3: Expiry Dates (WorkingDriverForm)
 const Step3WorkingExpiryDates = ({
   formData,
@@ -2045,6 +2185,14 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         "vehicleType",
         "vehicleModel",
       ],
+    },
+    {
+      name :"company & commission details",
+      icon :CalendarDaysIcon,
+      component: Step4CompanyDetails,
+      requiredFields:[
+        "company"
+      ]
     },
     {
       name: "Documents",
