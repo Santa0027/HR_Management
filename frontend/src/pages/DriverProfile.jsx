@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
 import {
   User,
   Mail,
@@ -43,75 +44,98 @@ const DriverProfile = () => {
     try {
       setLoading(true);
       
-      // Mock profile data
-      const mockProfileData = {
-        id: user?.id || 1,
-        name: user?.name || 'John Doe',
-        email: user?.email || 'john.doe@example.com',
-        phone: '+1 (555) 123-4567',
-        address: '123 Main Street, Apt 4B, New York, NY 10001',
-        date_of_birth: '1985-06-15',
-        emergency_contact_name: 'Jane Doe',
-        emergency_contact_phone: '+1 (555) 987-6543',
-        license_number: 'DL123456789',
-        license_expiry: '2025-12-31',
-        license_class: 'Class C',
-        years_experience: 5,
-        rating: 4.8,
-        total_trips: 1247,
-        status: 'active',
-        join_date: '2019-03-15',
-        profile_image: null,
-        bank_account: {
-          account_holder: 'John Doe',
-          bank_name: 'Chase Bank',
-          account_number: '****1234',
-          routing_number: '****5678'
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Try to fetch real driver profile data
+      let profileData;
+      try {
+        const response = await axiosInstance.get(`/drivers/${user.id}/profile/`);
+        const data = response.data;
+        profileData = data.data || data;
+      } catch (apiError) {
+        console.warn('API call failed, using fallback data:', apiError);
+        // Fallback to basic user data
+        profileData = {
+          id: user.id,
+          full_name: user.name || 'Driver',
+          email: user.email || '',
+          phone_number: user.phone || '',
+          status: 'active'
+        };
+      }
+
+      // Process and normalize the profile data
+      const processedProfileData = {
+        id: profileData.id || user.id,
+        name: profileData.full_name || profileData.driver_name || user.name || 'Driver',
+        email: profileData.email || user.email || '',
+        phone: profileData.phone_number || profileData.mobile || '',
+        address: profileData.apartment_area || profileData.address || '',
+        date_of_birth: profileData.date_of_birth || profileData.dob || '',
+        emergency_contact_name: profileData.nominee_name || '',
+        emergency_contact_phone: profileData.nominee_phone || '',
+        license_number: profileData.license_number || '',
+        license_expiry: profileData.license_expiry || '',
+        license_class: profileData.license_class || 'Class C',
+        years_experience: profileData.years_experience || 0,
+        rating: profileData.rating || 0,
+        total_trips: profileData.total_trips || 0,
+        status: profileData.status || 'active',
+        join_date: profileData.created_at || profileData.join_date || '',
+        profile_image: profileData.profile_image || null,
+        nationality: profileData.nationality || '',
+        city: profileData.city || '',
+        company: profileData.company || profileData.company_name || '',
+        employee_id: profileData.employee_id || '',
+        gender: profileData.gender || '',
+        age: profileData.age || '',
+        marital_status: profileData.marital_status || '',
+        blood_group: profileData.blood_group || '',
+        vehicle_type: profileData.vehicle_type || '',
+        bank_account: profileData.bank_account || {
+          account_holder: profileData.full_name || user.name || '',
+          bank_name: '',
+          account_number: '',
+          routing_number: ''
         }
       };
 
-      const mockDocuments = [
-        {
-          id: 1,
-          type: 'driving_license',
-          name: 'Driving License',
-          status: 'approved',
-          uploaded_date: '2024-01-01',
-          expiry_date: '2025-12-31',
-          file_url: '/documents/license.pdf'
-        },
-        {
-          id: 2,
-          type: 'vehicle_registration',
-          name: 'Vehicle Registration',
-          status: 'approved',
-          uploaded_date: '2024-01-01',
-          expiry_date: '2024-12-31',
-          file_url: '/documents/registration.pdf'
-        },
-        {
-          id: 3,
-          type: 'insurance',
-          name: 'Vehicle Insurance',
-          status: 'pending',
-          uploaded_date: '2024-01-10',
-          expiry_date: '2024-08-15',
-          file_url: '/documents/insurance.pdf'
-        },
-        {
-          id: 4,
-          type: 'background_check',
-          name: 'Background Check',
-          status: 'approved',
-          uploaded_date: '2024-01-01',
-          expiry_date: '2025-01-01',
-          file_url: '/documents/background.pdf'
-        }
-      ];
+      // Try to fetch documents
+      let documentsData = [];
+      try {
+        const docsResponse = await axiosInstance.get(`/drivers/${user.id}/documents/`);
+        const docsData = docsResponse.data;
+        documentsData = docsData.data || docsData || [];
+      } catch (docError) {
+        console.warn('Could not fetch documents, using fallback:', docError);
+        // Fallback documents based on profile data
+        documentsData = [
+          {
+            id: 1,
+            type: 'driving_license',
+            name: 'Driving License',
+            status: profileData.license_number ? 'approved' : 'pending',
+            uploaded_date: profileData.join_date || '',
+            expiry_date: profileData.license_expiry || '',
+            file_url: profileData.license_document || ''
+          },
+          {
+            id: 2,
+            type: 'civil_id',
+            name: 'Civil ID',
+            status: profileData.iqama ? 'approved' : 'pending',
+            uploaded_date: profileData.join_date || '',
+            expiry_date: profileData.iqama_expiry || '',
+            file_url: profileData.civil_id_document || ''
+          }
+        ].filter(doc => doc.status === 'approved' || doc.file_url);
+      }
 
-      setProfileData(mockProfileData);
-      setDocuments(mockDocuments);
-      setFormData(mockProfileData);
+      setProfileData(processedProfileData);
+      setDocuments(documentsData);
+      setFormData(processedProfileData);
       
       toast.success('Profile data loaded successfully');
     } catch (error) {
@@ -132,15 +156,59 @@ const DriverProfile = () => {
 
   const handleSave = async () => {
     try {
-      // Simulate API call to update profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setProfileData(formData);
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Prepare data for API call
+      const updateData = {
+        full_name: formData.name,
+        email: formData.email,
+        phone_number: formData.phone,
+        apartment_area: formData.address,
+        date_of_birth: formData.date_of_birth,
+        nominee_name: formData.emergency_contact_name,
+        nominee_phone: formData.emergency_contact_phone,
+        nationality: formData.nationality,
+        city: formData.city,
+        gender: formData.gender,
+        marital_status: formData.marital_status,
+        blood_group: formData.blood_group,
+      };
+
+      // Make API call to update profile
+      const response = await axiosInstance.patch(`/drivers/${user.id}/profile/`, updateData);
+
+      if (response.data) {
+        const updatedData = response.data.data || response.data;
+        // Process the updated data similar to fetchProfileData
+        const processedData = {
+          ...formData,
+          ...updatedData,
+          name: updatedData.full_name || updatedData.driver_name || formData.name,
+          phone: updatedData.phone_number || updatedData.mobile || formData.phone,
+          address: updatedData.apartment_area || formData.address,
+        };
+
+        setProfileData(processedData);
+        setFormData(processedData);
+      } else {
+        setProfileData(formData);
+      }
+
       setIsEditing(false);
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
+
+      if (error.response?.data) {
+        const errorMessage = error.response.data.detail ||
+                           error.response.data.message ||
+                           'Failed to update profile';
+        toast.error(errorMessage);
+      } else {
+        toast.error('Failed to update profile - please try again');
+      }
     }
   };
 

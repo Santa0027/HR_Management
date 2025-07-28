@@ -8,7 +8,7 @@ import {
   TruckIcon,
   PaperClipIcon,
   CalendarDaysIcon,
-  CubeTransparentIcon,
+
   ExclamationCircleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
@@ -180,9 +180,8 @@ const MemoizedInputField = React.memo(({ id, label, type = "text", required = tr
       name={id}
       value={formData[id] ?? ""}
       onChange={handleChange}
-      className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-        errors[id] ? "border-red-500" : "border-gray-300"
-      }`}
+      className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors[id] ? "border-red-500" : "border-gray-300"
+        }`}
       required={required}
       aria-describedby={errors[id] ? `${id}-error` : undefined}
     />
@@ -222,7 +221,7 @@ const Step1NewDriverPersonal = ({
           errors={errors}
         />
         <MemoizedInputField
-          id="emp_Id"
+          id="employee_id"
           label="Employee ID"
           type="text"
           formData={formData}
@@ -241,9 +240,8 @@ const Step1NewDriverPersonal = ({
             name="gender"
             value={formData.gender ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.gender ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.gender ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={errors.gender ? `gender-error` : undefined}
           >
@@ -281,9 +279,8 @@ const Step1NewDriverPersonal = ({
             name="nationality"
             value={formData.nationality ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.nationality ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.nationality ? "border-red-500" : "border-gray-300"
+              }`}
             required
           >
             <option value="">Select Nationality</option>
@@ -310,9 +307,8 @@ const Step1NewDriverPersonal = ({
             name="city"
             value={formData.city ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.city ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.city ? "border-red-500" : "border-gray-300"
+              }`}
             required
           >
             <option value="">Select City</option>
@@ -363,9 +359,8 @@ const Step1NewDriverPersonal = ({
             name="maritalStatus"
             value={formData.maritalStatus ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.maritalStatus ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.maritalStatus ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.maritalStatus ? `maritalStatus-error` : undefined
@@ -399,9 +394,8 @@ const Step1NewDriverPersonal = ({
             name="bloodGroup"
             value={formData.bloodGroup ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.bloodGroup ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.bloodGroup ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.bloodGroup ? `bloodGroup-error` : undefined
@@ -442,9 +436,8 @@ const Step1NewDriverPersonal = ({
           value={formData.homeCountryAddress ?? ""}
           onChange={handleChange}
           rows="3"
-          className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-            errors.homeCountryAddress ? "border-red-500" : "border-gray-300"
-          }`}
+          className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.homeCountryAddress ? "border-red-500" : "border-gray-300"
+            }`}
           required
           aria-describedby={
             errors.homeCountryAddress ? `homeCountryAddress-error` : undefined
@@ -513,7 +506,7 @@ const Step2NewDriverVehicle = ({
   companyCommission = null,
   companyAccessories = [],
   accessoryQuantities = {},
-  onAccessoryQuantityChange = () => {},
+  onAccessoryQuantityChange = () => { },
 }) => {
   const currentVehicleType = formData.vehicleType;
   const commissionTypeFieldName = `${currentVehicleType}CommissionType`;
@@ -545,9 +538,8 @@ const Step2NewDriverVehicle = ({
             name="company"
             value={formData.company ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.company ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.company ? "border-red-500" : "border-gray-300"
+              }`}
             required
           >
             <option value="">Select Company</option>
@@ -576,9 +568,8 @@ const Step2NewDriverVehicle = ({
             name="vehicleType"
             value={formData.vehicleType ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.vehicleType ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.vehicleType ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.vehicleType ? `vehicleType-error` : undefined
@@ -620,9 +611,8 @@ const Step2NewDriverVehicle = ({
             name="tShirtSize"
             value={formData.tShirtSize ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.tShirtSize ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.tShirtSize ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.tShirtSize ? `tShirtSize-error` : undefined
@@ -925,8 +915,8 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           const companiesData = await companiesResponse.json();
           setCompanies(companiesData);
         } else {
-            console.error('Failed to fetch companies:', companiesResponse.statusText);
-            setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
+          console.error('Failed to fetch companies:', companiesResponse.statusText);
+          setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
         }
 
         // Fetch dropdown options
@@ -935,8 +925,8 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           const dropdownData = await dropdownResponse.json();
           setDropdownOptions(dropdownData);
         } else {
-            console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
-            setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
+          console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
+          setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -1033,7 +1023,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
       component: Step1NewDriverPersonal,
       requiredFields: [
         "fullName",
-        "emp_Id",
+        "employee_id",
         "gender",
         "dob",
         "nationality",
@@ -1185,10 +1175,10 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
             requiredFieldsForStep.push(`${vehicleTypePrefix}FixedCommission`);
           }
         } else if (formData.company) { // If company selected but no rules for vehicle type
-           // This case is now handled by displaying an info message in the UI,
-           // but we still need to ensure the form is valid if no commission fields appear.
-           // If no commission type is found, then no commission fields are required.
-           // No explicit error needs to be added here for missing commission type if it's not found.
+          // This case is now handled by displaying an info message in the UI,
+          // but we still need to ensure the form is valid if no commission fields appear.
+          // If no commission type is found, then no commission fields are required.
+          // No explicit error needs to be added here for missing commission type if it's not found.
         }
       }
 
@@ -1243,7 +1233,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
           // Mapping New Driver Form fields to backend expected field names
           dataToSubmit.append('driver_type', 'new'); // Required field
           dataToSubmit.append('full_name', formData.fullName || ''); // Backend expects 'full_name'
-          dataToSubmit.append('emp_id', formData.emp_Id || '');
+          dataToSubmit.append('employee_id', formData.employee_id || '');
           dataToSubmit.append('gender', formData.gender || ''); // Required field
           dataToSubmit.append('date_of_birth', formData.dob || ''); // Backend expects 'date_of_birth'
           dataToSubmit.append('nationality', formData.nationality || ''); // Required field
@@ -1286,16 +1276,16 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
             const commission = companyCommission[vehicleType];
 
             if (commission) {
-                // Send commission data with proper field names
-                dataToSubmit.append(`${vehicleType}_rate_per_km`, commission.rate_per_km || 0);
-                dataToSubmit.append(`${vehicleType}_min_km`, commission.min_km || 0);
-                dataToSubmit.append(`${vehicleType}_rate_per_order`, commission.rate_per_order || 0);
-                dataToSubmit.append(`${vehicleType}_fixed_commission`, commission.fixed_commission || 0);
+              // Send commission data with proper field names
+              dataToSubmit.append(`${vehicleType}_rate_per_km`, commission.rate_per_km || 0);
+              dataToSubmit.append(`${vehicleType}_min_km`, commission.min_km || 0);
+              dataToSubmit.append(`${vehicleType}_rate_per_order`, commission.rate_per_order || 0);
+              dataToSubmit.append(`${vehicleType}_fixed_commission`, commission.fixed_commission || 0);
 
-                // Also send the commission type if available
-                if (commission.commission_type) {
-                  dataToSubmit.append(`${vehicleType}_commission_type`, commission.commission_type);
-                }
+              // Also send the commission type if available
+              if (commission.commission_type) {
+                dataToSubmit.append(`${vehicleType}_commission_type`, commission.commission_type);
+              }
             }
           }
 
@@ -1318,7 +1308,7 @@ const NewDriverForm = ({ onSubmit, onReset }) => {
 
           // Log FormData entries for debugging
           for (let pair of dataToSubmit.entries()) {
-            console.log(pair[0]+ ', ' + pair[1]);
+            console.log(pair[0] + ', ' + pair[1]);
           }
 
           // Submit to the correct backend endpoint
@@ -1448,9 +1438,8 @@ const Step1WorkingPersonalInfo = ({
                 onDriverSelect(e.target.value);
               }
             }}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.selectedNewDriver ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.selectedNewDriver ? "border-red-500" : "border-gray-300"
+              }`}
             required
           >
             <option value="">Select a new driver application</option>
@@ -1465,6 +1454,15 @@ const Step1WorkingPersonalInfo = ({
               {errors.selectedNewDriver}
             </p>
           )}
+          {formData.selectedNewDriver && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <InformationCircleIcon className="h-4 w-4 inline mr-1" />
+                Personal details have been automatically filled from the selected driver application.
+                Fields marked with gray background are read-only.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Employee ID Field */}
@@ -1477,23 +1475,52 @@ const Step1WorkingPersonalInfo = ({
           </label>
           <FormInput
             type="text"
-            id="emp_Id"
-            name="emp_Id"
-            value={formData.emp_Id ?? ""}
+            id="employee_id"
+            name="employee_id"
+            value={formData.employee_id ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.emp_Id ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.employee_id ? "border-red-500" : "border-gray-300"
+              }`}
             required
-            aria-describedby={errors.emp_Id ? `emp_Id-error` : undefined}
+            aria-describedby={errors.employee_id ? `emp_Id-error` : undefined}
           />
-          {errors.emp_Id && (
+          {errors.employee_id && (
             <p
               id="emp_Id-error"
               className="text-sm text-red-600 mt-1"
               role="alert"
             >
-              {errors.emp__Id}
+              {errors.employee_id}
+            </p>
+          )}
+        </div>
+
+        {/* Full Name - Read-only if prefilled */}
+        <div>
+          <label
+            htmlFor="fullName"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Full Name
+          </label>
+          <FormInput
+            type="text"
+            id="fullName"
+            name="fullName"
+            value={formData.fullName ?? ""}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formData.selectedNewDriver ? "bg-gray-100" : ""} ${errors.fullName ? "border-red-500" : "border-gray-300"
+              }`}
+            readOnly={!!formData.selectedNewDriver}
+            aria-describedby={errors.fullName ? `fullName-error` : undefined}
+          />
+          {errors.fullName && (
+            <p
+              id="fullName-error"
+              className="text-sm text-red-600 mt-1"
+              role="alert"
+            >
+              {errors.fullName}
             </p>
           )}
         </div>
@@ -1510,10 +1537,10 @@ const Step1WorkingPersonalInfo = ({
             name="gender"
             value={formData.gender ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.gender ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formData.selectedNewDriver ? "bg-gray-100" : ""} ${errors.gender ? "border-red-500" : "border-gray-300"
+              }`}
             required
+            disabled={!!formData.selectedNewDriver}
             aria-describedby={errors.gender ? `gender-error` : undefined}
           >
             <option value="">Select Gender</option>
@@ -1546,10 +1573,10 @@ const Step1WorkingPersonalInfo = ({
             value={formData.dob ?? ""}
             onChange={handleChange}
             autoComplete="bday"
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.dob ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formData.selectedNewDriver ? "bg-gray-100" : ""} ${errors.dob ? "border-red-500" : "border-gray-300"
+              }`}
             required
+            readOnly={!!formData.selectedNewDriver}
             aria-describedby={errors.dob ? `dob-error` : undefined}
           />
           {errors.dob && (
@@ -1577,10 +1604,10 @@ const Step1WorkingPersonalInfo = ({
             value={formData.nationality ?? ""}
             onChange={handleChange}
             autoComplete="country"
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.nationality ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formData.selectedNewDriver ? "bg-gray-100" : ""} ${errors.nationality ? "border-red-500" : "border-gray-300"
+              }`}
             required
+            readOnly={!!formData.selectedNewDriver}
             aria-describedby={
               errors.nationality ? `nationality-error` : undefined
             }
@@ -1610,10 +1637,10 @@ const Step1WorkingPersonalInfo = ({
             value={formData.phoneNumber ?? ""}
             onChange={handleChange}
             autoComplete="tel"
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.phoneNumber ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${formData.selectedNewDriver ? "bg-gray-100" : ""} ${errors.phoneNumber ? "border-red-500" : "border-gray-300"
+              }`}
             required
+            readOnly={!!formData.selectedNewDriver}
             aria-describedby={
               errors.phoneNumber ? `phoneNumber-error` : undefined
             }
@@ -1641,9 +1668,8 @@ const Step1WorkingPersonalInfo = ({
             name="vehicleType"
             value={formData.vehicleType ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.vehicleType ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.vehicleType ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.vehicleType ? `vehicleType-error` : undefined
@@ -1680,9 +1706,8 @@ const Step1WorkingPersonalInfo = ({
             name="vehicleModel"
             value={formData.vehicleModel ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.vehicleModel ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.vehicleModel ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.vehicleModel ? `vehicleModel-error` : undefined
@@ -1777,23 +1802,22 @@ const Step2WorkingDocuments = ({
             type="text"
             id="emp_Id"
             name="emp_Id"
-            value={formData.emp_Id ?? ""}
+            value={formData.employee_id ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.emp_Id ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.employee_id ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
-              errors.emp_Id ? `emp_Id-error` : undefined
+              errors.employee_id ? `emp_Id-error` : undefined
             }
           />
-          {errors.emp_Id && (
+          {errors.employee_id && (
             <p
               id="emp_Id-error"
               className="text-sm text-red-600 mt-1"
               role="alert"
             >
-              {errors.emp_Id}
+              {errors.employee_id}
             </p>
           )}
         </div>
@@ -1843,138 +1867,152 @@ const Step2WorkingDocuments = ({
 };
 
 
-const Step4CompanyDetails = ({ formData, setFormData, handleNext, handlePrevious }) => {
-  const [companies, setCompanies] = useState([]);
-  const [commission, setCommission] = useState('');
-  const [accessories, setAccessories] = useState([]);
-  const [accessoryCounts, setAccessoryCounts] = useState({});
-
-  useEffect(() => {
-    axiosInstance.get('/companies/')
-      .then(res => setCompanies(res.data))
-      .catch(err => console.error('Failed to fetch companies', err));
-  }, []);
-
-  const handleCompanyChange = async (e) => {
-    const companyId = e.target.value;
-    setFormData(prev => ({ ...prev, company_id: companyId }));
-
-    if (!companyId) return;
-
-    try {
-      const res = await axiosInstance.get(`/companies/${companyId}/`);
-      setCommission(res.data.commission);
-      setAccessories(res.data.accessories);
-
-      // Reset accessory counts
-      const initialCounts = {};
-      res.data.accessories.forEach(acc => {
-        initialCounts[acc.id] = 0;
-      });
-      setAccessoryCounts(initialCounts);
-    } catch (error) {
-      console.error('Error fetching company data:', error);
-    }
-  };
-
-  const handleAccessoryCountChange = (id, value) => {
-    setAccessoryCounts(prev => ({
-      ...prev,
-      [id]: parseInt(value) || 0,
-    }));
-  };
-
-  const handleSubmit = async () => {
-    const postData = {
-      full_name: formData.full_name || 'Unnamed Driver',
-      company_id: formData.company_id,
-      ...Object.keys(accessoryCounts).reduce((acc, key) => {
-        acc[`accessory_${key}`] = accessoryCounts[key];
-        return acc;
-      }, {}),
-    };
-
-    try {
-      const res = await axiosInstance.post('/api/save-driver/', postData);
-      alert('Driver saved successfully!');
-      handleNext();
-    } catch (err) {
-      console.error('Failed to save driver', err);
-      alert('Error saving driver');
-    }
-  };
+const Step4CompanyDetails = ({
+  formData,
+  handleChange,
+  handleNext,
+  handlePrevious,
+  errors,
+  companies = [],
+  companyCommission = null,
+  companyAccessories = [],
+  accessoryQuantities = {},
+  onAccessoryQuantityChange = () => {},
+}) => {
+  const currentVehicleType = formData.vehicleType;
+  const currentCommission = companyCommission && currentVehicleType ? companyCommission[currentVehicleType] : null;
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Company Details</h2>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Select Company</label>
-        <select
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-          value={formData.company_id || ''}
-          onChange={handleCompanyChange}
-        >
-          <option value="">-- Select Company --</option>
-          {companies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name}
-            </option>
-          ))}
-        </select>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Company Dropdown */}
+        <div className="md:col-span-2">
+          <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+            Company
+          </label>
+          <FormSelect
+            id="company"
+            name="company"
+            value={formData.company ?? ""}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.company ? "border-red-500" : "border-gray-300"
+              }`}
+            required
+          >
+            <option value="">Select Company</option>
+            {companies.map((company) => (
+              <option key={company.id} value={company.company_name}>
+                {company.company_name}
+              </option>
+            ))}
+          </FormSelect>
+          {errors.company && (
+            <p className="text-sm text-red-600 mt-1" role="alert">
+              {errors.company}
+            </p>
+          )}
+        </div>
       </div>
 
-      {formData.company_id && (
-        <>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">Commission</label>
-            <input
-              type="text"
-              value={commission}
-              readOnly
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Accessories Assigned</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {accessories.map((accessory) => (
-                <div key={accessory.id}>
-                  <label className="block text-sm text-gray-600">{accessory.name}</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={accessoryCounts[accessory.id] || 0}
-                    onChange={(e) =>
-                      handleAccessoryCountChange(accessory.id, e.target.value)
-                    }
-                    className="mt-1 w-full border border-gray-300 rounded-md p-2"
-                  />
+      {/* Enhanced Commission Details Section */}
+      {currentVehicleType && currentCommission && (
+        <div className="mt-8 p-6 border border-blue-200 rounded-lg bg-blue-50">
+          <h4 className="text-lg font-semibold text-blue-800 mb-4">
+            Commission Details ({currentVehicleType.toUpperCase()})
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(currentCommission.rate_per_km !== undefined && currentCommission.rate_per_km !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rate per KM</label>
+                <div className="text-lg font-semibold text-green-600">
+                  ${currentCommission.rate_per_km}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            {(currentCommission.min_km !== undefined && currentCommission.min_km !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum KM</label>
+                <div className="text-lg font-semibold text-blue-600">
+                  {currentCommission.min_km} km
+                </div>
+              </div>
+            )}
+            {(currentCommission.rate_per_order !== undefined && currentCommission.rate_per_order !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rate per Order</label>
+                <div className="text-lg font-semibold text-purple-600">
+                  ${currentCommission.rate_per_order}
+                </div>
+              </div>
+            )}
+            {(currentCommission.fixed_commission !== undefined && currentCommission.fixed_commission !== null) && (
+              <div className="bg-white p-3 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Commission</label>
+                <div className="text-lg font-semibold text-orange-600">
+                  ${currentCommission.fixed_commission}
+                </div>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
 
-      <div className="flex justify-between mt-6">
+      {/* Commission Not Available Message */}
+      {currentVehicleType && formData.company && !currentCommission && (
+        <div className="mt-8 p-6 border border-yellow-200 rounded-lg bg-yellow-50">
+          <h4 className="text-lg font-semibold text-yellow-800 mb-2">
+            Commission Information
+          </h4>
+          <p className="text-yellow-700">
+            No commission data available for {currentVehicleType.toUpperCase()} vehicles at {formData.company}.
+            Please contact administration to set up commission rates.
+          </p>
+        </div>
+      )}
+
+      {/* Accessories Section */}
+      {companyAccessories.length > 0 && (
+        <div className="mt-8 p-6 border border-green-200 rounded-lg bg-green-50">
+          <h4 className="text-lg font-semibold text-green-800 mb-4">
+            Company Accessories
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {companyAccessories.map(accessory => (
+              <div key={accessory.field_name} className="bg-white p-4 rounded border">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {accessory.name}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={accessoryQuantities[accessory.field_name] || 0}
+                  onChange={(e) => onAccessoryQuantityChange(accessory.field_name, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Enter quantity"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between mt-8">
         <button
           type="button"
           onClick={handlePrevious}
-          className="px-6 py-2 border border-gray-300 text-sm rounded-md bg-white hover:bg-gray-50"
+          className="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150"
         >
-          Previous
+          <ChevronLeftIcon className="mr-2 h-4 w-4" /> Previous
         </button>
         <button
           type="button"
-          onClick={handleSubmit}
-          className="px-6 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+          onClick={handleNext}
+          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150"
         >
-          Submit
+          Next <ChevronRightIcon className="ml-2 h-4 w-4" />
         </button>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -1984,6 +2022,7 @@ const Step3WorkingExpiryDates = ({
   handleChange,
   handleNext,
   handlePrevious,
+  handleSubmit,
   errors,
 }) => {
   const InputGroup = ({ label, id, isDate = false }) => (
@@ -1997,9 +2036,8 @@ const Step3WorkingExpiryDates = ({
         name={id}
         value={formData[id] ?? ""}
         onChange={handleChange}
-        className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-          errors[id] ? "border-red-500" : "border-gray-300"
-        }`}
+        className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors[id] ? "border-red-500" : "border-gray-300"
+          }`}
         required
         aria-describedby={errors[id] ? `${id}-error` : undefined}
       />
@@ -2054,10 +2092,10 @@ const Step3WorkingExpiryDates = ({
         </button>
         <button
           type="button"
-          onClick={handleNext}
-          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150"
+          onClick={handleSubmit}
+          className="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150"
         >
-          Next <ChevronRightIcon className="ml-2 h-4 w-4" />
+          <CheckCircleIcon className="mr-2 h-4 w-4" /> Submit Application
         </button>
       </div>
     </>
@@ -2099,9 +2137,8 @@ const Step4WorkingEquipment = ({
             name="workingDepartment"
             value={formData.workingDepartment ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${
-              errors.workingDepartment ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm ${errors.workingDepartment ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.workingDepartment ? `workingDepartment-error` : undefined
@@ -2136,9 +2173,8 @@ const Step4WorkingEquipment = ({
             name="tShirtSize"
             value={formData.tShirtSize ?? ""}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${
-              errors.tShirtSize ? "border-red-500" : "border-gray-300"
-            }`}
+            className={`mt-1 block w-full rounded-md border p-2 shadow-sm ${errors.tShirtSize ? "border-red-500" : "border-gray-300"
+              }`}
             required
             aria-describedby={
               errors.tShirtSize ? `tShirtSize-error` : undefined
@@ -2278,8 +2314,8 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           const companiesData = await companiesResponse.json();
           setCompanies(companiesData);
         } else {
-            console.error('Failed to fetch companies:', companiesResponse.statusText);
-            setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
+          console.error('Failed to fetch companies:', companiesResponse.statusText);
+          setMessageBox({ message: `Failed to load companies: ${companiesResponse.statusText}`, type: "error" });
         }
 
         // Fetch dropdown options
@@ -2288,8 +2324,8 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           const dropdownData = await dropdownResponse.json();
           setDropdownOptions(dropdownData);
         } else {
-            console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
-            setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
+          console.error('Failed to fetch dropdown options:', dropdownResponse.statusText);
+          setMessageBox({ message: `Failed to load dropdown options: ${dropdownResponse.statusText}`, type: "error" });
         }
 
         // Fetch new driver applications
@@ -2298,8 +2334,8 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           const newDriversData = await newDriversResponse.json();
           setNewDrivers(newDriversData.results || []);
         } else {
-            console.error('Failed to fetch new driver applications:', newDriversResponse.statusText);
-            setMessageBox({ message: `Failed to load new driver applications: ${newDriversResponse.statusText}`, type: "error" });
+          console.error('Failed to fetch new driver applications:', newDriversResponse.statusText);
+          setMessageBox({ message: `Failed to load new driver applications: ${newDriversResponse.statusText}`, type: "error" });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -2319,25 +2355,16 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
       component: Step1WorkingPersonalInfo,
       requiredFields: [
         "selectedNewDriver",
-        "emp_Id",
+        "employee_id",
         "vehicleType",
         "vehicleModel",
       ],
-    },
-    {
-      name :"company & commission details",
-      icon :CalendarDaysIcon,
-      component: Step4CompanyDetails,
-      requiredFields:[
-        "company"
-      ]
     },
     {
       name: "Documents",
       icon: PaperClipIcon,
       component: Step2WorkingDocuments,
       requiredFields: [
-        "emp_Id",
         "civilIdDoc",
         "licenseDocs",
         "vehicleDocs",
@@ -2350,6 +2377,14 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
       ],
     },
     {
+      name: "Company & Commission Details",
+      icon: CalendarDaysIcon,
+      component: Step4CompanyDetails,
+      requiredFields: [
+        "company"
+      ]
+    },
+    {
       name: "Expiry Dates",
       icon: CalendarDaysIcon,
       component: Step3WorkingExpiryDates,
@@ -2360,15 +2395,9 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
         "licenseExpiryDate",
         "vehicleNumber",
         "vehicleExpiryDate",
-        "healthCardNumber", // This field is in the form but not directly in module.py
+        "healthCardNumber",
         "healthCardExpiryDate",
       ],
-    },
-    {
-      name: "Equipment & Department",
-      icon: CubeTransparentIcon,
-      component: Step4WorkingEquipment,
-      requiredFields: ["workingDepartment", "tShirtSize"],
     },
   ];
 
@@ -2505,30 +2534,30 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
     try {
       setAutoFilling(true);
       console.log('Fetching driver details for ID:', driverId);
-      
+
       const response = await fetch(`http://127.0.0.1:8000/new-driver-application/${driverId}/`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result = await response.json();
       console.log('Driver details fetched:', result);
-      
+
       if (result.success && result.data) {
         const driverData = result.data;
-        
+
         // Auto-fill the form with existing driver data
         setFormData(prevData => ({
           ...prevData,
           selectedNewDriver: driverId, // Keep the selected driver ID
           // Personal details
-          fullName: driverData.driver_name || '',
-          emp_Id: driverData.emp_id || '',
+          fullName: driverData.full_name || driverData.driver_name || '',
+          employee_id: driverData.employee_id || '',
           gender: driverData.gender || '',
-          dob: driverData.date_of_birth || '', // Assuming backend sends 'date_of_birth'
+          dob: driverData.date_of_birth || driverData.dob || '', // Handle both field names
           nationality: driverData.nationality || '',
-          phoneNumber: driverData.phone_number || '',
-          company: driverData.company_name || '',
+          phoneNumber: driverData.phone_number || driverData.mobile || '',
+          company: driverData.company_name || driverData.company || '',
           city: driverData.city || '', // Added city from new_driver_application
           apartmentArea: driverData.apartment_area || '', // Added apartmentArea
           age: driverData.age || '', // Added age
@@ -2538,17 +2567,18 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           nomineeWife: driverData.nominee_name || '', // Assuming nominee_name maps to nomineeWife
           nomineePhone: driverData.nominee_phone || '', // Assuming nominee_phone maps to nomineePhone
           nomineeAddress: driverData.nominee_address || '', // Added nomineeAddress
-          
+
           // Vehicle details
           vehicleType: driverData.vehicle_type || '',
           vehicleDestination: driverData.vehicle_destination || '',
-          
+          vehicleModel: '', // This will be filled by user in working driver form
+
           // Physical details (these might not be in new-driver-application, but included for completeness)
           tShirtSize: driverData.t_shirt_size || '',
           weight: driverData.weight || '',
           height: driverData.height || '',
           kuwaitEntryDate: driverData.kuwait_entry_date || '', // Added kuwaitEntryDate
-          
+
           // Files are not auto-filled as they need to be re-uploaded for security/freshness
           civilIdDoc: null,
           fnbDocs: null,
@@ -2560,8 +2590,23 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           vehiclePhotoBack: null,
           vehiclePhotoLeft: null,
           vehiclePhotoRight: null,
+
+          // Initialize expiry date fields
+          civilIdNumber: '',
+          civilIdExpiryDate: '',
+          licenseNumber: '',
+          licenseExpiryDate: '',
+          vehicleNumber: '',
+          vehicleExpiryDate: '',
+          healthCardNumber: '',
+          healthCardExpiryDate: '',
         }));
-        
+
+        // If company is prefilled, fetch company details for commission and accessories
+        if (driverData.company_name || driverData.company) {
+          handleCompanySelection(driverData.company_name || driverData.company);
+        }
+
         console.log('Form auto-filled with driver data');
         setMessageBox({ message: 'Driver details loaded successfully! Please review and complete the remaining fields.', type: "success" });
       } else {
@@ -2589,8 +2634,8 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           dataToSubmit.append('new_driver_application_id', formData.selectedNewDriver || '');
 
           // Personal & Vehicle Info (from Step 1) - Using correct backend field names
-          dataToSubmit.append("emp_id", formData.emp_id || "");
-          dataToSubmit.append('full_name', formData.driver_name || ''); // Backend expects 'full_name'
+          dataToSubmit.append("employee_id", formData.employee_id || "");
+          dataToSubmit.append('full_name', formData.fullName || ''); // Use fullName from prefilled data
           dataToSubmit.append('gender', formData.gender || ''); // Required field
           dataToSubmit.append('date_of_birth', formData.dob || ''); // Backend expects 'date_of_birth'
           dataToSubmit.append('nationality', formData.nationality || ''); // Required field
@@ -2611,7 +2656,35 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
           // Vehicle details from new driver form (if applicable)
           dataToSubmit.append('vehicle_destination', formData.vehicleDestination || '');
           dataToSubmit.append('kuwait_entry_date', formData.kuwaitEntryDate || '');
+          dataToSubmit.append('t_shirt_size', formData.tShirtSize || '');
+          dataToSubmit.append('weight', formData.weight || '');
+          dataToSubmit.append('height', formData.height || '');
 
+          // Add accessory quantities if available
+          if (accessoryQuantities && Object.keys(accessoryQuantities).length > 0) {
+            Object.entries(accessoryQuantities).forEach(([accessoryField, quantity]) => {
+              dataToSubmit.append(`accessory_${accessoryField}`, quantity || 0);
+            });
+          }
+
+          // Append commission details based on vehicle type and company commission data
+          if (formData.vehicleType && companyCommission) {
+            const vehicleType = formData.vehicleType;
+            const commission = companyCommission[vehicleType];
+
+            if (commission) {
+              // Send commission data with proper field names
+              dataToSubmit.append(`${vehicleType}_rate_per_km`, commission.rate_per_km || 0);
+              dataToSubmit.append(`${vehicleType}_min_km`, commission.min_km || 0);
+              dataToSubmit.append(`${vehicleType}_rate_per_order`, commission.rate_per_order || 0);
+              dataToSubmit.append(`${vehicleType}_fixed_commission`, commission.fixed_commission || 0);
+
+              // Also send the commission type if available
+              if (commission.commission_type) {
+                dataToSubmit.append(`${vehicleType}_commission_type`, commission.commission_type);
+              }
+            }
+          }
 
           // Documents (from Step 2)
           if (formData.civilIdDoc) dataToSubmit.append('civil_id_doc', formData.civilIdDoc);
@@ -2657,7 +2730,7 @@ const WorkingDriverForm = ({ onSubmit, onReset }) => {
 
           // Log FormData entries for debugging
           for (let pair of dataToSubmit.entries()) {
-            console.log(pair[0]+ ', ' + pair[1]);
+            console.log(pair[0] + ', ' + pair[1]);
           }
 
           const response = await fetch('http://127.0.0.1:8000/Register/drivers/', { // Changed endpoint to /Register/drivers/
@@ -2783,21 +2856,19 @@ const DriverFormContainer = () => {
         <div className="flex justify-center mb-8 space-x-4">
           <button
             onClick={() => setShowNewDriverForm(true)}
-            className={`px-6 py-3 rounded-md text-lg font-semibold transition-all duration-300 ${
-              showNewDriverForm
+            className={`px-6 py-3 rounded-md text-lg font-semibold transition-all duration-300 ${showNewDriverForm
                 ? "bg-blue-600 text-white shadow-lg"
                 : "bg-white text-blue-600 border border-blue-600 hover:bg-blue-50"
-            }`}
+              }`}
           >
             New Driver Form
           </button>
           <button
             onClick={() => setShowNewDriverForm(false)}
-            className={`px-6 py-3 rounded-md text-lg font-semibold transition-all duration-300 ${
-              !showNewDriverForm
+            className={`px-6 py-3 rounded-md text-lg font-semibold transition-all duration-300 ${!showNewDriverForm
                 ? "bg-blue-600 text-white shadow-lg"
                 : "bg-white text-blue-600 border border-blue-600 hover:bg-blue-50"
-            }`}
+              }`}
           >
             Working Driver Form
           </button>

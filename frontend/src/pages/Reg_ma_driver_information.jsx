@@ -266,8 +266,8 @@ function DriverProfileEditDelete() {
 
       try {
         // Fetch driver data
-        const driverRes = await axiosInstance.get(`/Register/drivers/${driverId}/`);
-        const rawDriverData = driverRes.data;
+        const driverRes = await axiosInstance.get(`/Register/new-driver-applications/${driverId}/`);
+        const rawDriverData = driverRes.data.data || driverRes.data; // Handle both response formats
 
         // Process and normalize driver data
         const processedDriverData = {
@@ -374,23 +374,24 @@ function DriverProfileEditDelete() {
     });
 
     try {
-      const res = await axiosInstance.patch(`/Register/drivers/${driverId}/`, formData, {
+      const res = await axiosInstance.patch(`/Register/new-driver-applications/${driverId}/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       // Process the response data similar to initial fetch
+      const responseData = res.data.data || res.data; // Handle both response formats
       const updatedData = {
-        ...res.data,
+        ...responseData,
         // Ensure consistent field names
-        driver_name: res.data.driver_name  || '',
-        mobile: res.data.mobile || res.data.phone_number || '',
-        iqama: res.data.iqama || res.data.civil_id_number || '',
+        driver_name: responseData.driver_name || responseData.full_name || '',
+        mobile: responseData.mobile || responseData.phone_number || '',
+        iqama: responseData.iqama || responseData.civil_id_number || '',
         // Format dates for display
-        iqama_expiry: res.data.iqama_expiry ? res.data.iqama_expiry.split('T')[0] : '',
-        passport_expiry: res.data.passport_expiry ? res.data.passport_expiry.split('T')[0] : '',
-        license_expiry: res.data.license_expiry ? res.data.license_expiry.split('T')[0] : '',
-        visa_expiry: res.data.visa_expiry ? res.data.visa_expiry.split('T')[0] : '',
-        medical_expiry: res.data.medical_expiry ? res.data.medical_expiry.split('T')[0] : '',
+        iqama_expiry: responseData.iqama_expiry ? responseData.iqama_expiry.split('T')[0] : '',
+        passport_expiry: responseData.passport_expiry ? responseData.passport_expiry.split('T')[0] : '',
+        license_expiry: responseData.license_expiry ? responseData.license_expiry.split('T')[0] : '',
+        visa_expiry: responseData.visa_expiry ? responseData.visa_expiry.split('T')[0] : '',
+        medical_expiry: responseData.medical_expiry ? responseData.medical_expiry.split('T')[0] : '',
       };
 
       setDriverData(updatedData);
@@ -432,13 +433,13 @@ function DriverProfileEditDelete() {
     if (window.confirm(`Are you sure you want to delete driver ${driverData.driver_name}? This action cannot be undone.`)) {
       setLoading(true);
       try {
-        await axiosInstance.delete(`/Register/drivers/${driverId}/`);
-        alert('Driver deleted successfully!');
-        navigate('/driver-management'); // Redirect to driver list after deletion
+        await axiosInstance.delete(`/Register/new-driver-applications/${driverId}/`);
+        toast.success('Driver deleted successfully!');
+        navigate('/registration-management'); // Redirect to driver list after deletion
       } catch (err) {
         console.error("Error deleting driver:", err.response?.data || err.message);
-        const errorMessage = err.response?.data ? JSON.stringify(error.response.data) : err.message;
-        alert(`Delete failed! ${errorMessage}`);
+        const errorMessage = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+        toast.error(`Delete failed! ${errorMessage}`);
       } finally {
         setLoading(false);
       }

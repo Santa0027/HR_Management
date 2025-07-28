@@ -41,7 +41,7 @@ function Reg_ma_new_approval() {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('Register/drivers/');
+      const response = await axiosInstance.get('Register/new-driver-applications//');
       const driversData = response.data.results || response.data;
       setDrivers(driversData);
 
@@ -80,7 +80,7 @@ function Reg_ma_new_approval() {
   // Handle approval action
   const handleApprovalAction = async (driverId, action, notes = '') => {
     try {
-      await axiosInstance.patch(`Register/drivers/${driverId}/`, {
+      await axiosInstance.patch(`Register/new-driver-applications//${driverId}/`, {
         status: action,
         approval_notes: notes
       });

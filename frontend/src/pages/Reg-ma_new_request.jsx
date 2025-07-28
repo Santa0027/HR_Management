@@ -40,7 +40,7 @@ function Reg_ma_new_request() {
   useEffect(() => {
     const fetchDrivers = async () => {
       try {
-        const response = await axiosInstance.get('Register/drivers/');
+        const response = await axiosInstance.get('Register/new-driver-applications/');
         const driversData = response.data.results || response.data;
         setDrivers(driversData);
 
@@ -96,7 +96,7 @@ function Reg_ma_new_request() {
   const filteredDrivers = drivers
     .filter(driver => {
       const matchesSearch = !searchTerm ||
-        driver.driver_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         driver.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         driver.phone_number?.includes(searchTerm) ||
         String(driver.id).includes(searchTerm);
@@ -164,11 +164,11 @@ function Reg_ma_new_request() {
   // Handle driver action
   const handleDriverAction = async (driverId, action) => {
     try {
-      await axiosInstance.patch(`Register/drivers/${driverId}/`, { status: action });
+      await axiosInstance.patch(`Register/new-driver-applications/${driverId}/`, { status: action });
       toast.success(`Driver ${action} successfully`);
 
       // Refresh data
-      const response = await axiosInstance.get('Register/drivers/');
+      const response = await axiosInstance.get('Register/new-driver-applications/');
       const driversData = response.data.results || response.data;
       setDrivers(driversData);
       calculateStatistics(driversData);
@@ -485,8 +485,8 @@ function Reg_ma_new_request() {
                             <Users className="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{driver.driver_name}</div>
-                            <div className="text-sm text-gray-500">ID: {driver.emp_id}</div>
+                            <div className="text-sm font-medium text-gray-900">{driver.full_name}</div>
+                            <div className="text-sm text-gray-500">ID: {driver.employee_id}</div>
                           </div>
                         </div>
                       </td>
@@ -495,7 +495,7 @@ function Reg_ma_new_request() {
                       <td className="py-4 px-6 text-sm text-gray-900">
                         {driver.company?.company_name || 'No Company'}
                       </td>
-                      <td className="py-4 px-6 text-sm text-gray-900">{driver.city}</td>
+                      <td className="py-4 px-6 text-sm text-gray-900">{driver.nationality}</td>
                       <td className="py-4 px-6">
                         {getStatusBadge(driver.status)}
                       </td>
