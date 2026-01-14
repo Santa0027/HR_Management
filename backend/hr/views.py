@@ -245,7 +245,17 @@ class WarningLetterViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]  
     # permission_classes = [IsAuthenticated]
 
+
+
+# views.py
+from django.template.loader import render_to_string
+from django.core.files.base import ContentFile
+from weasyprint import HTML
+# from .models import TerminationLetter
+from rest_framework import viewsets
+# from .serializers import TerminationLetterSerializer
 class TerminationViewSet(viewsets.ModelViewSet):
+
     queryset = Termination.objects.all()
     serializer_class = TerminationSerializer
     permission_classes = [AllowAny]  
@@ -253,6 +263,24 @@ class TerminationViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated]
 
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self.generate_letter(instance)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        self.generate_letter(instance)
+
+    def generate_letter(self, instance):
+        html_string = render_to_string('termination_letter_template.html', {
+            'termination': instance,
+            'company_name': 'Your Company Name',
+        })
+
+        pdf_file = HTML(string=html_string).write_pdf()
+
+        file_name = f"termination_letter_{instance.id}.pdf"
+        instance.generated_letter.save(file_name, ContentFile(pdf_file), save=True)
 
 
 

@@ -85,24 +85,23 @@ function PendingApprovalTabContent() {
 
   return (
     <>
-      <div className="min-h-screen font-inter p-8 bg-black text-[#C6C8CF]">
-        {/* Header */}
-        <div className="flex justify-end items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-1 bg-[#3F4045] hover:bg-[#060B21] rounded-full text-sm">
-              English <ChevronDown size={16} className="ml-1"/>
-            </button>
-            <CircleUserRound size={24}/>
-          </div>
-        </div>
-
-        <div className="text-sm mb-6">Organization / Vehicle Registration Management</div>
+      <div className="min-h-screen font-inter p-8 bg-white text-[#1E2022]">
+         {/* Header */}
+                <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+                  <div className="text-sm text-[#52616B]">Organization / Vehicle Registration Management</div>
+                  <div className="flex items-center space-x-4">
+                    <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                      English <ChevronDown size={16} className="ml-1" />
+                    </button>
+                    <CircleUserRound size={24} className="text-[#1E2022]" />
+                  </div>
+                </header>
 
         {/* Title */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-white text-3xl font-semibold">Vehicle Registration Management</h1>
+          <h1 className="text-[#187795] text-3xl font-semibold">Vehicle Registration Management</h1>
           <Link to="/vehicle-registration">
-            <button className="bg-[#0430DE] hover:bg-[#2750F5] text-white px-6 py-2 rounded-full font-medium">
+            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium">
               Add Vehicle
             </button>
           </Link>
@@ -117,7 +116,7 @@ function PendingApprovalTabContent() {
                 setActiveTab(tab);
                 tab === 'All Vehicles' ? setCurrentPageAll(1) : setCurrentPagePending(1);
               }}
-              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === tab ? 'bg-[#060B21] text-white' : 'hover:bg-[#3F4045] text-[#C6C8CF]'}`}
+              className={`px-4 py-2 rounded-t-lg font-medium transition-colors ${activeTab === tab ? 'bg-[#060B21] text-white' : 'hover:bg-[#3F4045] text-[#636363]'}`}
             >
               {tab} ({tab === 'All Vehicles' ? allVehicles.length : allVehicles.filter(v => v.approval_status === 'PENDING').length})
             </button>
@@ -125,12 +124,12 @@ function PendingApprovalTabContent() {
         </div>
 
         {/* Filters */}
-        <div className="p-6 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 bg-[#060B21]">
-          <input id="vehicleType" value={filters.vehicleType} onChange={handleFilterChange} className="bg-[#1A1B1E] p-2 rounded text-sm" placeholder="Vehicle Type" />
-          <input id="registrationStatus" value={filters.registrationStatus} onChange={handleFilterChange} className="bg-[#1A1B1E] p-2 rounded text-sm" placeholder="Registration Status" />
-          <input id="vehicleNumber" value={filters.vehicleNumber} onChange={handleFilterChange} className="bg-[#1A1B1E] p-2 rounded text-sm" placeholder="Vehicle Number" />
-          <input id="chassisNumber" value={filters.chassisNumber} onChange={handleFilterChange} className="bg-[#1A1B1E] p-2 rounded text-sm" placeholder="Chassis Number" />
-          <select id="insuranceStatus" value={filters.insuranceStatus} onChange={handleFilterChange} className="bg-[#1A1B1E] p-2 rounded text-sm">
+        <div className="p-6 rounded-lg mb-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 bg-[#C9D6DF]]">
+          <input id="vehicleType" value={filters.vehicleType} onChange={handleFilterChange} className="bg-[#D9D9D9] p-2 rounded text-sm" placeholder="Vehicle Type" />
+          <input id="registrationStatus" value={filters.registrationStatus} onChange={handleFilterChange} className="bg-[#D9D9D9] p-2 rounded text-sm" placeholder="Registration Status" />
+          <input id="vehicleNumber" value={filters.vehicleNumber} onChange={handleFilterChange} className="bg-[#D9D9D9] p-2 rounded text-sm" placeholder="Vehicle Number" />
+          <input id="chassisNumber" value={filters.chassisNumber} onChange={handleFilterChange} className="bg-[#D9D9D9] p-2 rounded text-sm" placeholder="Chassis Number" />
+          <select id="insuranceStatus" value={filters.insuranceStatus} onChange={handleFilterChange} className="bg-[#D9D9D9] p-2 rounded text-sm">
             <option value="">Insurance Status</option>
             <option value="Valid">Valid</option>
             <option value="Expired">Expired</option>
@@ -146,7 +145,7 @@ function PendingApprovalTabContent() {
         {/* Vehicle Table */}
         <div className="overflow-x-auto mb-4 bg-[#060B21] rounded-lg">
           <table className="min-w-full">
-            <thead className="bg-[#3F4045] text-white uppercase text-sm">
+            <thead className="bg-[#284B63] text-white uppercase text-sm">
               <tr>
                 <th className="py-3 px-6 text-left">#</th>
                 <th className="py-3 px-6 text-left">Vehicle Number</th>
@@ -157,9 +156,9 @@ function PendingApprovalTabContent() {
                 <th className="py-3 px-6 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="text-sm text-[#C6C8CF] font-light">
+            <tbody className="text-sm text-[#353535] font-bold ">
               {pagedVehicles.map((v, i) => (
-                <tr key={v.id} className="border-b border-[#3F4045] hover:bg-[#1A1B1E]">
+                <tr key={v.id} className="border-b  bg-[#C9D6DF] border-[#3F4045] hover:bg-white">
                   <td className="py-3 px-6">{(currentPage - 1) * itemsPerPage + i + 1}</td>
                   <td className="py-3 px-6">{v.vehicle_number}</td>
                   <td className="py-3 px-6">{v.vehicle_type}</td>

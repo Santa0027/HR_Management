@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '../api/axiosInstance'; // Assuming axiosInstance is configured correctly here
+import { Link } from 'react-router-dom';
+import {
+  ChevronDown, CircleUserRound, ChevronLeft, ChevronRight
+} from 'lucide-react';
 
 // Reusing placeholder components from HRDashboard.jsx for consistency
 // If you are using Shadcn UI, uncomment their imports and remove these placeholders.
@@ -10,7 +14,7 @@ const TableHead = ({ children }) => <th className="py-2 px-2">{children}</th>;
 const TableHeader = ({ children }) => <thead className="text-left text-gray-400 border-b border-gray-700">{children}</thead>;
 const TableRow = ({ children }) => <tr className="border-b border-gray-800">{children}</tr>;
 const Button = ({ children, onClick, className = '', type = 'button' }) => <button type={type} onClick={onClick} className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm ${className}`}>{children}</button>;
-const Input = ({ type = 'text', placeholder, value, onChange, className = '', id, name, step }) => <input id={id} name={name} type={type} placeholder={placeholder} value={value} onChange={onChange} step={step} className={`w-full px-4 py-2 bg-gray-800 text-white rounded-md border border-gray-700 ${className}`} />;
+const Input = ({ type = 'text', placeholder, value, onChange, className = '', id, name, step }) => <input id={id} name={name} type={type} placeholder={placeholder} value={value} onChange={onChange} step={step} className={`w-full px-4 py-2 bg-[#D9D9D9] text-[#353535] rounded-md border border-gray-700 ${className}`} />;
 
 
 const AttendanceReport = () => {
@@ -167,8 +171,20 @@ const AttendanceReport = () => {
   };
 
   return (
-    <div className="bg-black text-white min-h-screen p-6 space-y-8">
-      <div>
+    <div className="bg-white text-[#1E2022]  min-h-screen p-6 space-y-8">
+
+      
+       {/* Header */}
+              <header className="flex justify-between items-center pb-6 border-b border-gray-700 mb-8">
+                <div className="text-sm text-[#52616B]">Organization / Attendance Report</div>
+                <div className="flex items-center space-x-4">
+                  <button className="flex items-center px-3 py-1 bg-[#284B63] hover:bg-[#52616B] text-[#FFFFFF] rounded-full text-sm  transition-colors">
+                    English <ChevronDown size={16} className="ml-1" />
+                  </button>
+                  <CircleUserRound size={24} className="text-[#1E2022]" />
+                </div>
+              </header>
+              <div>
         <h1 className="text-3xl font-bold mb-2">Attendance Report</h1>
         <p className="text-gray-400">View and manage driver attendance records.</p>
       </div>
@@ -179,7 +195,7 @@ const AttendanceReport = () => {
         placeholder="Search by driver name"
         value={searchTerm}
         onChange={handleSearch}
-        className="w-full p-2 rounded bg-gray-800 text-white border border-gray-700 focus:outline-none"
+        className="w-full p-2 rounded bg-[#D9D9D9] text-[#353535] border border-gray-700 focus:outline-none"
       />
 
       {/* View Switch Buttons */}
@@ -205,7 +221,7 @@ const AttendanceReport = () => {
       {/* Attendance Table */}
       <div className="overflow-auto mt-4 rounded-lg border border-gray-700">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-[#284B63] text-white">
             <TableRow>
               {viewType === 'daily' ? (
                 // Headers for Daily Report
@@ -294,24 +310,24 @@ const AttendanceReport = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-        <div className="bg-gray-800 p-4 rounded-md shadow-lg">
-          <p className="text-gray-400 text-sm">Total Present</p>
+        <div className="bg-[#C9D6DF] p-4 rounded-md shadow-lg">
+          <p className="text-[#353535] text-sm">Total Present</p>
           <p className="text-2xl font-bold mt-1">{summary.present_days || 0}</p>
         </div>
-        <div className="bg-gray-800 p-4 rounded-md shadow-lg">
-          <p className="text-gray-400 text-sm">Late Arrivals</p>
+        <div className="bg-[#C9D6DF] p-4 rounded-md shadow-lg">
+          <p className="text-[#353535] text-sm">Late Arrivals</p>
           <p className="text-2xl font-bold mt-1">{summary.late_days || 0}</p>
         </div>
-        <div className="bg-gray-800 p-4 rounded-md shadow-lg">
-          <p className="text-gray-400 text-sm">Total Absent</p>
+        <div className="bg-[#C9D6DF] p-4 rounded-md shadow-lg">
+          <p className="text-[#353535] text-sm">Total Absent</p>
           <p className="text-2xl font-bold mt-1">{summary.absent_days || 0}</p>
         </div>
-        <div className="bg-gray-800 p-4 rounded-md shadow-lg">
-          <p className="text-gray-400 text-sm">On-time Percentage</p>
+        <div className="bg-[#C9D6DF] p-4 rounded-md shadow-lg">
+          <p className="text-[#353535] text-sm">On-time Percentage</p>
           <p className="text-2xl font-bold mt-1">{summary.on_time_percentage || 0}%</p>
         </div>
-        <div className="bg-gray-800 p-4 rounded-md shadow-lg">
-          <p className="text-gray-400 text-sm">Total Deductions</p>
+        <div className="bg-[#C9D6DF] p-4 rounded-md shadow-lg">
+          <p className="text-[#353535] text-sm">Total Deductions</p>
           <p className="text-2xl font-bold mt-1">₹{Number(summary.total_deductions_amount || 0).toFixed(2)}</p>
         </div>
       </div>

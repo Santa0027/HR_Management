@@ -47,10 +47,10 @@ function DriverProfile() {
   if (error) return <div className="text-red-500 p-8">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
+    <div className="min-h-screen bg-white text-[#187795]  p-8">
       <h1 className="text-3xl font-semibold mb-6">Driver Profile</h1>
 
-      <div className="bg-gray-800 p-6 rounded-md mb-6 space-y-2">
+      <div className="bg-[#C9D6DF]  p-6 rounded-md mb-6 space-y-2">
         <p><strong>Name:</strong> {driver.driver_name}</p>
         <p><strong>Driver ID:</strong> {driver.id}</p>
         <p><strong>City:</strong> {driver.city}</p>

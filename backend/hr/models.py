@@ -6,43 +6,33 @@ from drivers.models import Driver
 from vehicle.models import VehicleRegistration
 
 class CheckinLocation(models.Model):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='checkin_locations')
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    radius_meters = models.PositiveIntegerField(default=50)
+    radius_meters = models.IntegerField()
     is_active = models.BooleanField(default=True)
+    # THIS LINE IS CRUCIAL: What is the name of your ForeignKey field to Driver?
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE,null=True,blank=True,related_name='checkin_locations') # <--- Is it 'driver'? Or something else?
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = "Check-in Location"
-        verbose_name_plural = "Check-in Locations"
-        unique_together = ('company', 'name')
-        ordering = ['company', 'name']
-
     def __str__(self):
-        return f"{self.name} ({self.company.company_name})"
-
+        return self.name
 
 class ApartmentLocation(models.Model):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='apartment_locations')
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    alarm_radius_meters = models.PositiveIntegerField(default=200)
+    alarm_radius_meters = models.IntegerField()
     is_active = models.BooleanField(default=True)
+    # THIS LINE IS CRUCIAL: What is the name of your ForeignKey field to Driver?
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE,null=True,blank=True,related_name='apartment_locations') # <--- Is it 'driver'? Or something else?
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = "Apartment/Alarm Location"
-        verbose_name_plural = "Apartment/Alarm Locations"
-        unique_together = ('company', 'name')
-        ordering = ['company', 'name']
-
     def __str__(self):
-        return f"{self.name} ({self.company.company_name})"
+        return self.name
+
 
 
 
@@ -158,7 +148,7 @@ class WarningLetter(models.Model):
         ('other', 'Other'),
     ]
 
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, related_name='warning_letters')
+    driver = models.ForeignKey(Driver,null=True,blank=True, on_delete=models.CASCADE, related_name='warning_letters')
     issued_date = models.DateField(default=timezone.now)
     reason = models.CharField(max_length=100, choices=WARNING_REASON_CHOICES)
     description = models.TextField(blank=True, null=True)
@@ -193,6 +183,7 @@ class Termination(models.Model):
     details = models.TextField(blank=True, null=True)
     document = models.FileField(upload_to='drivers/terminations/', null=True, blank=True)
     processed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_terminations')
+    generated_letter = models.FileField(upload_to='termination_letters/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
